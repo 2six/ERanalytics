@@ -14,16 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const container = document.getElementById('tier-table-container');
-            let html = '';
+            let html = '<table class="tier-table">';
 
-            html += '<table class="tier-table">';
-            html += '<tr class="tier-header">';
             orderedTiers.forEach(tier => {
+                html += '<tr class="tier-row">';
                 html += `<th>${tier}</th>`;
-            });
-            html += '</tr>';
-            html += '<tr class="tier-images">';
-            orderedTiers.forEach(tier => {
                 html += '<td>';
                 if (tierGroups[tier]) {
                     tierGroups[tier].forEach((experiment) => {
@@ -32,10 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
                 html += '</td>';
+                html += '</tr>';
             });
-            html += '</tr>';
-            html += '</table>';
 
+            html += '</table>';
             container.innerHTML = html;
         })
         .catch(error => {
