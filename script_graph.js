@@ -75,17 +75,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointRadius: function(context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const min승률 = Math.min(...data.map(item => item["승률"]));
-                        const max승률 = Math.max(...data.map(item => item["승률"]));
-                        const minPointSize = 5;
-                        const maxPointSize = 30;
-
-                        if (max승률 === min승률) return minPointSize;
-
-                        const normalized승률 = (승률 - min승률) / (max승률 - min승률);
-                        return minPointSize + normalized승률 * (maxPointSize - minPointSize);
-                    },
-                    pointHoverRadius: 8
+                        const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
+                        const 승률평균 = 전체승률합 / data.length;
+                        const 기준크기 = 15;
+                        const 크기조정비율 = 2; // 평균과의 차이에 곱해줄 비율 (조절 가능)
+                    
+                        const 승률차이 = (승률 - 승률평균) * 100; // 백분율로 차이 계산
+                    
+                        return 기준크기 + 승률차이 * 크기조정비율 / 10; // 크기 조정 (나누는 값 조절 가능)
+                    }
                 }]
             },
             options: {
