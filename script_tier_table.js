@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const tierGroups = {};
+            const orderedTiers = ["S+", "S", "A", "B", "C", "D", "F"];
 
             data.forEach(item => {
                 const tier = item["티어"];
@@ -15,15 +16,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('tier-table-container');
             let html = '';
 
-            for (const tier in tierGroups) {
-                html += `<h2>${tier} 티어</h2><table><tr>`;
-                tierGroups[tier].forEach((experiment) => {
-                    // 이미지 파일 이름 변환 로직
-                    const imageName = convertExperimentNameToImageName(experiment);
-                    html += `<td><img src="image/${imageName}.png" alt="${experiment}" width="100"></td>`;
-                });
-                html += '</tr></table>';
-            }
+            html += '<table class="tier-table">';
+            html += '<tr class="tier-header">';
+            orderedTiers.forEach(tier => {
+                html += `<th>${tier}</th>`;
+            });
+            html += '</tr>';
+            html += '<tr class="tier-images">';
+            orderedTiers.forEach(tier => {
+                html += '<td>';
+                if (tierGroups[tier]) {
+                    tierGroups[tier].forEach((experiment) => {
+                        const imageName = convertExperimentNameToImageName(experiment);
+                        html += `<img src="image/${imageName}.png" alt="${experiment}" width="100">`;
+                    });
+                }
+                html += '</td>';
+            });
+            html += '</tr>';
+            html += '</table>';
 
             container.innerHTML = html;
         })
@@ -32,16 +43,14 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tier-table-container').innerText = '데이터를 불러오는 데 실패했습니다.';
         });
 
-    // 실험체 이름 -> 이미지 파일 이름 변환 함수
+    // 실험체 이름 -> 이미지 파일 이름 변환 함수 (이전과 동일)
     function convertExperimentNameToImageName(experimentName) {
-        // "저격총 버니스" -> "버니스-저격총"
         if (experimentName.includes(" ")) {
             const parts = experimentName.split(" ");
             if (parts.length >= 2) {
                 return `${parts[1]}-${parts[0]}`;
             }
         }
-        // 다른 변환 규칙이 필요하다면 여기에 추가
-        return experimentName; // 기본적으로는 그대로 반환
+        return experimentName;
     }
 });
