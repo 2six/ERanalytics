@@ -10,13 +10,14 @@
             width: 1425px; /* 고정 너비 설정 */
             border-collapse: collapse;
             margin-bottom: 0px;
+            border: 1px solid white; /* 표 전체 테두리 추가 */
         }
         .tier-row th {
             padding: 10px;
             text-align: center;
             font-size: 1.2em;
             color: #fff;
-            border: 1px solid #ddd;
+            border: 1px solid white; /* 셀 테두리 색상 변경 */
             width: 50px;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
@@ -30,10 +31,10 @@
         .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); } /* F */
         .tier-row td {
             padding: 0px;
-            border: 1px solid #ddd;
+            border: 1px solid white; /* 셀 테두리 색상 변경 */
             display: block;
             gap: 0px;
-            background-color: #1a1a17;
+            background-color: white; /* 이미지 부분 배경색 흰색 고정 */
         }
         .tier-row td > div {
             display: flex;
@@ -45,7 +46,7 @@
             vertical-align: middle;
             width: 90px;
             height: auto;
-            cursor: pointer; /* 클릭 가능한 표시 */
+            cursor: pointer;
         }
         .image-popup {
             display: none; /* initially hidden */
