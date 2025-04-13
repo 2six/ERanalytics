@@ -74,25 +74,25 @@ document.addEventListener('DOMContentLoaded', function() {
         return scoredData;
     }
 
-function calculateTier(score, averageScore) {
-    const diff = score - averageScore;
-
-    if (diff > averageScore * 0.15) { // 평균보다 15% 초과
-        return "S+";
-    } else if (diff > averageScore * 0.1) { // 평균보다 10% 초과
-        return "S";
-    } else if (diff > averageScore * 0.05) { // 평균보다 5% 초과
-        return "A";
-    } else if (diff > -averageScore * 0.05) { // 평균과 -5% ~ +5% 사이
-        return "B";
-    } else if (diff > -averageScore * 0.1) { // 평균보다 -5% ~ -10% 사이
-        return "C";
-    } else if (diff > -averageScore * 0.15) { // 평균보다 -10% ~ -15% 사이
-        return "D";
-    } else { // 평균보다 15% 미만으로 낮음
-        return "F";
+    function calculateTier(score, averageScore) {
+        const diff = score - averageScore;
+    
+        if (diff > averageScore * 0.1) { // 평균보다 10% 초과
+            return "S+";
+        } else if (diff > averageScore * 0.05) { // 평균보다 5% 초과
+            return "S";
+        } else if (diff > 0) { // 평균보다 0 초과
+            return "A";
+        } else if (diff > -averageScore * 0.05) { // 평균과 -5% ~ +5% 사이
+            return "B";
+        } else if (diff > -averageScore * 0.1) { // 평균보다 -5% ~ -10% 사이
+            return "C";
+        } else if (diff > -averageScore * 0.15) { // 평균보다 -10% ~ -15% 사이
+            return "D";
+        } else { // 평균보다 15% 미만으로 낮음
+            return "F";
+        }
     }
-}
 
     function displaySelectedData(data) {
         const container = document.getElementById('data-container');
