@@ -18,17 +18,18 @@
             background-color: #f0f0f0;
             border: 1px solid #ddd;
             width: 50px;
+            white-space: nowrap; /* 티어 문자는 줄바꿈 방지 */
         }
         .tier-row td {
             padding: 10px;
-            white-space: nowrap;
-            overflow-x: auto;
             border: 1px solid #ddd;
+            display: flex; /* flexbox 레이아웃 사용 */
+            flex-wrap: wrap; /* 내용이 넘치면 줄바꿈 활성화 */
+            gap: 5px; /* 이미지 사이 간격 조절 */
         }
-        .tier-row img {
-            margin-right: 5px;
+        .tier-row td img {
             vertical-align: middle;
-            width: 100px; /* 이미지 크기 조절 */
+            width: 100px;
             height: auto;
         }
     </style>
