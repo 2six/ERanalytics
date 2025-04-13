@@ -101,17 +101,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                const index = context.dataIndex;
-                                const 실험체 = data[index]["실험체"];
-                                const 픽률 = (context.parsed.x * 100).toFixed(2);
-                                const RP획득 = context.parsed.y;
-                                const 승률 = (data[index]["승률"] * 100).toFixed(2);
+                            body: function(context) {
+                                if (!context || !context[0] || !context[0].dataPoint) {
+                                    return [];
+                                }
+                                const dataPoint = context[0].dataPoint;
+                                const index = context[0].dataIndex;
+                                const 실험체 = data.find((_, i) => i === index)["실험체"];
+                                const 픽률 = (dataPoint.x * 100).toFixed(2);
+                                const RP획득 = dataPoint.y;
+                                const 승률 = (data.find((_, i) => i === index)["승률"] * 100).toFixed(2);
+                
                                 return [
+                                    `실험체: ${실험체}`,
                                     `픽률: ${픽률}%`,
                                     `RP 획득: ${RP획득}`,
                                     `승률: ${승률}%`
                                 ];
+                            },
+                            title: function() {
+                                return ''; // 타이틀 제거
+                            },
+                            label: function() {
+                                return ''; // 기본 label은 숨김
                             }
                         }
                     }
@@ -119,19 +131,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Chart.js v3 이상에서 사용
                 afterDatasetsDraw: (chart) => {
                     const ctx = chart.ctx;
-                    chart.data.datasets.forEach((dataset, i) => {
-                        const meta = chart.getDatasetMeta(i);
-                        meta.data.forEach((point, index) => {
-                            const x = point.x;
-                            const y = point.y;
-                            const 실험체 = data[index]["실험체"];
-
-                            ctx.font = '10px sans-serif';
-                            ctx.fillStyle = 'black';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(실험체, x, y);
-                        });
+                    const data = chart.data.datasets[0].data; // 데이터 배열 직접 접근
+                    const meta = chart.getDatasetMeta(0);
+                
+                    meta.data.forEach((point, index) => {
+                        const x = point.x;
+                        const y = point.y;
+                        const 실험체 = chart.data.labels[index]; // labels 배열에서 실험체 이름 가져오기
+                
+                        ctx.font = '10px sans-serif';
+                        ctx.fillStyle = 'black';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(실험체, x, y);
                     });
                 }
                 // Chart.js v2에서 사용
