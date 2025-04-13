@@ -47,9 +47,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const pickRates = data.map(item => item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0));
         const rpGains = data.map(item => item["RP 획득"]);
 
-        // 가중 평균 계산
+        // 가중 평균 계산 수정
         const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0);
-        const 가중평균픽률 = data.reduce((acc, item) => acc + (item["표본수"] / 전체표본수) * (item["표본수"] / 전체표본수), 0);
+        const 가중평균픽률 = data.reduce((acc, item) => acc + (item["표본수"] * (item["표본수"] / 전체표본수)), 0);
         const 가중평균RP = data.reduce((acc, item) => acc + item["RP 획득"] * (item["표본수"] / 전체표본수), 0);
 
         // 플러그인 등록
@@ -154,11 +154,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'x',
-                                value: 가중평균픽률, // 정확히 픽률의 가중 평균 값 사용
+                                value: 가중평균픽률, // 수정된 가중 평균 픽률 값 사용
                                 label: {
-                                    display: true,
-                                    content: `가중평균 픽률 ${(가중평균픽률 * 100).toFixed(1)}%`,
-                                    position: 'start'
+                                    display: false // 툴팁 내용 제거
                                 }
                             },
                             {
@@ -167,11 +165,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'y',
-                                value: 가중평균RP, // 정확히 RP의 가중 평균 값 사용
+                                value: 가중평균RP, // 수정된 가중 평균 RP 값 사용
                                 label: {
-                                    display: true,
-                                    content: `가중평균 RP ${가중평균RP.toFixed(1)}`,
-                                    position: 'start'
+                                    display: false // 툴팁 내용 제거
                                 }
                             }
                         ]
