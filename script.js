@@ -55,7 +55,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 보정점수 = ((Math.log(item["RP 획득"] + 1) * 3) + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
-            return { ...item, 픽률: (pickRate * 100).toFixed(2) + '%', 점수: 보정점수 };
+            return {
+                "실험체": item["실험체"],
+                "점수": 보정점수,
+                "픽률": (pickRate * 100).toFixed(2) + '%',
+                "RP 획득": item["RP 획득"],
+                "승률": item["승률"],
+                "TOP 3": item["TOP 3"],
+                "평균 순위": item["평균 순위"]
+            };
         });
 
         scoredData.sort((a, b) => b.점수 - a.점수); // 점수 내림차순 정렬
@@ -65,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function displaySelectedData(data) {
         const container = document.getElementById('data-container');
-        const columnsToShow = ["실험체", "픽률", "점수", "RP 획득", "승률", "TOP 3", "평균 순위"];
+        const columnsToShow = ["실험체", "점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
         let html = '<table><thead><tr>';
         columnsToShow.forEach(column => {
@@ -76,7 +84,11 @@ document.addEventListener('DOMContentLoaded', function() {
         data.forEach(item => {
             html += '<tr>';
             columnsToShow.forEach(column => {
-                html += `<td>${item[column]}</td>`;
+                let value = item[column];
+                if (typeof value === 'number') {
+                    value = value.toFixed(2);
+                }
+                html += `<td>${value}</td>`;
             });
             html += '</tr>';
         });
