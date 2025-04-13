@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
                         const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
-                        const 크기조정비율 = 50;
+                        const 크기조정비율 = 30;
                 
                         const 승률차이 = (승률 - 승률평균) * 100;
                 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
                         const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
-                        const 크기조정비율 = 50;
+                        const 크기조정비율 = 30;
                 
                         const 승률차이 = (승률 - 승률평균) * 100;
                 
