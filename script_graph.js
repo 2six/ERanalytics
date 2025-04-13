@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     let myChart;
 
     fetch('data.json')
@@ -16,16 +16,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const pickRates = data.map(item => item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0));
         const rpGains = data.map(item => item["RP 획득"]);
 
-        // 가중평균 계산
-        const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0);
-        const 가중평균픽률 = data.reduce((acc, item) =>
-            acc + (item["표본수"] / 전체표본수) * (item["표본수"] / 전체표본수), 0
-        );
-        const 가중평균RP = data.reduce((acc, item) =>
-            acc + (item["RP 획득"] * item["표본수"]), 0
-        ) / 전체표본수;
+        let 가중치합 = 0;
+        let 가중픽률합 = 0;
+        let 가중RP합 = 0;
 
-        // 텍스트 출력 플러그인
+        data.forEach(item => {
+            가중치합 += item["표본수"];
+            가중픽률합 += (item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0)) * item["표본수"];
+            가중RP합 += item["RP 획득"] * item["표본수"];
+        });
+
+        const 가중평균픽률 = 가중픽률합 / 가중치합;
+        const 가중평균RP = 가중RP합 / 가중치합;
+
         const labelPlugin = {
             id: 'labelPlugin',
             afterDatasetsDraw(chart) {
@@ -55,7 +58,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // 차트 생성
         myChart = new Chart(ctx, {
             type: 'scatter',
             data: {
@@ -63,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: '픽률 vs RP 획득',
                     data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], 승률: item["승률"] })),
-                    backgroundColor: function(context) {
+                    backgroundColor: function (context) {
                         const index = context.dataIndex;
                         const totalDataPoints = context.chart.data.datasets[0].data.length;
                         const hue = (index * (360 / totalDataPoints)) % 360;
@@ -71,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const lightness = 60 + (index % 2) * 20;
                         return `hsl(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
                     },
-                    pointRadius: function(context) {
+                    pointRadius: function (context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
@@ -88,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         return 원크기;
                     },
-                    pointHoverRadius: function(context) {
+                    pointHoverRadius: function (context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
@@ -131,20 +133,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             text: 'RP 획득'
                         },
                         ticks: {
-                            stepSize: 1,
-                            min: Math.floor(Math.min(...rpGains)) - 1, // 최소값 정수화
-                            max: Math.ceil(Math.max(...rpGains)) + 1  // 최대값 정수화
-                        }
+                            stepSize: 1
+                        },
+                        min: Math.min(...rpGains) - 1,
+                        max: Math.max(...rpGains) + 1
                     }
                 },
                 plugins: {
                     tooltip: {
                         enabled: true,
                         callbacks: {
-                            title: function() {
+                            title: function () {
                                 return '';
                             },
-                            label: function(context) {
+                            label: function (context) {
                                 const index = context.dataIndex;
                                 const dataPoint = context.raw;
                                 const label = context.chart.data.labels[index];
@@ -162,37 +164,34 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     },
                     annotation: {
-                        annotations: [
-                            {
-                                type: 'line',
-                                borderColor: 'yellow',
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                scaleID: 'x',
-                                value: 가중평균픽률,
-                                label: {
-                                    enabled: true,
-                                    content: `가중평균 픽률: ${(가중평균픽률 * 100).toFixed(1)}%`,
-                                    position: 'top'
-                                }
-                            },
-                            {
-                                type: 'line',
-                                borderColor: 'yellow',
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                scaleID: 'y',
-                                value: 가중평균RP,
-                                label: {
-                                    enabled: true,
-                                    content: `가중평균 RP: ${가중평균RP.toFixed(1)}`,
-                                    position: 'left'
-                                }
+                        annotations: [{
+                            type: 'line',
+                            borderColor: 'yellow',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            xScaleID: 'x',
+                            value: 가중평균픽률,
+                            label: {
+                                enabled: true,
+                                content: `가중평균 픽률: ${(가중평균픽률 * 100).toFixed(1)}%`,
+                                position: 'top'
                             }
-                        ]
-                    },
-                    labelPlugin: labelPlugin // 플러그인 추가
-                }
+                        }, {
+                            type: 'line',
+                            borderColor: 'yellow',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            yScaleID: 'y',
+                            value: 가중평균RP,
+                            label: {
+                                enabled: true,
+                                content: `가중평균 RP: ${가중평균RP.toFixed(1)}`,
+                                position: 'right'
+                            }
+                        }]
+                    }
+                },
+                plugins: [labelPlugin]
             }
         });
     }
