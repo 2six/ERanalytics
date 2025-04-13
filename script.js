@@ -2,10 +2,11 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
-            fetch('config.ini') // 설정 파일 로드
+            fetch('config.ini')
                 .then(response => response.text())
                 .then(iniString => {
-                    const tierConfig = ini.parse(iniString).tiers;
+                    const parsedConfig = parseINI(iniString);
+                    const tierConfig = parsedConfig.tiers;
                     const sortedData = calculateAndSortScores(data, tierConfig);
                     displaySelectedData(sortedData);
                 })
@@ -19,6 +20,38 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
             document.getElementById('data-container').innerText = '데이터를 불러오는 데 실패했습니다.';
         });
+
+    function parseINI(iniString) {
+        const config = {};
+        let currentSection = null;
+
+        const lines = iniString.split('\n');
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) {
+                continue; // 빈 줄 또는 주석 무시
+            }
+
+            const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
+            if (sectionMatch) {
+                currentSection = sectionMatch[1];
+                config[currentSection] = {};
+                continue;
+            }
+
+            const keyValueMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
+            if (keyValueMatch) {
+                const key = keyValueMatch[1].trim();
+                const value = keyValueMatch[2].trim();
+                if (currentSection) {
+                    config[currentSection][key] = value;
+                } else {
+                    config[key] = value; // 섹션 없는 키-값 쌍 처리 (선택 사항)
+                }
+            }
+        }
+        return config;
+    }
 
     function calculateAndSortScores(data, tierConfig) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
