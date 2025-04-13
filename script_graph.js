@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
+    let myChart; // Declare a variable to hold the chart instance
+
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
@@ -18,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pickRates = data.map(item => item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0));
         const rpGains = data.map(item => item["RP 획득"]);
 
-        new Chart(ctx, {
+        myChart = new Chart(ctx, { // Assign the chart instance to myChart
             type: 'scatter',
             data: {
                 labels: labels,
@@ -37,21 +39,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         const max승률 = Math.max(...data.map(item => item["승률"]));
                         const minPointSize = 10;
                         const maxPointSize = 25;
-                
+
                         if (max승률 === min승률) {
-                            return minPointSize; // 모든 승률이 같으면 최소 크기 반환
+                            return minPointSize;
                         }
-                
-                        // 승률을 0~1 범위로 정규화
+
                         const normalized승률 = (승률 - min승률) / (max승률 - min승률);
-                
-                        // 정규화된 승률을 점 크기 범위에 매핑
                         return minPointSize + normalized승률 * (maxPointSize - minPointSize);
                     },
                     pointHoverRadius: 8
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     x: {
                         type: 'linear',
@@ -98,46 +99,74 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 plugins: {
-                    annotation: {
-                        annotations: data.map((item, index) => {
-                            const meta = chart.getDatasetMeta(0);
-                            const point = meta.data[index];
-                            if (point) {
-                                return {
-                                    type: 'label',
-                                    xValue: point.x,
-                                    yValue: point.y,
-                                    content: item["실험체"],
-                                    font: {
-                                        size: 10,
-                                        color: 'black' // 텍스트 색상
-                                    },
-                                    textAlign: 'center',
-                                    textBaseline: 'middle',
-                                    padding: 0,
-                                    pointRadius: 0 // 원 위에 텍스트만 표시
-                                };
-                            }
-                            return null;
-                        }).filter(annotation => annotation !== null)
-                    },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                const index = context.dataIndex;
-                                const 실험체 = data[index]["실험체"];
-                                const 픽률 = (context.parsed.x * 100).toFixed(2);
-                                const RP획득 = context.parsed.y;
-                                const 승률 = (data[index]["승률"] * 100).toFixed(2);
+                            body: function(context) {
+                                if (!context || !context[0] || !context[0].dataPoint) {
+                                    return [];
+                                }
+                                const dataPoint = context[0].dataPoint;
+                                const 픽률 = (dataPoint.x * 100).toFixed(2);
+                                const RP획득 = dataPoint.y;
+                                const index = context[0].dataIndex;
+                                const 승률 = (data.find((_, i) => i === index)["승률"] * 100).toFixed(2);
+
                                 return [
                                     `픽률: ${픽률}%`,
                                     `RP 획득: ${RP획득}`,
                                     `승률: ${승률}%`
                                 ];
+                            },
+                            title: function(context) {
+                                if (!context || !context[0] || !context[0].label) {
+                                    return '';
+                                }
+                                return context[0].label; // 실험체 이름 (타이틀)
+                            },
+                            label: function() {
+                                return ''; // 기본 label은 숨김
                             }
                         }
                     }
+                },
+                // Chart.js v3 이상에서 사용
+                afterDatasetsDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        meta.data.forEach((point, index) => {
+                            const x = point.x;
+                            const y = point.y;
+                            const 실험체 = data[index]["실험체"];
+
+                            ctx.font = '10px sans-serif';
+                            ctx.fillStyle = 'black';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(실험체, x, y);
+                        });
+                    });
                 }
+                // Chart.js v2에서 사용
+                /*
+                draw: function(chartInstance) {
+                    var ctx = chartInstance.chart.ctx;
+                    chartInstance.data.datasets.forEach(function (dataset, i) {
+                        var meta = chartInstance.getDatasetMeta(i);
+                        meta.data.forEach(function (point, index) {
+                            var x = point.getCenterPoint().x;
+                            var y = point.getCenterPoint().y;
+                            var 실험체 = data[index]["실험체"];
+
+                            ctx.font = '10px sans-serif';
+                            ctx.fillStyle = 'black';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(실험체, x, y);
+                        });
+                    });
+                }
+                */
             }
         });
     }
