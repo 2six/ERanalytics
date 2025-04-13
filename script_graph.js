@@ -117,20 +117,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     }                    
                 },
                 tooltip: {
-                    enabled: true,
-                    mode: 'nearest',
-                    intersect: false,
                     callbacks: {
                         title: () => '', // 타이틀 제거
-                        label: context => {
+                        label: (context) => {
                             const index = context.dataIndex;
                             const dataPoint = context.raw;
                             const label = context.chart.data.labels[index];
+                
                             const 픽률 = (dataPoint.x * 100).toFixed(2);
                             const RP획득 = dataPoint.y;
                             const 승률 = (data[index]["승률"] * 100).toFixed(2);
                 
-                            return `실험체: ${label}\n픽률: ${픽률}%\nRP 획득: ${RP획득}\n승률: ${승률}%`;
+                            return [
+                                `실험체: ${label}`,
+                                `픽률: ${픽률}%`,
+                                `RP 획득: ${RP획득}`,
+                                `승률: ${승률}%`
+                            ];
                         }
                     }
                 }
