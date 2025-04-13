@@ -2,15 +2,25 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
-            const sortedData = calculateAndSortScores(data);
-            displaySelectedData(sortedData);
+            fetch('config.ini') // 설정 파일 로드
+                .then(response => response.text())
+                .then(iniString => {
+                    const tierConfig = ini.parse(iniString).tiers;
+                    const sortedData = calculateAndSortScores(data, tierConfig);
+                    displaySelectedData(sortedData);
+                })
+                .catch(error => {
+                    console.error('config.ini 파일을 불러오는 중 오류 발생:', error);
+                    const sortedData = calculateAndSortScores(data, {});
+                    displaySelectedData(sortedData);
+                });
         })
         .catch(error => {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
             document.getElementById('data-container').innerText = '데이터를 불러오는 데 실패했습니다.';
         });
 
-    function calculateAndSortScores(data) {
+    function calculateAndSortScores(data, tierConfig) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
         const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
 
@@ -55,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 보정점수 = ((Math.log(item["RP 획득"] + 1) * 3) + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
-            const tier = calculateTier(보정점수, averageScore);
+            const tier = calculateTier(보정점수, averageScore, tierConfig);
 
             return {
                 "실험체": item["실험체"],
@@ -74,22 +84,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return scoredData;
     }
 
-    function calculateTier(score, averageScore) {
+    function calculateTier(score, averageScore, config) {
         const diff = score - averageScore;
-    
-        if (diff > averageScore * 0.1) { // 평균보다 10% 초과
+        if (diff > averageScore * parseFloat(config["S+"])) {
             return "S+";
-        } else if (diff > averageScore * 0.05) { // 평균보다 5% 초과
+        } else if (diff > averageScore * parseFloat(config["S"])) {
             return "S";
-        } else if (diff > 0) { // 평균보다 0 초과
+        } else if (diff > averageScore * parseFloat(config["A"])) {
             return "A";
-        } else if (diff > -averageScore * 0.05) { // 평균과 -5% ~ +5% 사이
+        } else if (diff > averageScore * parseFloat(config["B"])) {
             return "B";
-        } else if (diff > -averageScore * 0.1) { // 평균보다 -5% ~ -10% 사이
+        } else if (diff > averageScore * parseFloat(config["C"])) {
             return "C";
-        } else if (diff > -averageScore * 0.15) { // 평균보다 -10% ~ -15% 사이
+        } else if (diff > averageScore * parseFloat(config["D"])) {
             return "D";
-        } else { // 평균보다 15% 미만으로 낮음
+        } else {
             return "F";
         }
     }
