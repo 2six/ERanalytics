@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => (value * 100).toFixed(1) + '%',
-                            stepSize: 0.0025
+                            stepSize: 0.005
                         }
                     },
                     y: {
@@ -153,9 +153,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderColor: 'yellow',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
-                                xMin: 가중평균픽률,
-                                xMax: 가중평균픽률,
                                 scaleID: 'x',
+                                value: 가중평균픽률, // 정확히 픽률의 가중 평균 값 사용
                                 label: {
                                     display: true,
                                     content: `가중평균 픽률 ${(가중평균픽률 * 100).toFixed(1)}%`,
@@ -167,9 +166,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderColor: 'yellow',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
-                                yMin: 가중평균RP,
-                                yMax: 가중평균RP,
                                 scaleID: 'y',
+                                value: 가중평균RP, // 정확히 RP의 가중 평균 값 사용
                                 label: {
                                     display: true,
                                     content: `가중평균 RP ${가중평균RP.toFixed(1)}`,
