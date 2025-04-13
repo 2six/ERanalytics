@@ -140,24 +140,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const closeButton = document.querySelector('.image-popup-close');
         const tableContainer = document.getElementById('tier-table-container');
         const popupTableButton = document.getElementById('popup-table-button');
-
-        if (popupTableButton && tableContainer && popup && popupImage && closeButton) {
+        const tierTable = tableContainer.querySelector('.tier-table'); // 실제 표 요소 선택
+    
+        if (popupTableButton && tierTable && popup && popupImage && closeButton) {
             popupTableButton.addEventListener('click', function() {
-                html2canvas(tableContainer, {
-                    width: tableContainer.offsetWidth,
+                html2canvas(tierTable, { // 캡처 대상을 실제 표 요소로 변경
+                    width: tierTable.offsetWidth, // 표의 실제 너비 사용
                     scrollX: 0,
-                    scrollY: -window.scrollY
+                    scrollY: 0, // 스크롤 보정 제거
+                    windowWidth: tierTable.offsetWidth, // 뷰포트 너비도 표 너비로 제한
+                    windowHeight: tierTable.offsetHeight // 뷰포트 높이도 표 높이로 제한 (선택 사항)
                 }).then(canvas => {
                     popup.style.display = 'block';
                     popupImage.src = canvas.toDataURL();
                     popupImage.alt = '티어표 이미지';
                 });
             });
-
+    
             closeButton.addEventListener('click', function() {
                 popup.style.display = 'none';
             });
-
+    
             window.addEventListener('click', function(event) {
                 if (event.target === popup) {
                     popup.style.display = 'none';
