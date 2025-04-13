@@ -133,6 +133,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function convertExperimentNameToImageName(experimentName) {
         if (experimentName === "글러브 리 다이린") {
             return "리다이린-글러브";
+        } else if (experimentName === "쌍절곤 리 다이린") {
+            return "리다이린-쌍절곤";
         } else if (experimentName.startsWith("리 다이린 ")) {
             const parts = experimentName.substring("리 다이린 ".length).split(" ");
             if (parts.length > 0) {
