@@ -100,30 +100,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            body: function(context) {
-                                if (!context || !context[0] || !context[0].dataPoint) {
-                                    return [];
-                                }
-                                const dataPoint = context[0].dataPoint;
-                                const 픽률 = (dataPoint.x * 100).toFixed(2);
-                                const RP획득 = dataPoint.y;
-                                const index = context[0].dataIndex;
-                                const 승률 = (data.find((_, i) => i === index)["승률"] * 100).toFixed(2);
-                
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const 실험체 = data[index]["실험체"];
+                                const 픽률 = (context.parsed.x * 100).toFixed(2);
+                                const RP획득 = context.parsed.y;
+                                const 승률 = (data[index]["승률"] * 100).toFixed(2);
                                 return [
                                     `픽률: ${픽률}%`,
                                     `RP 획득: ${RP획득}`,
                                     `승률: ${승률}%`
                                 ];
-                            },
-                            title: function(context) {
-                                if (!context || !context[0] || !context[0].label) {
-                                    return '';
-                                }
-                                return context[0].label; // 실험체 이름 (타이틀)
-                            },
-                            label: function() {
-                                return ''; // 기본 label은 숨김
                             }
                         }
                     }
