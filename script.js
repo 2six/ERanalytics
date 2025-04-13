@@ -2,19 +2,18 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
-            calculateAndDisplayScores(data);
+            const sortedData = calculateAndSortScores(data);
+            displaySelectedData(sortedData);
         })
         .catch(error => {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
             document.getElementById('data-container').innerText = '데이터를 불러오는 데 실패했습니다.';
         });
 
-    function calculateAndDisplayScores(data) {
-        const container = document.getElementById('data-container');
+    function calculateAndSortScores(data) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
         const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
 
-        // 가중 평균 RP 획득, 승률, Top 3 계산
         let weightedSumRP = 0;
         let weightedSumWinRate = 0;
         let weightedSumTop3 = 0;
@@ -33,10 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const k = 1.5;
 
-        let html = '<table>';
-        html += '<thead><tr><th>실험체</th><th>픽률</th><th>점수</th></tr></thead><tbody>';
-
-        data.forEach(item => {
+        const scoredData = data.map(item => {
             const pickRate = (item["표본수"] / totalSampleCount);
             const r = pickRate / averagePickRate;
 
@@ -59,7 +55,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 보정점수 = ((Math.log(item["RP 획득"] + 1) * 3) + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
-            html += `<tr><td>${item["실험체"]}</td><td>${(pickRate * 100).toFixed(2)}%</td><td>${보정점수.toFixed(2)}</td></tr>`;
+            return { ...item, 픽률: (pickRate * 100).toFixed(2) + '%', 점수: 보정점수 };
+        });
+
+        scoredData.sort((a, b) => b.점수 - a.점수); // 점수 내림차순 정렬
+
+        return scoredData;
+    }
+
+    function displaySelectedData(data) {
+        const container = document.getElementById('data-container');
+        const columnsToShow = ["실험체", "픽률", "점수", "RP 획득", "승률", "TOP 3", "평균 순위"];
+
+        let html = '<table><thead><tr>';
+        columnsToShow.forEach(column => {
+            html += `<th>${column}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        data.forEach(item => {
+            html += '<tr>';
+            columnsToShow.forEach(column => {
+                html += `<td>${item[column]}</td>`;
+            });
+            html += '</tr>';
         });
 
         html += '</tbody></table>';
