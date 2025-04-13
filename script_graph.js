@@ -15,12 +15,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const labels = data.map(item => item["실험체"]);
         const pickRates = data.map(item => item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0));
         const rpGains = data.map(item => item["RP 획득"]);
-        const minRP = Math.min(...rpGains);
-        const maxRP = Math.max(...rpGains);
 
-        // 그래프를 조금 더 보기 좋게 만들기 위해 여유값 설정
-        const yMin = Math.floor(minRP - 1);
-        const yMax = Math.ceil(maxRP + 1);
+        let 가중치합 = 0;
+        let 가중픽률합 = 0;
+        let 가중RP합 = 0;
+
+        data.forEach(item => {
+            가중치합 += item["표본수"];
+            가중픽률합 += (item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0)) * item["표본수"];
+            가중RP합 += item["RP 획득"] * item["표본수"];
+        });
+
+        const 가중평균픽률 = 가중픽률합 / 가중치합;
+        const 가중평균RP = 가중RP합 / 가중치합;
 
         const labelPlugin = {
             id: 'labelPlugin',
@@ -29,23 +36,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const meta = chart.getDatasetMeta(0);
                 const dataPoints = meta.data;
                 const chartLabels = chart.data.labels;
-        
+
                 ctx.save();
                 dataPoints.forEach((point, index) => {
                     const x = point.x;
                     const y = point.y;
                     const 실험체 = chartLabels[index];
-        
+
                     ctx.font = '10px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-        
-                    // 흰색 테두리 추가
-                    ctx.lineWidth = 2;
+
+                    ctx.lineWidth = 1.5;
                     ctx.strokeStyle = 'white';
                     ctx.strokeText(실험체, x, y);
-        
-                    // 글씨 본체
+
                     ctx.fillStyle = 'black';
                     ctx.fillText(실험체, x, y);
                 });
@@ -59,74 +64,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: labels,
                 datasets: [{
                     label: '픽률 vs RP 획득',
-                    data: data.map((item, index) => ({
-                        x: pickRates[index],
-                        y: rpGains[index],
-                        label: labels[index],
-                        승률: item["승률"]
-                    })),
+                    data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], 승률: item["승률"] })),
                     backgroundColor: function(context) {
                         const index = context.dataIndex;
                         const totalDataPoints = context.chart.data.datasets[0].data.length;
-                    
                         const hue = (index * (360 / totalDataPoints)) % 360;
                         const saturation = 50 + (index % 3) * 15;
-                        const lightness = 60 + (index % 2) * 20; // 밝기를 60% ~ 80% 사이로 변경
-                    
+                        const lightness = 60 + (index % 2) * 20;
                         return `hsl(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
                     },
                     pointRadius: function(context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const 표본수 = data[index]["표본수"];
-                    
-                        let 가중치합 = 0;
-                        let 가중승률합 = 0;
-                    
-                        data.forEach(item => {
-                            가중치합 += item["표본수"];
-                            가중승률합 += item["승률"] * item["표본수"];
-                        });
-                    
-                        const 가중승률평균 = 가중승률합 / 가중치합;
+                        const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
+                        const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
                         const 크기조정비율 = 35;
                         const 최소크기 = 2;
-                    
-                        const 승률차이 = (승률 - 가중승률평균) * 100;
+
+                        const 승률차이 = (승률 - 승률평균) * 100;
                         let 원크기 = 기준크기 + 승률차이 * 크기조정비율 / 10;
-                    
+
                         if (원크기 < 최소크기) {
                             원크기 = 최소크기;
                         }
-                    
                         return 원크기;
                     },
-                    pointHoverRadius: function(context) { // pointRadius 함수 결과를 사용
+                    pointHoverRadius: function(context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const 표본수 = data[index]["표본수"];
-                    
-                        let 가중치합 = 0;
-                        let 가중승률합 = 0;
-                    
-                        data.forEach(item => {
-                            가중치합 += item["표본수"];
-                            가중승률합 += item["승률"] * item["표본수"];
-                        });
-                    
-                        const 가중승률평균 = 가중승률합 / 가중치합;
+                        const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
+                        const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
                         const 크기조정비율 = 35;
                         const 최소크기 = 2;
-                    
-                        const 승률차이 = (승률 - 가중승률평균) * 100;
+
+                        const 승률차이 = (승률 - 승률평균) * 100;
                         let 원크기 = 기준크기 + 승률차이 * 크기조정비율 / 10;
-                    
+
                         if (원크기 < 최소크기) {
                             원크기 = 최소크기;
                         }
-                    
                         return 원크기;
                     }
                 }]
@@ -154,29 +132,28 @@ document.addEventListener('DOMContentLoaded', function() {
                             display: true,
                             text: 'RP 획득'
                         },
-                        min: yMin,
-                        max: yMax,
                         ticks: {
                             stepSize: 1
-                        }
-                    }                    
+                        },
+                        min: Math.min(...rpGains) - 1,
+                        max: Math.max(...rpGains) + 1
+                    }
                 },
                 plugins: {
                     tooltip: {
                         enabled: true,
                         callbacks: {
                             title: function() {
-                                return ''; // 타이틀 제거
+                                return '';
                             },
                             label: function(context) {
                                 const index = context.dataIndex;
                                 const dataPoint = context.raw;
-                
                                 const label = context.chart.data.labels[index];
                                 const 픽률 = (dataPoint.x * 100).toFixed(2);
                                 const RP획득 = dataPoint.y;
                                 const 승률 = (data[index]["승률"] * 100).toFixed(2);
-                
+
                                 return [
                                     `${label}`,
                                     `픽률: ${픽률}%`,
@@ -185,10 +162,37 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ];
                             }
                         }
+                    },
+                    annotation: {
+                        annotations: [{
+                            type: 'line',
+                            borderColor: 'yellow',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            xScaleID: 'x',
+                            value: 가중평균픽률,
+                            label: {
+                                enabled: true,
+                                content: `가중평균 픽률: ${(가중평균픽률 * 100).toFixed(1)}%`,
+                                position: 'top'
+                            }
+                        }, {
+                            type: 'line',
+                            borderColor: 'yellow',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            yScaleID: 'y',
+                            value: 가중평균RP,
+                            label: {
+                                enabled: true,
+                                content: `가중평균 RP: ${가중평균RP.toFixed(1)}`,
+                                position: 'right'
+                            }
+                        }]
                     }
-                }
-            },
-            plugins: [labelPlugin]
+                },
+                plugins: [labelPlugin, ChartAnnotation]
+            }
         });
     }
 });
