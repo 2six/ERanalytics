@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             text: 'RP 획득'
                         },
                         ticks: {
-                            stepSize: 2
+                            stepSize: 1
                         },
                         min: Math.floor(Math.min(...rpGains)) - 1,
                         max: Math.ceil(Math.max(...rpGains)) + 1
