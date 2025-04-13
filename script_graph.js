@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => (value * 100).toFixed(1) + '%',
-                            stepSize: 0.005
+                            stepSize: 0.0025
                         }
                     },
                     y: {
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             text: 'RP 획득'
                         },
                         ticks: {
-                            stepSize: 1
+                            stepSize: 2
                         },
                         min: Math.floor(Math.min(...rpGains)) - 1,
                         max: Math.ceil(Math.max(...rpGains)) + 1
