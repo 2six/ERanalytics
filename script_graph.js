@@ -43,11 +43,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 const dataPoint = context[0].dataPoint;
                                 const index = context[0].dataIndex;
-                                const 실험체 = myChart.data.labels[index]; // myChart 사용
+                                const 실험체 = myChart.data.labels[index];
                                 const 픽률 = (dataPoint.x * 100).toFixed(2);
                                 const RP획득 = dataPoint.y;
-                                const 승률 = (myChart.data.datasets[0].data[index].승률 * 100).toFixed(2); // myChart 사용
-
+                                const 승률 = (myChart.data.datasets[0].data[index].승률 * 100).toFixed(2);
+                
                                 return [
                                     `실험체: ${실험체}`,
                                     `픽률: ${픽률}%`,
@@ -58,8 +58,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             title: function() {
                                 return ''; // 타이틀 제거
                             },
-                            label: function() {
-                                return ''; // 기본 label은 숨김
+                            // label: function() {
+                            //     return ''; // 기본 label은 숨김
+                            // }
+                            label: function(context) { // 기본 동작으로 변경
+                                return context.dataset.label || '';
                             }
                         }
                     }
