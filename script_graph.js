@@ -67,9 +67,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     })),
                     backgroundColor: function(context) {
                         const index = context.dataIndex;
-                        const hue = (index * 3.6) % 360; // 각 데이터 포인트마다 3.6도씩 색조를 변경 (360 / 100)
-                        const saturation = 70; // 채도 (0 ~ 100%)
-                        const lightness = 50; // 밝기 (0 ~ 100%)
+                        const hue = (index * 7) % 360;
+                        const saturation = 70;
+                        const lightness = 40 + (index % 2) * 20; // 밝기를 40 또는 60으로 번갈아 가며 적용
                         return `hsl(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
                     },
                     pointRadius: function(context) {
