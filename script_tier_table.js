@@ -131,14 +131,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function convertExperimentNameToImageName(experimentName) {
-        if (experimentName === "리 다이린 글러브") {
-            return "리-글러브";
-        } else if (experimentName === "글러브 리 다이린") { // 혹시 순서가 반대인 경우도 처리
-            return "리-글러브";
+        if (experimentName.startsWith("리 다이린 ")) {
+            const parts = experimentName.substring("리 다이린 ".length).split(" ");
+            if (parts.length > 0) {
+                return `리다이린-${parts.join("-")}`;
+            } else {
+                return "리다이린"; // "리 다이린"만 있는 경우 (혹시라도)
+            }
         } else if (experimentName.startsWith("돌격 소총 ")) {
-            const parts = experimentName.split(" ");
-            const name = parts.slice(2).join("-"); // "돌격", "소총" 제외 나머지 연결
-            return `${name}-돌격소총`;
+            const parts = experimentName.substring("돌격 소총 ".length).split(" ");
+            return `${parts.join("-")}-돌격소총`;
         } else if (experimentName.includes(" ")) {
             const parts = experimentName.split(" ");
             if (parts.length >= 2) {
