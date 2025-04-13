@@ -115,42 +115,46 @@ document.addEventListener('DOMContentLoaded', function() {
         orderedTiers.forEach(tier => {
             html += '<tr class="tier-row">';
             html += `<th>${tier}</th>`;
-            html += '<td><div>'; // <td> 내부를 <div>로 감싸기 시작
+            html += '<td><div>';
             if (tierGroups[tier]) {
                 tierGroups[tier].forEach((experiment, index) => {
                     const imageName = convertExperimentNameToImageName(experiment);
                     const imageSrc = `image/${imageName}.png`;
                     html += `<img src="${imageSrc}" alt="${experiment}">`;
                     if ((index + 1) % imagesPerRow === 0 && index !== 0 && index !== tierGroups[tier].length - 1) {
-                        html += '</div><div>'; // 줄바꿈 시 새로운 <div>
+                        html += '</div><div>';
                     }
                 });
             }
-            html += '</div></td>'; // <td> 내부 <div> 닫기
+            html += '</div></td>';
             html += '</tr>';
         });
 
         html += '</table>';
         container.innerHTML = html;
 
-        const downloadButton = document.getElementById('download-table-button');
-        if (downloadButton && container) {
-            downloadButton.addEventListener('click', function() {
-                const table = document.querySelector('.tier-table'); // 표 요소 직접 선택
-                if (table) {
-                    html2canvas(table, {
-                        width: table.offsetWidth // 실제 표의 너비 사용
-                    }).then(canvas => {
-                        const link = document.createElement('a');
-                        link.download = 'tier_table.png';
-                        link.href = canvas.toDataURL();
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    });
-                }
+        const popup = document.getElementById('image-popup');
+        const popupImage = document.getElementById('popup-image');
+        const closeButton = document.querySelector('.image-popup-close');
+        const images = container.querySelectorAll('.tier-row td img');
+
+        images.forEach(img => {
+            img.addEventListener('click', function() {
+                popup.style.display = 'block';
+                popupImage.src = this.src;
+                popupImage.alt = this.alt;
             });
-        }
+        });
+
+        closeButton.addEventListener('click', function() {
+            popup.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target === popup) {
+                popup.style.display = 'none';
+            }
+        });
     }
 
     function convertExperimentNameToImageName(experimentName) {
@@ -176,29 +180,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return experimentName;
     }
-    
-    const popup = document.getElementById('image-popup');
-    const popupImage = document.getElementById('popup-image');
-    const closeButton = document.querySelector('.image-popup-close');
-    const tierTableContainer = document.getElementById('tier-table-container');
-    const images = tierTableContainer.querySelectorAll('.tier-row td img');
-
-    images.forEach(img => {
-        img.addEventListener('click', function() {
-            popup.style.display = 'block';
-            popupImage.src = this.src;
-            popupImage.alt = this.alt;
-        });
-    });
-
-    closeButton.addEventListener('click', function() {
-        popup.style.display = 'none';
-    });
-
-    // 팝업 외부 클릭 시 닫기 (선택 사항)
-    window.addEventListener('click', function(event) {
-        if (event.target === popup) {
-            popup.style.display = 'none';
-        }
-    });
 });

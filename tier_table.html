@@ -31,21 +31,21 @@
         .tier-row td {
             padding: 0px;
             border: 1px solid #ddd;
-            display: block; /* Flexbox 제거 */
-            /* flex-wrap: wrap; */ /* Flexbox 제거 */
+            display: block;
             gap: 0px;
+            background-color: #1a1a17;
         }
         .tier-row td > div {
             display: flex;
             flex-wrap: wrap;
             gap: 0px;
             padding: 0px;
-            background-color: #1a1a17;
         }
         .tier-row td img {
             vertical-align: middle;
             width: 90px;
             height: auto;
+            cursor: pointer; /* 클릭 가능한 표시 */
         }
         .image-popup {
             display: none; /* initially hidden */
@@ -92,14 +92,14 @@
     </header>
 
     <main>
-        <button id="download-table-button">표 이미지로 다운로드</button>
-        <section id="tier-table-container">
+        <button id="download-table-button" style="display:none;">표 이미지로 다운로드</button> <section id="tier-table-container">
         </section>
+        <div id="image-popup" class="image-popup">
+            <span class="image-popup-close">&times;</span>
+            <img class="image-popup-content" id="popup-image">
+        </div>
     </main>
-    <div id="image-popup" class="image-popup">
-        <span class="image-popup-close">&times;</span>
-        <img class="image-popup-content" id="popup-image">
-    </div>
+
     <footer>
         <p>© 2025 실험체 통계 웹사이트</p>
     </footer>
