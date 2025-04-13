@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }]
                     }
                 },
-                plugins: [labelPlugin, ChartAnnotation]
+                plugins: [labelPlugin]
             }
         });
     }
