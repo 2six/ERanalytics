@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const index = context.dataIndex;
                         const hue = (index * 7) % 360;
                         const saturation = 70;
-                        const lightness = 40 + (index % 2) * 20; // 밝기를 40 또는 60으로 번갈아 가며 적용
+                        const lightness = 50;
                         return `hsl(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
                     },
                     pointRadius: function(context) {
@@ -78,11 +78,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
                         const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
-                        const 크기조정비율 = 2; // 평균과의 차이에 곱해줄 비율 (조절 가능)
-                    
-                        const 승률차이 = (승률 - 승률평균) * 100; // 백분율로 차이 계산
-                    
-                        return 기준크기 + 승률차이 * 크기조정비율 / 10; // 크기 조정 (나누는 값 조절 가능)
+                        const 크기조정비율 = 20;
+                
+                        const 승률차이 = (승률 - 승률평균) * 100;
+                
+                        return 기준크기 + 승률차이 * 크기조정비율 / 10;
+                    },
+                    pointHoverRadius: function(context) { // pointRadius 함수 결과를 사용
+                        const index = context.dataIndex;
+                        const 승률 = data[index]["승률"];
+                        const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
+                        const 승률평균 = 전체승률합 / data.length;
+                        const 기준크기 = 15;
+                        const 크기조정비율 = 20;
+                
+                        const 승률차이 = (승률 - 승률평균) * 100;
+                
+                        return 기준크기 + 승률차이 * 크기조정비율 / 10;
                     }
                 }]
             },
