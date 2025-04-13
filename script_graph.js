@@ -42,15 +42,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function createPickRateRPChart(data) {
         const ctx = document.getElementById('pickRateRPChart').getContext('2d');
-
+    
         const labels = data.map(item => item["실험체"]);
-        const rpGains = data.map(item => item["RP 획득"]);
-
-        // 가중 평균 계산 수정
-        const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0);
-
-        // 각 실험체의 픽률 계산
+        
+        const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0); // ⬅️ 이걸 먼저!
         const pickRates = data.map(item => item["표본수"] / 전체표본수);
+        const rpGains = data.map(item => item["RP 획득"]);
         
         // 가중평균 픽률 (픽률 * 가중치)
         const 가중평균픽률 = pickRates.reduce((acc, pickRate, i) => acc + pickRate * (data[i]["표본수"] / 전체표본수), 0);
