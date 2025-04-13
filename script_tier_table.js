@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayTierTable(scoredData) {
         const tierGroups = {};
         const orderedTiers = ["S+", "S", "A", "B", "C", "D", "F"];
+        const imagesPerRow = 15; // 한 줄에 표시할 이미지 개수
 
         scoredData.forEach(item => {
             const tier = item["티어"];
@@ -116,10 +117,13 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `<th>${tier}</th>`;
             html += '<td>';
             if (tierGroups[tier]) {
-                tierGroups[tier].forEach((experiment) => {
+                tierGroups[tier].forEach((experiment, index) => {
                     const imageName = convertExperimentNameToImageName(experiment);
                     const imageSrc = `image/${imageName}.png`;
                     html += `<img src="${imageSrc}" alt="${experiment}">`;
+                    if ((index + 1) % imagesPerRow === 0 && index !== 0 && index !== tierGroups[tier].length - 1) {
+                        html += '<br>';
+                    }
                 });
             }
             html += '</td>';
