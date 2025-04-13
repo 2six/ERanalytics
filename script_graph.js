@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const 승률 = data[index]["승률"];
                         const min승률 = Math.min(...data.map(item => item["승률"]));
                         const max승률 = Math.max(...data.map(item => item["승률"]));
-                        const minPointSize = 5;
-                        const maxPointSize = 15;
+                        const minPointSize = 10;
+                        const maxPointSize = 25;
                 
                         if (max승률 === min승률) {
                             return minPointSize; // 모든 승률이 같으면 최소 크기 반환
@@ -98,6 +98,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 plugins: {
+                    annotation: {
+                        annotations: data.map((item, index) => {
+                            const meta = chart.getDatasetMeta(0);
+                            const point = meta.data[index];
+                            if (point) {
+                                return {
+                                    type: 'label',
+                                    xValue: point.x,
+                                    yValue: point.y,
+                                    content: item["실험체"],
+                                    font: {
+                                        size: 10,
+                                        color: 'black' // 텍스트 색상
+                                    },
+                                    textAlign: 'center',
+                                    textBaseline: 'middle',
+                                    padding: 0,
+                                    pointRadius: 0 // 원 위에 텍스트만 표시
+                                };
+                            }
+                            return null;
+                        }).filter(annotation => annotation !== null)
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
