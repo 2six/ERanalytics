@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
             acc + (item["RP 획득"] * item["표본수"]), 0
         ) / 전체표본수;
 
+        // 텍스트 출력 플러그인
         const labelPlugin = {
             id: 'labelPlugin',
             afterDatasetsDraw(chart) {
@@ -54,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
+        // 차트 생성
         myChart = new Chart(ctx, {
             type: 'scatter',
             data: {
@@ -129,10 +131,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             text: 'RP 획득'
                         },
                         ticks: {
-                            stepSize: 1
-                        },
-                        min: Math.min(...rpGains) - 1,
-                        max: Math.max(...rpGains) + 1
+                            stepSize: 1,
+                            min: Math.floor(Math.min(...rpGains)) - 1, // 최소값 정수화
+                            max: Math.ceil(Math.max(...rpGains)) + 1  // 최대값 정수화
+                        }
                     }
                 },
                 plugins: {
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 borderColor: 'yellow',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
-                                xScaleID: 'x',
+                                scaleID: 'x',
                                 value: 가중평균픽률,
                                 label: {
                                     enabled: true,
@@ -179,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 borderColor: 'yellow',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
-                                yScaleID: 'y',
+                                scaleID: 'y',
                                 value: 가중평균RP,
                                 label: {
                                     enabled: true,
@@ -189,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         ]
                     },
-                    labelPlugin: labelPlugin // 플러그인 추가 부분이 여기 있어야 해!
+                    labelPlugin: labelPlugin // 플러그인 추가
                 }
             }
         });
