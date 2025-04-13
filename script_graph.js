@@ -154,28 +154,29 @@ document.addEventListener('DOMContentLoaded', function () {
                         annotations: [
                             {
                                 type: 'line',
-                                borderColor: 'yellow',
+                                borderColor: '#ffac2b', // 여기
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'x',
-                                value: 가중평균픽률, // 수정된 가중 평균 픽률 값 사용
+                                value: 가중평균픽률,
                                 label: {
-                                    display: false // 툴팁 내용 제거
+                                    display: false
                                 }
                             },
                             {
                                 type: 'line',
-                                borderColor: 'yellow',
+                                borderColor: '#ffac2b', // 여기도
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'y',
-                                value: 가중평균RP, // 수정된 가중 평균 RP 값 사용
+                                value: 가중평균RP,
                                 label: {
-                                    display: false // 툴팁 내용 제거
+                                    display: false
                                 }
                             }
                         ]
                     }
+                    
                 }
             }
         });
