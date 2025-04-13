@@ -133,7 +133,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const RP획득 = dataPoint.y;
                                 const 승률 = (data[index]["승률"] * 100).toFixed(2);
                 
-                                return `실험체: ${label}\n픽률: ${픽률}%\nRP 획득: ${RP획득}\n승률: ${승률}%`;
+                                return [
+                                    `실험체: ${label}`,
+                                    `픽률: ${픽률}%`,
+                                    `RP 획득: ${RP획득}`,
+                                    `승률: ${승률}%`
+                                ];
                             }
                         }
                     }
