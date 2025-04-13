@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.length > 0) {
             html += '<thead><tr>';
             for (const key in data[0]) {
-                if (key !== "표본수") { // 표본수는 헤더에 표시하지 않음
-                    html += `<th>${key}</th>`;
-                } else {
+                if (key === "표본수") {
                     html += `<th>픽률</th>`; // 표본수 대신 픽률 헤더 표시
+                } else {
+                    html += `<th>${key}</th>`;
                 }
             }
             html += '</tr></thead>';
@@ -33,11 +33,11 @@ document.addEventListener('DOMContentLoaded', function() {
         data.forEach(item => {
             html += '<tr>';
             for (const key in item) {
-                if (key !== "표본수") {
-                    html += `<td>${item[key]}</td>`;
-                } else {
+                if (key === "표본수") {
                     const pickRate = (item["표본수"] / totalSampleCount) * 100;
                     html += `<td>${pickRate.toFixed(2)}%</td>`; // 픽률 계산 및 백분율 형식으로 표시
+                } else {
+                    html += `<td>${item[key]}</td>`;
                 }
             }
             html += '</tr>';
