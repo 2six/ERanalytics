@@ -124,9 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += `<img src="${imageSrc}" alt="${experiment}">`;
                     imgCount++;
                     if (imgCount % imagesPerRow === 0 && imgCount < tierGroups[tier].length) {
-                        html += '<br>';
+                        html += '</div><div>';
                     }
                 });
+                html += '</div>'; // 마지막 <div> 닫기
             }
             html += '</td>';
             html += '</tr>';
@@ -134,6 +135,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += '</table>';
         container.innerHTML = html;
+
+        // 각 <td> 내부의 <div> 요소에 flex 스타일 적용 (JavaScript)
+        const tdElements = container.querySelectorAll('.tier-row td');
+        tdElements.forEach(td => {
+            const imgElements = td.querySelectorAll('img');
+            let innerHTML = '<div>'; // 초기 <div> 열기
+            for (let i = 0; i < imgElements.length; i++) {
+                innerHTML += imgElements[i].outerHTML;
+                if ((i + 1) % imagesPerRow === 0 && i !== 0 && i !== imgElements.length - 1) {
+                    innerHTML += '</div><div>';
+                }
+            }
+            innerHTML += '</div>'; // 마지막 <div> 닫기
+            td.innerHTML = innerHTML;
+            td.style.display = 'block'; // 필요에 따라 조절
+            const divElements = td.querySelectorAll('div');
+            divElements.forEach(div => {
+                div.style.display = 'flex';
+                div.style.flexWrap = 'wrap';
+                div.style.gap = '0px';
+                div.style.padding = '0px'; // 필요에 따라 조절
+            });
+        });
     }
 
     function convertExperimentNameToImageName(experimentName) {
