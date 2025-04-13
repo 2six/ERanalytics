@@ -2,21 +2,21 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
-            // 티어 설정을 불러오는 부분 (config.ini 사용)
             fetch('config.ini')
                 .then(response => response.text())
                 .then(iniString => {
                     const tierConfig = parseINI(iniString).tiers;
-                    const averageScore = calculateAverageScore(data); // 평균 점수 계산 함수 필요
-                    const scoredData = calculateTiers(data, averageScore, tierConfig); // 티어 계산 함수 필요
+                    const averageScore = calculateAverageScore(data);
+                    const scoredData = calculateTiers(data, averageScore, tierConfig);
                     displayTierTable(scoredData);
+                    setupTablePopup(); // 표 팝업 기능 설정
                 })
                 .catch(error => {
                     console.error('config.ini 파일을 불러오는 중 오류 발생:', error);
-                    // 오류 처리 (기본 티어 설정 등으로 대체하거나 오류 메시지 표시)
                     const averageScore = calculateAverageScore(data);
-                    const scoredData = calculateTiers(data, averageScore, {}); // 빈 설정으로 처리
+                    const scoredData = calculateTiers(data, averageScore, {});
                     displayTierTable(scoredData);
+                    setupTablePopup(); // 표 팝업 기능 설정
                 });
         })
         .catch(error => {
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayTierTable(scoredData) {
         const tierGroups = {};
         const orderedTiers = ["S+", "S", "A", "B", "C", "D", "F"];
-        const imagesPerRow = 15; // 한 줄에 표시할 이미지 개수
+        const imagesPerRow = 15;
 
         scoredData.forEach(item => {
             const tier = item["티어"];
@@ -132,29 +132,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += '</table>';
         container.innerHTML = html;
+    }
 
+    function setupTablePopup() {
         const popup = document.getElementById('image-popup');
         const popupImage = document.getElementById('popup-image');
         const closeButton = document.querySelector('.image-popup-close');
-        const images = container.querySelectorAll('.tier-row td img');
+        const tableContainer = document.getElementById('tier-table-container');
+        const popupTableButton = document.getElementById('popup-table-button');
 
-        images.forEach(img => {
-            img.addEventListener('click', function() {
-                popup.style.display = 'block';
-                popupImage.src = this.src;
-                popupImage.alt = this.alt;
+        if (popupTableButton && tableContainer && popup && popupImage && closeButton) {
+            popupTableButton.addEventListener('click', function() {
+                html2canvas(tableContainer, {
+                    width: tableContainer.offsetWidth,
+                    scrollX: 0,
+                    scrollY: -window.scrollY
+                }).then(canvas => {
+                    popup.style.display = 'block';
+                    popupImage.src = canvas.toDataURL();
+                    popupImage.alt = '티어표 이미지';
+                });
             });
-        });
 
-        closeButton.addEventListener('click', function() {
-            popup.style.display = 'none';
-        });
-
-        window.addEventListener('click', function(event) {
-            if (event.target === popup) {
+            closeButton.addEventListener('click', function() {
                 popup.style.display = 'none';
-            }
-        });
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target === popup) {
+                    popup.style.display = 'none';
+                }
+            });
+        }
     }
 
     function convertExperimentNameToImageName(experimentName) {
