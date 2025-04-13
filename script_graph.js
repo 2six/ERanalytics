@@ -25,7 +25,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: '픽률 vs RP 획득',
                     data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], label: labels[index] })),
-                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    backgroundColor: function(context) {
+                        const index = context.dataIndex;
+                        const colors = ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
+                        return colors[index % colors.length];
+                    },
                     pointRadius: 5,
                     pointHoverRadius: 8
                 }]
@@ -42,6 +46,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         ticks: {
                             format: {
                                 style: 'percent'
+                            },
+                            stepSize: 0.005
+                        },
+                        minor: {
+                            display: true,
+                            grid: {
+                                drawTicks: true
+                            },
+                            ticks: {
+                                stepSize: 0.0025
                             }
                         }
                     },
@@ -51,6 +65,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         title: {
                             display: true,
                             text: 'RP 획득'
+                        },
+                        ticks: {
+                            stepSize: 5
+                        },
+                        minor: {
+                            display: true,
+                            grid: {
+                                drawTicks: true
+                            },
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     }
                 },
