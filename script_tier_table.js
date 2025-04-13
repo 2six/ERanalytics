@@ -176,4 +176,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return experimentName;
     }
+    
+    const popup = document.getElementById('image-popup');
+    const popupImage = document.getElementById('popup-image');
+    const closeButton = document.querySelector('.image-popup-close');
+    const tierTableContainer = document.getElementById('tier-table-container');
+    const images = tierTableContainer.querySelectorAll('.tier-row td img');
+
+    images.forEach(img => {
+        img.addEventListener('click', function() {
+            popup.style.display = 'block';
+            popupImage.src = this.src;
+            popupImage.alt = this.alt;
+        });
+    });
+
+    closeButton.addEventListener('click', function() {
+        popup.style.display = 'none';
+    });
+
+    // 팝업 외부 클릭 시 닫기 (선택 사항)
+    window.addEventListener('click', function(event) {
+        if (event.target === popup) {
+            popup.style.display = 'none';
+        }
+    });
 });

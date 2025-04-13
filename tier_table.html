@@ -47,6 +47,42 @@
             width: 90px;
             height: auto;
         }
+        .image-popup {
+            display: none; /* initially hidden */
+            position: fixed; /* stay in place */
+            z-index: 1; /* sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* full width */
+            height: 100%; /* full height */
+            overflow: auto; /* enable scroll if needed */
+            background-color: rgba(0,0,0,0.9); /* black w/ opacity */
+        }
+        .image-popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%; /* adjust as needed */
+            max-height: 90%; /* adjust as needed */
+            object-fit: contain; /* keep aspect ratio */
+        }
+        .image-popup-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .image-popup-close:hover,
+        .image-popup-close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -60,7 +96,10 @@
         <section id="tier-table-container">
         </section>
     </main>
-
+    <div id="image-popup" class="image-popup">
+        <span class="image-popup-close">&times;</span>
+        <img class="image-popup-content" id="popup-image">
+    </div>
     <footer>
         <p>© 2025 실험체 통계 웹사이트</p>
     </footer>
