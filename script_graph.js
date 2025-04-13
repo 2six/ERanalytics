@@ -30,7 +30,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         const colors = ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
                         return colors[index % colors.length];
                     },
-                    pointRadius: 5,
+                    pointRadius: function(context) {
+                        const index = context.dataIndex;
+                        const 승률 = data[index]["승률"];
+                        // 승률에 따라 점 크기를 조절하는 로직 (예시)
+                        if (승률 > 0.55) { // 55% 초과
+                            return 12;
+                        } else if (승률 > 0.50) { // 50% 초과
+                            return 8;
+                        } else {
+                            return 5;
+                        }
+                    },
                     pointHoverRadius: 8
                 }]
             },
@@ -84,7 +95,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `${context.dataset.label}: (픽률: ${(context.parsed.x * 100).toFixed(2)}%, RP: ${context.parsed.y})`;
+                                const index = context.dataIndex;
+                                const 실험체 = data[index]["실험체"];
+                                const 픽률 = (context.parsed.x * 100).toFixed(2);
+                                const RP획득 = context.parsed.y;
+                                const 승률 = (data[index]["승률"] * 100).toFixed(2);
+                                return `${실험체}: (픽률: ${픽률}%, RP: ${RP획득}, 승률: ${승률}%)`;
                             }
                         }
                     }
