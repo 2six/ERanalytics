@@ -42,21 +42,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function createPickRateRPChart(data) {
         const ctx = document.getElementById('pickRateRPChart').getContext('2d');
-    
+
         const labels = data.map(item => item["실험체"]);
-        
-        const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0); // ⬅️ 이걸 먼저!
+        const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0);
         const pickRates = data.map(item => item["표본수"] / 전체표본수);
         const rpGains = data.map(item => item["RP 획득"]);
-        
-        // 가중평균 픽률 (픽률 * 가중치)
-        const 가중평균픽률 = pickRates.reduce((acc, pickRate, i) => acc + pickRate * (data[i]["표본수"] / 전체표본수), 0);
-        
-        // 가중평균 RP 획득 (RP * 가중치)
-        const 가중평균RP = data.reduce((acc, item) => acc + item["RP 획득"] * (item["표본수"] / 전체표본수), 0);
-        
 
-        // 플러그인 등록
+        // 평균 픽률 (단순 평균)
+        const 평균픽률 = pickRates.reduce((sum, rate) => sum + rate, 0) / pickRates.length;
+
+        // 가중평균 RP 획득
+        const 가중평균RP = data.reduce((acc, item) => acc + item["RP 획득"] * (item["표본수"] / 전체표본수), 0);
+
         Chart.register(labelPlugin, window['chartjs-plugin-annotation']);
 
         myChart = new Chart(ctx, {
@@ -111,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => (value * 100).toFixed(1) + '%',
-                            stepSize: 0.0025
+                            stepSize: 0.002
                         }
                     },
                     y: {
@@ -140,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const 픽률 = (dataPoint.x * 100).toFixed(2);
                                 const RP획득 = dataPoint.y;
                                 const 승률 = (data[index]["승률"] * 100).toFixed(2);
-                    
+
                                 return [
                                     `${label}`,
                                     `픽률: ${픽률}%`,
@@ -149,23 +146,23 @@ document.addEventListener('DOMContentLoaded', function () {
                                 ];
                             }
                         }
-                    },                    
+                    },
                     annotation: {
                         annotations: [
                             {
                                 type: 'line',
-                                borderColor: '#ffac2b', // 여기
+                                borderColor: '#ffac2b',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'x',
-                                value: 가중평균픽률,
+                                value: 평균픽률,
                                 label: {
                                     display: false
                                 }
                             },
                             {
                                 type: 'line',
-                                borderColor: '#ffac2b', // 여기도
+                                borderColor: '#ffac2b',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'y',
@@ -176,7 +173,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             }
                         ]
                     }
-                    
                 }
             }
         });
