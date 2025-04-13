@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ctx.textBaseline = 'middle';
         
                     // 흰색 테두리 추가
-                    ctx.lineWidth = 1.5;
+                    ctx.lineWidth = 2;
                     ctx.strokeStyle = 'white';
                     ctx.strokeText(실험체, x, y);
         
@@ -86,11 +86,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
                         const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
-                        const 크기조정비율 = 30;
-                
+                        const 크기조정비율 = 35;
+                        const 최소크기 = 2; // 최소 크기 지정
+                    
                         const 승률차이 = (승률 - 승률평균) * 100;
-                
-                        return 기준크기 + 승률차이 * 크기조정비율 / 10;
+                        let 원크기 = 기준크기 + 승률차이 * 크기조정비율 / 10;
+                    
+                        // 최소 크기보다 작으면 최소 크기로 설정
+                        if (원크기 < 최소크기) {
+                            원크기 = 최소크기;
+                        }
+                    
+                        return 원크기;
                     },
                     pointHoverRadius: function(context) { // pointRadius 함수 결과를 사용
                         const index = context.dataIndex;
@@ -98,11 +105,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
                         const 승률평균 = 전체승률합 / data.length;
                         const 기준크기 = 15;
-                        const 크기조정비율 = 30;
-                
+                        const 크기조정비율 = 35;
+                        const 최소크기 = 2; // 최소 크기 지정
+                    
                         const 승률차이 = (승률 - 승률평균) * 100;
-                
-                        return 기준크기 + 승률차이 * 크기조정비율 / 10;
+                        let 원크기 = 기준크기 + 승률차이 * 크기조정비율 / 10;
+                    
+                        // 최소 크기보다 작으면 최소 크기로 설정
+                        if (원크기 < 최소크기) {
+                            원크기 = 최소크기;
+                        }                    
+                        return 원크기;
                     }
                 }]
             },
