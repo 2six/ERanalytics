@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 2;
                 ctx.strokeStyle = 'white';
                 ctx.strokeText(실험체, x, y);
 
