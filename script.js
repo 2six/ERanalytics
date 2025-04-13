@@ -55,9 +55,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 보정점수 = ((Math.log(item["RP 획득"] + 1) * 3) + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
+            const tier = calculateTier(보정점수, averageScore);
+
             return {
                 "실험체": item["실험체"],
                 "점수": 보정점수,
+                "티어": tier,
                 "픽률": (pickRate * 100).toFixed(2) + '%',
                 "RP 획득": item["RP 획득"],
                 "승률": item["승률"],
@@ -71,9 +74,28 @@ document.addEventListener('DOMContentLoaded', function() {
         return scoredData;
     }
 
+    function calculateTier(score, averageScore) {
+        const diff = score - averageScore;
+        if (diff > averageScore * 0.2) {
+            return "S+";
+        } else if (diff > averageScore * 0.1) {
+            return "S";
+        } else if (diff > 0) {
+            return "A";
+        } else if (diff > -averageScore * 0.1) {
+            return "B";
+        } else if (diff > -averageScore * 0.2) {
+            return "C";
+        } else if (diff > -averageScore * 0.3) {
+            return "D";
+        } else {
+            return "F";
+        }
+    }
+
     function displaySelectedData(data) {
         const container = document.getElementById('data-container');
-        const columnsToShow = ["실험체", "점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
+        const columnsToShow = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
         let html = '<table><thead><tr>';
         columnsToShow.forEach(column => {
@@ -86,7 +108,11 @@ document.addEventListener('DOMContentLoaded', function() {
             columnsToShow.forEach(column => {
                 let value = item[column];
                 if (typeof value === 'number') {
-                    value = value.toFixed(2);
+                    if (column === "평균 순위") {
+                        value = value.toFixed(1);
+                    } else {
+                        value = value.toFixed(2);
+                    }
                 }
                 html += `<td>${value}</td>`;
             });
