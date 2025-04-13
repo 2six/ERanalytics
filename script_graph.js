@@ -67,16 +67,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     })),
                     backgroundColor: function(context) {
                         const index = context.dataIndex;
-                        const colors = ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
-                        return colors[index % colors.length];
+                        const hue = (index * 3.6) % 360; // 각 데이터 포인트마다 3.6도씩 색조를 변경 (360 / 100)
+                        const saturation = 70; // 채도 (0 ~ 100%)
+                        const lightness = 50; // 밝기 (0 ~ 100%)
+                        return `hsl(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
                     },
                     pointRadius: function(context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
                         const min승률 = Math.min(...data.map(item => item["승률"]));
                         const max승률 = Math.max(...data.map(item => item["승률"]));
-                        const minPointSize = 10;
-                        const maxPointSize = 25;
+                        const minPointSize = 5;
+                        const maxPointSize = 30;
 
                         if (max승률 === min승률) return minPointSize;
 
