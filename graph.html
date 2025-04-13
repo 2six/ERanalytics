@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>픽률 vs RP 획득</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        header h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 50vh;
+        }
+        canvas {
+            max-width: 80%;
+            max-height: 80%;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        nav li {
+            display: inline;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">홈</a></li>
+                <li><a href="statistics.html">실험체 통계</a></li>
+                <li><a href="tier_table.html">티어표</a></li>
+                <li><a href="graph.html">픽률 vs RP</a></li>
+            </ul>
+        </nav>
+        <h1>픽률 vs RP 획득</h1>
+    </header>
+
+    <main>
+        <canvas id="pickRateRPChart" width="600" height="400"></canvas>
+    </main>
+
+    <footer>
+        <p>© 2025 나만의 실험체 통계</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script_graph.js"></script> </body>
+</html>
