@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const labels = data.map(item => item["실험체"]);
         const pickRates = data.map(item => item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0));
         const rpGains = data.map(item => item["RP 획득"]);
+        const minRP = Math.min(...rpGains);
+        const maxRP = Math.max(...rpGains);
+
+        // 그래프를 조금 더 보기 좋게 만들기 위해 여유값 설정
+        const yMin = Math.floor(minRP - 1);
+        const yMax = Math.ceil(maxRP + 1);
 
         const labelPlugin = {
             id: 'labelPlugin',
@@ -35,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ctx.textBaseline = 'middle';
         
                     // 흰색 테두리 추가
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 1.5;
                     ctx.strokeStyle = 'white';
                     ctx.strokeText(실험체, x, y);
         
@@ -103,20 +109,21 @@ document.addEventListener('DOMContentLoaded', function() {
                             display: true,
                             text: 'RP 획득'
                         },
+                        min: yMin,
+                        max: yMax,
                         ticks: {
-                            stepSize: 5
+                            stepSize: 1
                         }
-                    }
+                    }                    
                 },
                 tooltip: {
                     callbacks: {
-                        title: function() {
-                            return ''; // 타이틀 제거
-                        },
-                        label: function(context) {
+                        title: () => '', // 타이틀 제거
+                        label: (context) => {
                             const index = context.dataIndex;
-                            const label = context.chart.data.labels[index];
                             const dataPoint = context.raw;
+                            const label = context.chart.data.labels[index];
+                
                             const 픽률 = (dataPoint.x * 100).toFixed(2);
                             const RP획득 = dataPoint.y;
                             const 승률 = (data[index]["승률"] * 100).toFixed(2);
@@ -129,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ];
                         }
                     }
-                }
+                }                
             },
             plugins: [labelPlugin]
         });
