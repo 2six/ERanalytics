@@ -115,49 +115,37 @@ document.addEventListener('DOMContentLoaded', function() {
         orderedTiers.forEach(tier => {
             html += '<tr class="tier-row">';
             html += `<th>${tier}</th>`;
-            html += '<td>';
+            html += '<td><div>'; // <td> 내부를 <div>로 감싸기 시작
             if (tierGroups[tier]) {
-                let imgCount = 0;
-                tierGroups[tier].forEach((experiment) => {
+                tierGroups[tier].forEach((experiment, index) => {
                     const imageName = convertExperimentNameToImageName(experiment);
                     const imageSrc = `image/${imageName}.png`;
                     html += `<img src="${imageSrc}" alt="${experiment}">`;
-                    imgCount++;
-                    if (imgCount % imagesPerRow === 0 && imgCount < tierGroups[tier].length) {
-                        html += '</div><div>';
+                    if ((index + 1) % imagesPerRow === 0 && index !== 0 && index !== tierGroups[tier].length - 1) {
+                        html += '</div><div>'; // 줄바꿈 시 새로운 <div>
                     }
                 });
-                html += '</div>'; // 마지막 <div> 닫기
             }
-            html += '</td>';
+            html += '</div></td>'; // <td> 내부 <div> 닫기
             html += '</tr>';
         });
 
         html += '</table>';
         container.innerHTML = html;
 
-        // 각 <td> 내부의 <div> 요소에 flex 스타일 적용 (JavaScript)
-        const tdElements = container.querySelectorAll('.tier-row td');
-        tdElements.forEach(td => {
-            const imgElements = td.querySelectorAll('img');
-            let innerHTML = '<div>'; // 초기 <div> 열기
-            for (let i = 0; i < imgElements.length; i++) {
-                innerHTML += imgElements[i].outerHTML;
-                if ((i + 1) % imagesPerRow === 0 && i !== 0 && i !== imgElements.length - 1) {
-                    innerHTML += '</div><div>';
-                }
-            }
-            innerHTML += '</div>'; // 마지막 <div> 닫기
-            td.innerHTML = innerHTML;
-            td.style.display = 'block'; // 필요에 따라 조절
-            const divElements = td.querySelectorAll('div');
-            divElements.forEach(div => {
-                div.style.display = 'flex';
-                div.style.flexWrap = 'wrap';
-                div.style.gap = '0px';
-                div.style.padding = '0px'; // 필요에 따라 조절
+        const downloadButton = document.getElementById('download-table-button');
+        if (downloadButton && container) {
+            downloadButton.addEventListener('click', function() {
+                html2canvas(container).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'tier_table.png';
+                    link.href = canvas.toDataURL();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
             });
-        });
+        }
     }
 
     function convertExperimentNameToImageName(experimentName) {

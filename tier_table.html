@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="style.css">
     <style>
         .tier-table {
-            width: 1425px;
+            width: 1425px; /* 고정 너비 설정 */
             border-collapse: collapse;
-            margin-bottom: 0px; /* 기존 20px 에서 10px 로 줄임 */
+            margin-bottom: 0px;
         }
         .tier-row th {
             padding: 10px;
@@ -19,7 +19,7 @@
             border: 1px solid #ddd;
             width: 50px;
             white-space: nowrap;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* 글자 테두리 */
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
         .tier-row th:first-child { background-color: rgb(255, 127, 127); } /* S+ */
         .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); } /* S */
@@ -31,14 +31,20 @@
         .tier-row td {
             padding: 0px;
             border: 1px solid #ddd;
+            display: block; /* Flexbox 제거 */
+            /* flex-wrap: wrap; */ /* Flexbox 제거 */
+            gap: 0px;
+        }
+        .tier-row td > div {
             display: flex;
             flex-wrap: wrap;
-            gap: 0px; /* 이미지 간 간격을 2px로 줄임 */
+            gap: 0px;
+            padding: 0px;
         }
         .tier-row td img {
-        vertical-align: middle;
-        width: 90px; /* 이미지 가로 크기를 80px 로 줄임 (원하는 크기로 조정 가능) */
-        height: auto;
+            vertical-align: middle;
+            width: 90px;
+            height: auto;
         }
     </style>
 </head>
@@ -49,14 +55,16 @@
     </header>
 
     <main>
+        <button id="download-table-button">표 이미지로 다운로드</button>
         <section id="tier-table-container">
-            </section>
+        </section>
     </main>
 
     <footer>
         <p>© 2025 실험체 통계 웹사이트</p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="script_tier_table.js"></script>
 </body>
 </html>
