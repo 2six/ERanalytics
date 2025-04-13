@@ -36,9 +36,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: false,
                 plugins: {
                     tooltip: {
+                        enabled: true, // 툴팁 명시적 활성화
                         callbacks: {
-                            body: function(context) {
-                                if (!context || !context[0] || !context[0].dataPoint) {
+                            label: function() {
+                                return ''; // 기본 레이블 숨김
+                            },
+                            title: function() {
+                                return ''; // 타이틀 숨김
+                            },
+                            afterBody: function(context) {
+                                if (!context || context.length === 0 || !context[0].dataPoint) {
                                     return [];
                                 }
                                 const dataPoint = context[0].dataPoint;
@@ -54,15 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     `RP 획득: ${RP획득}`,
                                     `승률: ${승률}%`
                                 ];
-                            },
-                            title: function() {
-                                return ''; // 타이틀 제거
-                            },
-                            // label: function() {
-                            //     return ''; // 기본 label은 숨김
-                            // }
-                            label: function(context) { // 기본 동작으로 변경
-                                return context.dataset.label || '';
                             }
                         }
                     }
