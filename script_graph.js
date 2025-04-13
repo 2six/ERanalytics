@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: labels,
                 datasets: [{
                     label: '픽률 vs RP 획득',
-                    data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], label: labels[index] })),
+                    data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], label: labels[index], 승률: item["승률"] })), // 승률 데이터 포함
                     backgroundColor: function(context) {
                         const index = context.dataIndex;
                         const colors = ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
@@ -107,11 +107,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 const dataPoint = context[0].dataPoint;
                                 const index = context[0].dataIndex;
-                                const 실험체 = chart.data.labels[index]; // chart 객체 사용
+                                const 실험체 = labels[index];
                                 const 픽률 = (dataPoint.x * 100).toFixed(2);
                                 const RP획득 = dataPoint.y;
-                                const 승률 = (chart.data.datasets[0].data[index].승률 * 100).toFixed(2); // chart 객체 사용
-                
+                                const 승률 = (data[index]["승률"] * 100).toFixed(2);
+
                                 return [
                                     `실험체: ${실험체}`,
                                     `픽률: ${픽률}%`,
@@ -126,37 +126,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return ''; // 기본 label은 숨김
                             }
                         }
-                    }
-                },
-                // Chart.js v3 이상에서 사용
-                afterDatasetsDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    const data = chart.data.datasets[0].data;
-                    const labels = chart.data.labels; // 레이블 배열 직접 접근
-                    const meta = chart.getDatasetMeta(0);
-                
-                    meta.data.forEach((point, index) => {
-                        const x = point.x;
-                        const y = point.y;
-                        const 실험체 = labels[index]; // 레이블 배열에서 실험체 이름 가져오기
-                
-                        ctx.font = '10px sans-serif';
-                        ctx.fillStyle = 'black';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(실험체, x, y);
-                    });
-                }
-                // Chart.js v2에서 사용
-                /*
-                draw: function(chartInstance) {
-                    var ctx = chartInstance.chart.ctx;
-                    chartInstance.data.datasets.forEach(function (dataset, i) {
-                        var meta = chartInstance.getDatasetMeta(i);
-                        meta.data.forEach(function (point, index) {
-                            var x = point.getCenterPoint().x;
-                            var y = point.getCenterPoint().y;
-                            var 실험체 = data[index]["실험체"];
+                    },
+                    // Chart.js v3 이상에서 사용
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const meta = chart.getDatasetMeta(0);
+                        const dataPoints = meta.data;
+                        const chartData = chart.data.datasets[0].data;
+                        const chartLabels = chart.data.labels;
+
+                        dataPoints.forEach((point, index) => {
+                            const x = point.x;
+                            const y = point.y;
+                            const 실험체 = chartLabels[index];
 
                             ctx.font = '10px sans-serif';
                             ctx.fillStyle = 'black';
@@ -164,9 +146,28 @@ document.addEventListener('DOMContentLoaded', function() {
                             ctx.textBaseline = 'middle';
                             ctx.fillText(실험체, x, y);
                         });
-                    });
+                    }
+                    // Chart.js v2에서 사용
+                    /*
+                    draw: function(chartInstance) {
+                        var ctx = chartInstance.chart.ctx;
+                        chartInstance.data.datasets.forEach(function (dataset, i) {
+                            var meta = chartInstance.getDatasetMeta(i);
+                            meta.data.forEach(function (point, index) {
+                                var x = point.getCenterPoint().x;
+                                var y = point.getCenterPoint().y;
+                                var 실험체 = data[index]["실험체"];
+
+                                ctx.font = '10px sans-serif';
+                                ctx.fillStyle = 'black';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(실험체, x, y);
+                            });
+                        });
+                    }
+                    */
                 }
-                */
             }
         });
     }
