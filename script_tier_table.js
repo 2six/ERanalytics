@@ -1,3 +1,5 @@
+console.log("test");
+
 document.addEventListener('DOMContentLoaded', function() {
     fetch('data.json')
         .then(response => response.json())
