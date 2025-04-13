@@ -78,16 +78,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointRadius: function(context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
-                        const 승률평균 = 전체승률합 / data.length;
+                        const 표본수 = data[index]["표본수"];
+                    
+                        let 가중치합 = 0;
+                        let 가중승률합 = 0;
+                    
+                        data.forEach(item => {
+                            가중치합 += item["표본수"];
+                            가중승률합 += item["승률"] * item["표본수"];
+                        });
+                    
+                        const 가중승률평균 = 가중승률합 / 가중치합;
                         const 기준크기 = 15;
                         const 크기조정비율 = 35;
-                        const 최소크기 = 2; // 최소 크기 지정
+                        const 최소크기 = 2;
                     
-                        const 승률차이 = (승률 - 승률평균) * 100;
+                        const 승률차이 = (승률 - 가중승률평균) * 100;
                         let 원크기 = 기준크기 + 승률차이 * 크기조정비율 / 10;
                     
-                        // 최소 크기보다 작으면 최소 크기로 설정
                         if (원크기 < 최소크기) {
                             원크기 = 최소크기;
                         }
@@ -97,19 +105,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointHoverRadius: function(context) { // pointRadius 함수 결과를 사용
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const 전체승률합 = data.reduce((sum, item) => sum + item["승률"], 0);
-                        const 승률평균 = 전체승률합 / data.length;
+                        const 표본수 = data[index]["표본수"];
+                    
+                        let 가중치합 = 0;
+                        let 가중승률합 = 0;
+                    
+                        data.forEach(item => {
+                            가중치합 += item["표본수"];
+                            가중승률합 += item["승률"] * item["표본수"];
+                        });
+                    
+                        const 가중승률평균 = 가중승률합 / 가중치합;
                         const 기준크기 = 15;
                         const 크기조정비율 = 35;
-                        const 최소크기 = 2; // 최소 크기 지정
+                        const 최소크기 = 2;
                     
-                        const 승률차이 = (승률 - 승률평균) * 100;
+                        const 승률차이 = (승률 - 가중승률평균) * 100;
                         let 원크기 = 기준크기 + 승률차이 * 크기조정비율 / 10;
                     
-                        // 최소 크기보다 작으면 최소 크기로 설정
                         if (원크기 < 최소크기) {
                             원크기 = 최소크기;
-                        }                    
+                        }
+                    
                         return 원크기;
                     }
                 }]
