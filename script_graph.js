@@ -124,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return ''; // 타이틀 제거
                             },
                             label: function(context) {
-                                console.log('툴팁 작동 확인:', context);
                                 const index = context.dataIndex;
                                 const dataPoint = context.raw;
                 
