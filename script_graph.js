@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => (value * 100).toFixed(1) + '%',
-                            stepSize: 0.005
+                            stepSize: 0.0025
                         }
                     },
                     y: {
