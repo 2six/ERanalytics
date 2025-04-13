@@ -1,5 +1,3 @@
-console.log("test");
-
 document.addEventListener('DOMContentLoaded', function() {
     fetch('data.json')
         .then(response => response.json())
@@ -26,8 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     tierGroups[tier].forEach((experiment) => {
                         const imageName = convertExperimentNameToImageName(experiment);
                         const imageSrc = `image/${imageName}.png`;
-                        console.log("생성된 이미지 src:", imageSrc); // 이 줄을 추가
-                        html += `<img src="${imageSrc}" alt="${experiment}" width="100">`;
+                        html += `<img src="${imageSrc}" alt="${experiment}">`;
                     });
                 }
                 html += '</td>';
