@@ -23,7 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (tierGroups[tier]) {
                     tierGroups[tier].forEach((experiment) => {
                         const imageName = convertExperimentNameToImageName(experiment);
-                        html += `<img src="image/${imageName}.png" alt="${experiment}" width="100">`;
+                        const imageSrc = `image/${imageName}.png`;
+                        console.log("생성된 이미지 src:", imageSrc); // 이 줄을 추가
+                        html += `<img src="${imageSrc}" alt="${experiment}" width="100">`;
                     });
                 }
                 html += '</td>';
@@ -38,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tier-table-container').innerText = '데이터를 불러오는 데 실패했습니다.';
         });
 
-    // 실험체 이름 -> 이미지 파일 이름 변환 함수 (이전과 동일)
     function convertExperimentNameToImageName(experimentName) {
         if (experimentName.includes(" ")) {
             const parts = experimentName.split(" ");
