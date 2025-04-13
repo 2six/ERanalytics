@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const 승률 = (data[index]["승률"] * 100).toFixed(2);
                 
                                 return [
-                                    `실험체: ${label}`,
+                                    `${label}`,
                                     `픽률: ${픽률}%`,
                                     `RP 획득: ${RP획득}`,
                                     `승률: ${승률}%`
