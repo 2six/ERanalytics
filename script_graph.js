@@ -107,10 +107,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 const dataPoint = context[0].dataPoint;
                                 const index = context[0].dataIndex;
-                                const 실험체 = data.find((_, i) => i === index)["실험체"];
+                                const 실험체 = chart.data.labels[index]; // chart 객체 사용
                                 const 픽률 = (dataPoint.x * 100).toFixed(2);
                                 const RP획득 = dataPoint.y;
-                                const 승률 = (data.find((_, i) => i === index)["승률"] * 100).toFixed(2);
+                                const 승률 = (chart.data.datasets[0].data[index].승률 * 100).toFixed(2); // chart 객체 사용
                 
                                 return [
                                     `실험체: ${실험체}`,
@@ -131,13 +131,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Chart.js v3 이상에서 사용
                 afterDatasetsDraw: (chart) => {
                     const ctx = chart.ctx;
-                    const data = chart.data.datasets[0].data; // 데이터 배열 직접 접근
+                    const data = chart.data.datasets[0].data;
+                    const labels = chart.data.labels; // 레이블 배열 직접 접근
                     const meta = chart.getDatasetMeta(0);
                 
                     meta.data.forEach((point, index) => {
                         const x = point.x;
                         const y = point.y;
-                        const 실험체 = chart.data.labels[index]; // labels 배열에서 실험체 이름 가져오기
+                        const 실험체 = labels[index]; // 레이블 배열에서 실험체 이름 가져오기
                 
                         ctx.font = '10px sans-serif';
                         ctx.fillStyle = 'black';
