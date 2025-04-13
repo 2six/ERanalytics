@@ -117,11 +117,13 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `<th>${tier}</th>`;
             html += '<td>';
             if (tierGroups[tier]) {
-                tierGroups[tier].forEach((experiment, index) => {
+                let imgCount = 0;
+                tierGroups[tier].forEach((experiment) => {
                     const imageName = convertExperimentNameToImageName(experiment);
                     const imageSrc = `image/${imageName}.png`;
                     html += `<img src="${imageSrc}" alt="${experiment}">`;
-                    if ((index + 1) % imagesPerRow === 0 && index !== 0 && index !== tierGroups[tier].length - 1) {
+                    imgCount++;
+                    if (imgCount % imagesPerRow === 0 && imgCount < tierGroups[tier].length) {
                         html += '<br>';
                     }
                 });
