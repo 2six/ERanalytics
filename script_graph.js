@@ -33,14 +33,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointRadius: function(context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        // 승률에 따라 점 크기를 조절하는 로직 (예시)
-                        if (승률 > 0.55) { // 55% 초과
-                            return 12;
-                        } else if (승률 > 0.50) { // 50% 초과
-                            return 8;
-                        } else {
-                            return 5;
+                        const min승률 = Math.min(...data.map(item => item["승률"]));
+                        const max승률 = Math.max(...data.map(item => item["승률"]));
+                        const minPointSize = 5;
+                        const maxPointSize = 15;
+                
+                        if (max승률 === min승률) {
+                            return minPointSize; // 모든 승률이 같으면 최소 크기 반환
                         }
+                
+                        // 승률을 0~1 범위로 정규화
+                        const normalized승률 = (승률 - min승률) / (max승률 - min승률);
+                
+                        // 정규화된 승률을 점 크기 범위에 매핑
+                        return minPointSize + normalized승률 * (maxPointSize - minPointSize);
                     },
                     pointHoverRadius: 8
                 }]
@@ -100,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const 픽률 = (context.parsed.x * 100).toFixed(2);
                                 const RP획득 = context.parsed.y;
                                 const 승률 = (data[index]["승률"] * 100).toFixed(2);
-                                return `${실험체}: (픽률: ${픽률}%, RP: ${RP획득}, 승률: ${승률}%)`;
+                                return `실험체: ${실험체}<br>픽률: ${픽률}%<br>RP 획득: ${RP획득}<br>승률: ${승률}%`;
                             }
                         }
                     }
