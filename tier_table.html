@@ -20,13 +20,13 @@
             width: 50px;
             white-space: nowrap;
         }
-        .tier-row th:nth-child(1) { background-color: rgb(255, 127, 127); } /* S+ */
-        .tier-row th:nth-child(2) { background-color: rgb(255, 191, 127); } /* S */
-        .tier-row th:nth-child(3) { background-color: rgb(255, 223, 127); } /* A */
-        .tier-row th:nth-child(4) { background-color: rgb(255, 255, 127); } /* B */
-        .tier-row th:nth-child(5) { background-color: rgb(191, 255, 127); } /* C */
-        .tier-row th:nth-child(6) { background-color: rgb(127, 255, 127); } /* D */
-        .tier-row th:nth-child(7) { background-color: rgb(127, 255, 255); } /* F */
+        .tier-row th:first-child { background-color: rgb(255, 127, 127); } /* S+ */
+        .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); } /* S */
+        .tier-row:nth-child(3) th:first-child { background-color: rgb(255, 223, 127); } /* A */
+        .tier-row:nth-child(4) th:first-child { background-color: rgb(255, 255, 127); } /* B */
+        .tier-row:nth-child(5) th:first-child { background-color: rgb(191, 255, 127); } /* C */
+        .tier-row:nth-child(6) th:first-child { background-color: rgb(127, 255, 127); } /* D */
+        .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); } /* F */
         .tier-row td {
             padding: 10px;
             border: 1px solid #ddd;
