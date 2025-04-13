@@ -3,11 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basic Graph</title>
+    <title>그래프</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 50vh;
+        }
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        nav li {
+            display: inline;
+            margin: 0 10px;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="pickRateRPChart" width="800" height="600"></canvas>
+    <header>
+        <nav>
+            <ul style="list-style: none; padding: 0; text-align: center; margin-bottom: 20px;">
+                <li style="display: inline; margin: 0 10px;"><a href="index.html">홈</a></li>
+                <li style="display: inline; margin: 0 10px;"><a href="statistics.html">실험체 통계</a></li>
+                <li style="display: inline; margin: 0 10px;"><a href="tier_table.html">티어표</a></li>
+                <li style="display: inline; margin: 0 10px;"><a href="graph.html">그래프</a></li>
+            </ul>
+        </nav>
+        <h1>그래프</h1>
+    </header>
+
+    <main>
+        <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
+    </main>
+
+    <footer>
+        <p>© 2025 나만의 실험체 통계</p>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script_graph.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <script src="script_graph.js"></script> </body>
 </html>

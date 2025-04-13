@@ -7,10 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
             createPickRateRPChart(data);
         })
         .catch(error => {
-            console.error('Error loading data.json:', error);
+            console.error('data.json 파일을 불러오는 중 오류 발생:', error);
             const chartContainer = document.getElementById('pickRateRPChart');
             if (chartContainer) {
-                chartContainer.innerText = 'Failed to load data for the chart.';
+                chartContainer.innerText = '데이터를 불러오는 데 실패하여 그래프를 표시할 수 없습니다.';
             }
         });
 
@@ -20,13 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const pickRates = data.map(item => item["표본수"] / data.reduce((sum, i) => sum + i["표본수"], 0));
         const rpGains = data.map(item => item["RP 획득"]);
 
-        myChart = new Chart(ctx, {
+        myChart = new Chart(ctx, { // Assign the chart instance to myChart
             type: 'scatter',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Pick Rate vs RP Gain',
-                    data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], 승률: item["승률"] })), // 승률 데이터 포함
+                    label: '픽률 vs RP 획득',
+                    data: data.map((item, index) => ({ x: pickRates[index], y: rpGains[index], label: labels[index], 승률: item["승률"] })), // 승률 데이터 포함
                     backgroundColor: function(context) {
                         const index = context.dataIndex;
                         const colors = ['rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
@@ -53,11 +53,6 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    mode: 'nearest',
-                    intersect: true,
-                    axis: 'xy'
-                },
                 scales: {
                     x: {
                         type: 'linear',
@@ -105,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 plugins: {
                     tooltip: {
-                        enabled: true,
                         callbacks: {
                             body: function(context) {
                                 if (!context || !context[0] || !context[0].dataPoint) {
@@ -113,10 +107,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 const dataPoint = context[0].dataPoint;
                                 const index = context[0].dataIndex;
-                                const 실험체 = myChart.data.labels[index];
+                                const 실험체 = labels[index];
                                 const 픽률 = (dataPoint.x * 100).toFixed(2);
                                 const RP획득 = dataPoint.y;
-                                const 승률 = (myChart.data.datasets[0].data[index].승률 * 100).toFixed(2);
+                                const 승률 = (data[index]["승률"] * 100).toFixed(2);
 
                                 return [
                                     `실험체: ${실험체}`,
@@ -126,16 +120,53 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ];
                             },
                             title: function() {
-                                return '';
+                                return ''; // 타이틀 제거
                             },
                             label: function() {
-                                return '';
+                                return ''; // 기본 label은 숨김
                             }
                         }
+                    },
+                    // Chart.js v3 이상에서 사용
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const meta = chart.getDatasetMeta(0);
+                        const dataPoints = meta.data;
+                        const chartData = chart.data.datasets[0].data;
+                        const chartLabels = chart.data.labels;
+
+                        dataPoints.forEach((point, index) => {
+                            const x = point.x;
+                            const y = point.y;
+                            const 실험체 = chartLabels[index];
+
+                            ctx.font = '10px sans-serif';
+                            ctx.fillStyle = 'black';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(실험체, x, y);
+                        });
                     }
-                },
-                afterRender: chart => {
-                    chart.update(); // 렌더링 후 업데이트
+                    // Chart.js v2에서 사용
+                    /*
+                    draw: function(chartInstance) {
+                        var ctx = chartInstance.chart.ctx;
+                        chartInstance.data.datasets.forEach(function (dataset, i) {
+                            var meta = chartInstance.getDatasetMeta(i);
+                            meta.data.forEach(function (point, index) {
+                                var x = point.getCenterPoint().x;
+                                var y = point.getCenterPoint().y;
+                                var 실험체 = data[index]["실험체"];
+
+                                ctx.font = '10px sans-serif';
+                                ctx.fillStyle = 'black';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(실험체, x, y);
+                            });
+                        });
+                    }
+                    */
                 }
             }
         });
