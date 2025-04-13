@@ -15,17 +15,24 @@
             padding: 10px;
             text-align: center;
             font-size: 1.2em;
-            background-color: #f0f0f0;
+            color: #fff; /* 티어 문자 색상을 흰색으로 변경하여 배경색과 대비 */
             border: 1px solid #ddd;
             width: 50px;
-            white-space: nowrap; /* 티어 문자는 줄바꿈 방지 */
+            white-space: nowrap;
         }
+        .tier-row th:nth-child(1) { background-color: rgb(255, 127, 127); } /* S+ */
+        .tier-row th:nth-child(2) { background-color: rgb(255, 191, 127); } /* S */
+        .tier-row th:nth-child(3) { background-color: rgb(255, 223, 127); } /* A */
+        .tier-row th:nth-child(4) { background-color: rgb(255, 255, 127); } /* B */
+        .tier-row th:nth-child(5) { background-color: rgb(191, 255, 127); } /* C */
+        .tier-row th:nth-child(6) { background-color: rgb(127, 255, 127); } /* D */
+        .tier-row th:nth-child(7) { background-color: rgb(127, 255, 255); } /* F */
         .tier-row td {
             padding: 10px;
             border: 1px solid #ddd;
-            display: flex; /* flexbox 레이아웃 사용 */
-            flex-wrap: wrap; /* 내용이 넘치면 줄바꿈 활성화 */
-            gap: 5px; /* 이미지 사이 간격 조절 */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
         }
         .tier-row td img {
             vertical-align: middle;
