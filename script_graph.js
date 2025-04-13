@@ -67,9 +67,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     })),
                     backgroundColor: function(context) {
                         const index = context.dataIndex;
-                        const hue = (index * 7) % 360;
-                        const saturation = 70;
-                        const lightness = 50;
+                        const totalDataPoints = context.chart.data.datasets[0].data.length;
+                    
+                        // 색조를 360도 범위에서 비교적 고르게 분포시킵니다.
+                        const hue = (index * (360 / totalDataPoints)) % 360;
+                    
+                        // 채도를 50% ~ 80% 사이의 값으로 변화를 줍니다.
+                        const saturation = 50 + (index % 3) * 15; // 50, 65, 80 반복
+                    
+                        // 밝기를 40% ~ 60% 사이의 값으로 변화를 줍니다.
+                        const lightness = 40 + (index % 2) * 20; // 40, 60 반복
+                    
                         return `hsl(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
                     },
                     pointRadius: function(context) {
