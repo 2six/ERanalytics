@@ -136,14 +136,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const downloadButton = document.getElementById('download-table-button');
         if (downloadButton && container) {
             downloadButton.addEventListener('click', function() {
-                html2canvas(container).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = 'tier_table.png';
-                    link.href = canvas.toDataURL();
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                });
+                const table = document.querySelector('.tier-table'); // 표 요소 직접 선택
+                if (table) {
+                    html2canvas(table, {
+                        width: table.offsetWidth // 실제 표의 너비 사용
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'tier_table.png';
+                        link.href = canvas.toDataURL();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+                }
             });
         }
     }
