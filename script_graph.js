@@ -23,18 +23,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const meta = chart.getDatasetMeta(0);
                 const dataPoints = meta.data;
                 const chartLabels = chart.data.labels;
-
+        
                 ctx.save();
                 dataPoints.forEach((point, index) => {
                     const x = point.x;
                     const y = point.y;
                     const 실험체 = chartLabels[index];
-
+        
                     ctx.font = '10px sans-serif';
-                    ctx.fillStyle = 'black';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(실험체, x, y - 10);
+        
+                    // 흰색 테두리 추가
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = 'white';
+                    ctx.strokeText(실험체, x, y);
+        
+                    // 글씨 본체
+                    ctx.fillStyle = 'black';
+                    ctx.fillText(실험체, x, y);
                 });
                 ctx.restore();
             }
@@ -101,25 +108,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                const index = context[0].dataIndex;
-                                return labels[index];
-                            },
-                            label: function(context) {
-                                const dataPoint = context.raw;
-                                const 픽률 = (dataPoint.x * 100).toFixed(2);
-                                const RP획득 = dataPoint.y;
-                                const 승률 = (data[context.dataIndex]["승률"] * 100).toFixed(2);
-
-                                return [
-                                    `픽률: ${픽률}%`,
-                                    `RP 획득: ${RP획득}`,
-                                    `승률: ${승률}%`
-                                ];
-                            }
+                tooltip: {
+                    callbacks: {
+                        title: function() {
+                            return ''; // 타이틀 제거
+                        },
+                        label: function(context) {
+                            const index = context.dataIndex;
+                            const label = context.chart.data.labels[index];
+                            const dataPoint = context.raw;
+                            const 픽률 = (dataPoint.x * 100).toFixed(2);
+                            const RP획득 = dataPoint.y;
+                            const 승률 = (data[index]["승률"] * 100).toFixed(2);
+                
+                            return [
+                                `실험체: ${label}`,
+                                `픽률: ${픽률}%`,
+                                `RP 획득: ${RP획득}`,
+                                `승률: ${승률}%`
+                            ];
                         }
                     }
                 }
