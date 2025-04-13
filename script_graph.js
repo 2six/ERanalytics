@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+    Chart.register(window['chartjs-plugin-annotation']);
     let myChart;
 
     fetch('data.json')
