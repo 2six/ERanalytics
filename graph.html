@@ -82,11 +82,9 @@
         <p>통계를 가공한 그래프입니다.</p>
     </header>
 
-    <main>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <button id="popup-graph-button" style="margin-bottom: 10px;">그래프 이미지 팝업</button>
-            <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
-        </div>
+    <main style="position: relative; display: inline-block;">
+        <button id="popup-graph-button" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); z-index: 10;">그래프 이미지 팝업</button>
+        <canvas id="pickRateRPChart" width="1000" height="800" style="display: block;"></canvas>
     
         <div id="image-popup" class="image-popup">
             <span class="image-popup-close">&times;</span>
