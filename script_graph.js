@@ -1,4 +1,27 @@
+function exportChartToImage() {
+    const chartCanvas = document.getElementById('pickRateRPChart');
+    if (!chartCanvas) {
+        console.error('캔버스 요소를 찾을 수 없습니다.');
+        return;
+    }
+
+    const imageDataURL = chartCanvas.toDataURL('image/png'); // PNG 형식으로 이미지 데이터 URL 생성
+
+    const newWindow = window.open('', '_blank'); // 새 창 열기
+
+    if (newWindow) {
+        newWindow.document.write('<img src="' + imageDataURL + '"/>'); // 새 창에 이미지 표시
+    } else {
+        alert('팝업 차단 기능이 활성화되어 있어 새 창을 열 수 없습니다.');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    const exportButton = document.createElement('button');
+    exportButton.textContent = '이미지로 내보내기';
+    exportButton.addEventListener('click', exportChartToImage);
+    document.body.appendChild(exportButton); // 버튼을 body에 추가 (원하는 위치에 추가하세요)
+
     let myChart;
 
     fetch('data.json')
