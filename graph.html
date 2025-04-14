@@ -83,16 +83,17 @@
     </header>
 
     <main>
-        <button id="popup-graph-button">그래프 이미지 팝업</button>
-        <section>
-            <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
-        </section>
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <button id="popup-graph-button">그래프 이미지 팝업</button>
+        </div>
+        <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
     
         <div id="image-popup" class="image-popup">
             <span class="image-popup-close">&times;</span>
-            <img class="image-popup-content" id="popup-image">
+            <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
         </div>
     </main>
+    
 
     <footer>
         <p>© 2025 나만의 실험체 통계</p>
