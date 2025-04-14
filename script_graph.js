@@ -46,11 +46,9 @@ document.addEventListener('DOMContentLoaded', function () {
             ctx.font = '14px sans-serif';
             ctx.fillStyle = 'black';
 
-            // 좌상단
             ctx.textAlign = 'left';
             ctx.fillText(chart.config._제목 || '', left + 10, top + 20);
 
-            // 우상단
             ctx.textAlign = 'right';
             ctx.fillText(`평균 픽률: ${(chart.config._평균픽률 * 100).toFixed(2)}%`, right - 10, top + 20);
             ctx.fillText(`평균 RP: ${chart.config._가중평균RP.toFixed(1)}`, right - 10, top + 40);
@@ -60,7 +58,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // ==================== 공통 팝업 기능 ====================
     function setupGraphPopup() {
         const popup = document.getElementById('image-popup');
         const popupImage = document.getElementById('popup-image');
@@ -87,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ==================== 그래프 생성 공통 함수 ====================
     function createGraph({ xKey, yKey, radiusKey, title }) {
         if (myChart) {
             myChart.destroy();
@@ -100,7 +96,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const xValues = chartData.map(d =>
             xKey === "픽률" ? d["표본수"] / 전체표본수 : d[xKey]
         );
-        const yValues = chartData.map(d => d[yKey]);
+        const yValues = chartData.map(d =>
+            yKey === "픽률" ? d["표본수"] / 전체표본수 : d[yKey]
+        );
         const radiusValues = chartData.map(d =>
             radiusKey === "픽률" ? d["표본수"] / 전체표본수 : d[radiusKey]
         );
@@ -111,6 +109,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const isXPercent = xKey === "픽률" || xKey === "승률";
         const isYPercent = yKey === "픽률" || yKey === "승률";
+
+        const xMin = isXPercent
+            ? Math.floor(Math.min(...xValues) * 100) / 100
+            : Math.floor(Math.min(...xValues)) - 1;
+        const xMax = isXPercent
+            ? Math.ceil(Math.max(...xValues) * 100) / 100
+            : Math.ceil(Math.max(...xValues)) + 1;
+        const yMin = isYPercent
+            ? Math.floor(Math.min(...yValues) * 100) / 100
+            : Math.floor(Math.min(...yValues)) - 1;
+        const yMax = isYPercent
+            ? Math.ceil(Math.max(...yValues) * 100) / 100
+            : Math.ceil(Math.max(...yValues)) + 1;
 
         Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
 
@@ -135,11 +146,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
                         const 기준크기 = 15;
-                        const min크기 = 2;
+                        const 최소크기 = 2;
 
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
-                        return min크기 + 비율 * (기준크기 - min크기);
+                        return 최소크기 + 비율 * (기준크기 - 최소크기);
                     },
                     pointHoverRadius: 8
                 }]
@@ -154,7 +165,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             title: () => '',
                             label: function (context) {
                                 const index = context.dataIndex;
-                                const dataPoint = context.raw;
                                 const label = chartData[index]["실험체"];
                                 const 픽률 = ((chartData[index]["표본수"] / 전체표본수) * 100).toFixed(2);
                                 const RP획득 = chartData[index]["RP 획득"];
@@ -204,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             callback: value => isXPercent ? (value * 100).toFixed(1) + '%' : value,
                             stepSize: isXPercent ? 0.01 : 1
                         },
-                        min: isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100 : Math.floor(Math.min(...xValues)) - 1,
-                        max: isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100 : Math.ceil(Math.max(...xValues)) + 1
+                        min: xMin,
+                        max: xMax
                     },
                     y: {
                         type: 'linear',
@@ -218,8 +228,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             callback: value => isYPercent ? (value * 100).toFixed(1) + '%' : value,
                             stepSize: isYPercent ? 0.01 : 1
                         },
-                        min: isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100 : Math.floor(Math.min(...yValues)) - 1,
-                        max: isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100 : Math.ceil(Math.max(...yValues)) + 1
+                        min: yMin,
+                        max: yMax
                     }
                 }
             }
@@ -231,7 +241,6 @@ document.addEventListener('DOMContentLoaded', function () {
         myChart.config._가중평균승률 = 가중평균승률;
     }
 
-    // ==================== 탭 이벤트 ====================
     function setupGraphTabs() {
         document.querySelectorAll('.graph-tab').forEach(button => {
             button.addEventListener('click', () => {
@@ -247,14 +256,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ==================== 초기화 ====================
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
             chartData = data;
             setupGraphPopup();
             setupGraphTabs();
-            document.querySelector('[data-type="pick-rp"]').click(); // 기본 그래프
+            document.querySelector('[data-type="pick-rp"]').click(); // 기본 그래프 표시
         })
         .catch(error => {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
