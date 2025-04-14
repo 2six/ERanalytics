@@ -30,6 +30,42 @@
             display: inline;
             margin: 0 10px;
         }
+        .image-popup {
+            display: none; /* initially hidden */
+            position: fixed; /* stay in place */
+            z-index: 1; /* sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* full width */
+            height: 100%; /* full height */
+            overflow: auto; /* enable scroll if needed */
+            background-color: rgba(0,0,0,0.9); /* black w/ opacity */
+        }
+        .image-popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%; /* adjust as needed */
+            max-height: 90%; /* adjust as needed */
+            object-fit: contain; /* keep aspect ratio */
+        }
+        .image-popup-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .image-popup-close:hover,
+        .image-popup-close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -46,12 +82,13 @@
     </header>
 
     <main>
-        <div id="imagePopup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border: 1px solid black; padding: 10px; z-index: 1000;">
-            <img id="popupImage" src="" alt="저장된 그래프">
-            <button id="closePopup">닫기</button>
-        </div>
-        <button id="saveGraphButton">이미지로 저장</button>
+        <button id="popup-graph-button">그래프 이미지 팝업</button>
         <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
+    
+        <div id="image-popup" class="image-popup">
+            <span class="image-popup-close">&times;</span>
+            <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
+        </div>
     </main>
 
     <footer>
@@ -60,6 +97,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="script_graph.js"></script>
 </body>
 </html>

@@ -1,13 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     let myChart;
-    const imagePopup = document.getElementById('imagePopup');
-    const popupImage = document.getElementById('popupImage');
-    const closePopup = document.getElementById('closePopup');
 
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
             createPickRateRPChart(data);
+            setupGraphPopup(); // 그래프 생성 후 팝업 기능 연결
         })
         .catch(error => {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
@@ -51,10 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const pickRates = data.map(item => item["표본수"] / 전체표본수);
         const rpGains = data.map(item => item["RP 획득"]);
 
-        // 평균 픽률 (단순 평균)
         const 평균픽률 = pickRates.reduce((sum, rate) => sum + rate, 0) / pickRates.length;
-
-        // 가중평균 RP 획득
         const 가중평균RP = data.reduce((acc, item) => acc + item["RP 획득"] * (item["표본수"] / 전체표본수), 0);
 
         Chart.register(labelPlugin, window['chartjs-plugin-annotation']);
@@ -111,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => (value * 100).toFixed(1) + '%',
-                            stepSize: 0.002
+                            stepSize: 0.005
                         }
                     },
                     y: {
@@ -158,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'x',
-                                value: (data.reduce((acc, item) => acc + (item["표본수"] / 전체표본수) * (item["표본수"] / 전체표본수), 0)),
+                                value: 평균픽률,
                                 label: {
                                     display: false
                                 }
@@ -181,26 +176,37 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 그래프를 이미지로 저장하고 팝업처럼 표시하는 함수
-    function saveGraphAsImage() {
-        const canvas = document.getElementById('pickRateRPChart');
-        if (canvas && myChart) {
-            const imageDataURL = canvas.toDataURL('image/png');
-            popupImage.src = imageDataURL;
-            imagePopup.style.display = 'block'; // 팝업 보이기
-        } else {
-            alert('그래프를 찾을 수 없습니다.');
+    function setupGraphPopup() {
+        const popup = document.getElementById('image-popup');
+        const popupImage = document.getElementById('popup-image');
+        const closeButton = document.querySelector('.image-popup-close');
+        const graphCanvas = document.getElementById('pickRateRPChart');
+        const popupGraphButton = document.getElementById('popup-graph-button');
+
+        if (popupGraphButton && graphCanvas && popup && popupImage && closeButton) {
+            popupGraphButton.addEventListener('click', function () {
+                html2canvas(graphCanvas, {
+                    width: graphCanvas.offsetWidth,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: graphCanvas.offsetWidth,
+                    windowHeight: graphCanvas.offsetHeight
+                }).then(canvas => {
+                    popup.style.display = 'block';
+                    popupImage.src = canvas.toDataURL();
+                    popupImage.alt = '그래프 이미지';
+                });
+            });
+
+            closeButton.addEventListener('click', function () {
+                popup.style.display = 'none';
+            });
+
+            window.addEventListener('click', function (event) {
+                if (event.target === popup) {
+                    popup.style.display = 'none';
+                }
+            });
         }
-    }
-
-    // 팝업 닫기 버튼 이벤트 리스너
-    closePopup.addEventListener('click', function() {
-        imagePopup.style.display = 'none'; // 팝업 숨기기
-    });
-
-    // 이미지 저장 버튼 클릭 이벤트 리스너
-    const saveButton = document.getElementById('saveGraphButton');
-    if (saveButton) {
-        saveButton.addEventListener('click', saveGraphAsImage);
     }
 });
