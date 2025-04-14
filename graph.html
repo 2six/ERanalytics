@@ -12,7 +12,6 @@
             text-align: center;
             margin-bottom: 20px;
         }
-
         nav li {
             display: inline;
             margin: 0 10px;
@@ -22,11 +21,9 @@
             margin-top: 10px;
             width: 100%;
             height: auto;
-            max-height: 800px;
+            max-height: 1000px;
             max-width: 100%;
-        }
-
-        
+        }        
         /* 팝업 스타일 tier_table 방식 */
         .image-popup {
             display: none;
@@ -39,7 +36,6 @@
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.8);
         }
-
         .image-popup-content {
             display: block;
             margin: 5% auto;
@@ -47,7 +43,6 @@
             max-height: 80%;
             border: 4px solid white;
         }
-
         .image-popup-close {
             position: absolute;
             top: 20px;
@@ -78,7 +73,7 @@
     <main>
         <button id="popup-graph-button">그래프 이미지 팝업</button>
 
-        <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
+        <canvas id="pickRateRPChart"></canvas>
 
         <div id="image-popup" class="image-popup">
             <span class="image-popup-close">&times;</span>
