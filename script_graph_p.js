@@ -142,24 +142,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         승률: item["승률"]
                     })),
                     backgroundColor: function(context) {
-                        const vibrantColors = [
-                            '#FF0000', '#00FF00', '#0000FF', '#FFD700',
-                            '#FF00FF', '#00FFFF', '#FF8C00', '#32CD32'
-                        ];
-                        return vibrantColors[context.dataIndex % vibrantColors.length];
+                        // 과학적 색상 분할 (Golden Angle 기반)
+                        const goldenRatio = 0.618033988749895; // 황금비율
+                        const hue = (context.dataIndex * 360 * goldenRatio) % 360;
+                        return `hsl(${hue}, 65%, 60%, 0.8)`; // 채도 65%, 명도 60%
                     },
-                    pointRadius: function (context) {
+                    pointRadius: function(context) {
+                        // 기존 radius 계산 로직 유지
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
-                        const 기준크기 = 30; // ✅ 원 크기 크게 확대
+                        const 기준크기 = 30;
                         const 최소크기 = 6;
-
-                        if (max === min) return 기준크기;
-                        const 비율 = (val - min) / (max - min);
-                        return 최소크기 + 비율 * (기준크기 - 최소크기);
-                    },
-                    pointHoverRadius: 10
+                        return max === min ? 기준크기 : 최소크기 + ((val - min) / (max - min)) * (기준크기 - 최소크기);
+                    }
                 }]
             },
             options: {
