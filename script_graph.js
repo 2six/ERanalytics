@@ -5,13 +5,12 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
             createPickRateRPChart(data);
-            setupGraphPopup(); // 그래프 생성 후 팝업 기능 연결
+            setupGraphPopup();
         })
         .catch(error => {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
         });
 
-    // 원 위에 실험체 이름 표시 플러그인
     const labelPlugin = {
         id: 'labelPlugin',
         afterDatasetsDraw(chart) {
@@ -41,6 +40,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    const cornerTextPlugin = {
+        id: 'cornerTextPlugin',
+        afterDraw(chart) {
+            const { ctx, chartArea } = chart;
+            const left = chartArea.left;
+            const top = chartArea.top;
+            const right = chartArea.right;
+
+            ctx.save();
+            ctx.font = '14px sans-serif';
+            ctx.fillStyle = 'black';
+
+            // 좌상단 텍스트
+            ctx.textAlign = 'left';
+            ctx.fillText('픽률 / RP 획득', left + 10, top + 20);
+
+            // 우상단 텍스트
+            const 평균픽률퍼센트 = (chart.config._평균픽률 * 100).toFixed(2);
+            const 평균RP = chart.config._가중평균RP.toFixed(1);
+            const 평균승률퍼센트 = (chart.config._가중평균승률 * 100).toFixed(2);
+
+            ctx.textAlign = 'right';
+            ctx.fillText(`평균 픽률: ${평균픽률퍼센트}%`, right - 10, top + 20);
+            ctx.fillText(`평균 RP: ${평균RP}`, right - 10, top + 40);
+            ctx.fillText(`평균 승률: ${평균승률퍼센트}%`, right - 10, top + 60);
+
+            ctx.restore();
+        }
+    };
+
     function createPickRateRPChart(data) {
         const ctx = document.getElementById('pickRateRPChart').getContext('2d');
 
@@ -48,25 +77,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const 전체표본수 = data.reduce((sum, i) => sum + i["표본수"], 0);
         const pickRates = data.map(item => item["표본수"] / 전체표본수);
         const rpGains = data.map(item => item["RP 획득"]);
-        const 승률List = data.map(item => item["승률"]);
 
-        // 가중 평균 픽률 계산
-        const 가중평균픽률 = data.reduce((acc, item) => acc + (item["표본수"] / 전체표본수) * (item["표본수"] / 전체표본수), 0);
-
-        // 가중 평균 RP 획득
+        const 평균픽률 = pickRates.reduce((sum, rate) => sum + rate, 0) / pickRates.length;
         const 가중평균RP = data.reduce((acc, item) => acc + item["RP 획득"] * (item["표본수"] / 전체표본수), 0);
+        const 가중평균승률 = data.reduce((acc, item) => acc + item["승률"] * (item["표본수"] / 전체표본수), 0);
 
-        // 평균 승률 (단순 평균)
-        const 평균승률 = 승률List.reduce((sum, rate) => sum + rate, 0) / 승률List.length;
-
-        Chart.register(labelPlugin, window['chartjs-plugin-annotation']);
+        Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
 
         myChart = new Chart(ctx, {
             type: 'scatter',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: '실험체 데이터', // 툴팁에 사용될 데이터셋 라벨 (숨길 예정)
                     data: data.map((item, index) => ({
                         x: pickRates[index],
                         y: rpGains[index],
@@ -83,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     pointRadius: function (context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const 평균승률 = 승률List.reduce((sum, item) => sum + item, 0) / 승률List.length;
+                        const 평균승률 = data.reduce((sum, item) => sum + item["승률"], 0) / data.length;
                         const 기준크기 = 15;
                         const 승률차이 = (승률 - 평균승률) * 100;
                         let 크기 = 기준크기 + 승률차이 * 3.5;
@@ -92,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     pointHoverRadius: function (context) {
                         const index = context.dataIndex;
                         const 승률 = data[index]["승률"];
-                        const 평균승률 = 승률List.reduce((sum, item) => sum + item, 0) / 승률List.length;
+                        const 평균승률 = data.reduce((sum, item) => sum + item["승률"], 0) / data.length;
                         const 기준크기 = 15;
                         const 승률차이 = (승률 - 평균승률) * 100;
                         let 크기 = 기준크기 + 승률차이 * 3.5;
@@ -104,22 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false // 기존 라벨 (픽률 vs RP 획득) 숨기기
-                    },
-                    title: {
-                        display: true,
-                        text: '픽률 / RP 획득', // 좌상단 텍스트
-                        align: 'start',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        },
-                        padding: {
-                            top: 10,
-                            bottom: 10
-                        }
-                    },
+                    legend: { display: false },
                     tooltip: {
                         enabled: true,
                         callbacks: {
@@ -149,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'x',
-                                value: 가중평균픽률,
+                                value: 평균픽률,
                                 label: {
                                     display: false
                                 }
@@ -164,29 +171,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                 label: {
                                     display: false
                                 }
-                            },
-                            {
-                                type: 'label',
-                                position: 'top-end',
-                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                                borderColor: 'rgba(0, 0, 0, 0.8)',
-                                borderWidth: 1,
-                                borderRadius: 5,
-                                color: 'black',
-                                padding: 5,
-                                text: [
-                                    `평균 픽률: ${(가중평균픽률 * 100).toFixed(2)}%`,
-                                    `평균 RP: ${가중평균RP.toFixed(2)}`,
-                                    `평균 승률: ${(평균승률 * 100).toFixed(2)}%`
-                                ],
-                                font: {
-                                    size: 12
-                                },
-                                textAlign: 'right',
-                                xPadding: 10,
-                                yPadding: 10,
-                                x: 'chartArea.right', // 명시적으로 x 좌표 설정
-                                y: 'chartArea.top'    // 명시적으로 y 좌표 설정
                             }
                         ]
                     }
@@ -220,6 +204,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
+
+        // 평균값 전달 (커스텀 config용)
+        myChart.config._평균픽률 = 평균픽률;
+        myChart.config._가중평균RP = 가중평균RP;
+        myChart.config._가중평균승률 = 가중평균승률;
     }
 
     function setupGraphPopup() {
