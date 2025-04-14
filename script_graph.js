@@ -184,7 +184,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 },
                                 textAlign: 'right',
                                 xPadding: 10,
-                                yPadding: 10
+                                yPadding: 10,
+                                x: 'chartArea.right', // 명시적으로 x 좌표 설정
+                                y: 'chartArea.top'    // 명시적으로 y 좌표 설정
                             }
                         ]
                     }
