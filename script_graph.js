@@ -1,28 +1,8 @@
-function exportChartToImage() {
-    const chartCanvas = document.getElementById('pickRateRPChart');
-    if (!chartCanvas) {
-        console.error('캔버스 요소를 찾을 수 없습니다.');
-        return;
-    }
-
-    const imageDataURL = chartCanvas.toDataURL('image/png'); // PNG 형식으로 이미지 데이터 URL 생성
-
-    const newWindow = window.open('', '_blank'); // 새 창 열기
-
-    if (newWindow) {
-        newWindow.document.write('<img src="' + imageDataURL + '"/>'); // 새 창에 이미지 표시
-    } else {
-        alert('팝업 차단 기능이 활성화되어 있어 새 창을 열 수 없습니다.');
-    }
-}
-
 document.addEventListener('DOMContentLoaded', function () {
-    const exportButton = document.createElement('button');
-    exportButton.textContent = '이미지로 내보내기';
-    exportButton.addEventListener('click', exportChartToImage);
-    document.body.appendChild(exportButton); // 버튼을 body에 추가 (원하는 위치에 추가하세요)
-
     let myChart;
+    const imagePopup = document.getElementById('imagePopup');
+    const popupImage = document.getElementById('popupImage');
+    const closePopup = document.getElementById('closePopup');
 
     fetch('data.json')
         .then(response => response.json())
@@ -178,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 scaleID: 'x',
-                                value: 평균픽률,
+                                value: (data.reduce((acc, item) => acc + (item["표본수"] / 전체표본수) * (item["표본수"] / 전체표본수), 0)),
                                 label: {
                                     display: false
                                 }
@@ -199,5 +179,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
+    }
+
+    // 그래프를 이미지로 저장하고 팝업처럼 표시하는 함수
+    function saveGraphAsImage() {
+        const canvas = document.getElementById('pickRateRPChart');
+        if (canvas && myChart) {
+            const imageDataURL = canvas.toDataURL('image/png');
+            popupImage.src = imageDataURL;
+            imagePopup.style.display = 'block'; // 팝업 보이기
+        } else {
+            alert('그래프를 찾을 수 없습니다.');
+        }
+    }
+
+    // 팝업 닫기 버튼 이벤트 리스너
+    closePopup.addEventListener('click', function() {
+        imagePopup.style.display = 'none'; // 팝업 숨기기
+    });
+
+    // 이미지 저장 버튼 클릭 이벤트 리스너
+    const saveButton = document.getElementById('saveGraphButton');
+    if (saveButton) {
+        saveButton.addEventListener('click', saveGraphAsImage);
     }
 });
