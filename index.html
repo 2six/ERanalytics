@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실험체 통계</title>
+    <title>통합 그래프 & 티어표</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 통합된 스타일 (기존 graph.html, tier_table.html 스타일 포함) */
+        /* 공통 스타일 */
         nav ul {
             list-style: none;
             padding: 0;
@@ -17,15 +17,12 @@
             display: inline;
             margin: 0 10px;
         }
-        .graph-container {
+        
+        /* 그래프 스타일 */
+        #graph-container {
             margin-bottom: 20px;
         }
-        .graph-tab {
-            margin: 0 5px;
-            padding: 8px 15px;
-            cursor: pointer;
-        }
-        canvas {
+        #pickRateRPChart {
             display: block;
             margin-top: 10px;
             width: 100%;
@@ -33,18 +30,25 @@
             max-height: 900px;
             max-width: 100%;
         }
+        
+        /* 티어표 스타일 */
+        #tier-table-container {
+            display: none; /* 처음에는 숨김 */
+            margin-top: 20px;
+        }
         .tier-table {
-            width: 100%; /* 부모 컨테이너에 맞춰 자동 조정 */
+            width: 1425px;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            border: 1px solid white; /* 표 전체 테두리 추가 */
+            margin-bottom: 0px;
+            border: 1px solid white;
         }
         .tier-row th {
             padding: 10px;
             text-align: center;
             font-size: 1.2em;
             color: #fff;
-            border: 1px solid white; /* 셀 테두리 색상 변경 */
+            border: 1px solid white;
+            width: 50px;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
@@ -57,10 +61,10 @@
         .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); } /* F */
         .tier-row td {
             padding: 0px;
-            border: 1px solid white; /* 셀 테두리 색상 변경 */
+            border: 1px solid white;
             display: block;
             gap: 0px;
-            background-color: #1a1a17; /* 이미지 부분 배경색 흰색 고정 */
+            background-color: #1a1a17;
         }
         .tier-row td > div {
             display: flex;
@@ -70,11 +74,12 @@
         }
         .tier-row td img {
             vertical-align: middle;
-            width: 70px; /* 이미지 크기 조정 */
+            width: 90px;
             height: auto;
             cursor: pointer;
-            margin: 5px; /* 이미지 간 간격 추가 */
         }
+        
+        /* 팝업 스타일 */
         .image-popup {
             display: none;
             position: fixed;
@@ -102,13 +107,20 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .content-switcher button { /* 그래프/티어표 전환 버튼 스타일 */
-            margin: 0 5px;
-            padding: 8px 15px;
+        
+        /* 탭 버튼 스타일 */
+        .tab-buttons {
+            margin-bottom: 10px;
+        }
+        .tab-buttons button {
+            padding: 8px 16px;
+            margin-right: 5px;
             cursor: pointer;
         }
-        #graph-area { display: block; } /* 초기에는 그래프 표시 */
-        #tier-table-area { display: none; }
+        .tab-buttons button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
@@ -120,99 +132,115 @@
             <ul>
                 <li><a href="index.html">홈</a></li>
                 <li><a href="statistics.html">실험체 통계</a></li>
-                <li><a href="#">그래프 / 티어표</a></li>
+                <li><a href="tier_table.html">티어표</a></li>
+                <li><a href="graph.html">그래프</a></li>
             </ul>
         </nav>
-        <h1>실험체 통계</h1>
+        <h1>통합 그래프 & 티어표</h1>
     </header>
 
     <main>
-        <div class="content-switcher" style="margin-bottom: 10px;">
-            <button class="graph-tab active" data-target="graph-area" data-type="pick-rp">픽률 / RP 획득</button>
-            <button class="graph-tab" data-target="graph-area" data-type="pick-win">픽률 / 승률</button>
-            <button class="graph-tab" data-target="graph-area" data-type="rp-win">RP 획득 / 승률</button>
-            <button class="content-tab" data-target="tier-table-area">티어표</button>
+        <!-- 그래프/티어표 전환 탭 -->
+        <div class="tab-buttons">
+            <button id="graph-tab-btn" class="active">그래프 보기</button>
+            <button id="tier-table-tab-btn">티어표 보기</button>
         </div>
-
-        <div id="graph-area">
+        
+        <!-- 그래프 영역 -->
+        <div id="graph-container">
+            <!-- 그래프 전환 탭 -->
+            <div style="margin-bottom: 10px;">
+                <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
+                <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
+                <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
+            </div>
+        
+            <!-- 그래프 캔버스 -->
             <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
-            <div id="image-popup" class="image-popup">
-                <span class="image-popup-close" onclick="closePopup('image-popup')">&times;</span>
-                <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
-            </div>
-            <button id="popup-graph-button">그래프 이미지 팝업</button>
         </div>
-
-        <div id="tier-table-area">
-            <section id="tier-table-container"></section>
-            <div id="image-popup-table" class="image-popup">
-                <span class="image-popup-close" onclick="closePopup('image-popup-table')">&times;</span>
-                <img class="image-popup-content" id="popup-table-image" alt="티어표 이미지">
-            </div>
-            <br><button id="popup-table-button">표 이미지 팝업</button>
+        
+        <!-- 티어표 영역 -->
+        <div id="tier-table-container"></div>
+        
+        <!-- 이미지 팝업 -->
+        <div id="image-popup" class="image-popup">
+            <span class="image-popup-close">&times;</span>
+            <img class="image-popup-content" id="popup-image" alt="팝업 이미지">
         </div>
+        
+        <!-- 팝업 버튼 -->
+        <button id="popup-button">이미지 팝업</button>
     </main>
 
     <footer>
         <p>© 2025 나만의 실험체 통계</p>
     </footer>
 
+    <!-- 분리된 JavaScript 파일 참조 -->
     <script src="script_graph.js"></script>
     <script src="script_tier_table.js"></script>
+    
+    <!-- 뷰 전환을 위한 간단한 스크립트 -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const graphArea = document.getElementById('graph-area');
-            const tierTableArea = document.getElementById('tier-table-area');
-            const contentTabs = document.querySelectorAll('.content-switcher button');
-            const graphTabs = document.querySelectorAll('.graph-tab[data-target="graph-area"]');
-            const tierTableTab = document.querySelector('.content-tab[data-target="tier-table-area"]');
+    document.addEventListener('DOMContentLoaded', function() {
+        const graphTabBtn = document.getElementById('graph-tab-btn');
+        const tierTableTabBtn = document.getElementById('tier-table-tab-btn');
+        const graphContainer = document.getElementById('graph-container');
+        const tierTableContainer = document.getElementById('tier-table-container');
+        const popupButton = document.getElementById('popup-button');
 
-            // 초기 상태: 그래프 영역 보이기, 티어표 영역 숨기기
-            graphArea.style.display = 'block';
-            tierTableArea.style.display = 'none';
-            contentTabs.forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.graph-tab[data-target="graph-area"].active').classList.add('active');
+        // 뷰 전환 함수
+        function switchView(view) {
+            if (view === 'graph') {
+                graphContainer.style.display = 'block';
+                tierTableContainer.style.display = 'none';
+                graphTabBtn.classList.add('active');
+                tierTableTabBtn.classList.remove('active');
+                popupButton.textContent = '그래프 이미지 팝업';
+            } else {
+                graphContainer.style.display = 'none';
+                tierTableContainer.style.display = 'block';
+                graphTabBtn.classList.remove('active');
+                tierTableTabBtn.classList.add('active');
+                popupButton.textContent = '티어표 이미지 팝업';
+            }
+        }
 
-            // 콘텐츠 전환 (그래프/티어표)
-            contentTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    contentTabs.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                    const targetId = this.getAttribute('data-target');
-                    graphArea.style.display = targetId === 'graph-area' ? 'block' : 'none';
-                    tierTableArea.style.display = targetId === 'tier-table-area' ? 'block' : 'none';
+        // 탭 버튼 이벤트 리스너
+        graphTabBtn.addEventListener('click', () => switchView('graph'));
+        tierTableTabBtn.addEventListener('click', () => switchView('table'));
+
+        // 팝업 버튼 이벤트 리스너
+        popupButton.addEventListener('click', function() {
+            const popup = document.getElementById('image-popup');
+            const popupImage = document.getElementById('popup-image');
+            
+            if (graphContainer.style.display !== 'none') {
+                // 그래프 캡처
+                html2canvas(document.getElementById('pickRateRPChart')).then(canvas => {
+                    popup.style.display = 'block';
+                    popupImage.src = canvas.toDataURL();
+                    popupImage.alt = '그래프 이미지';
                 });
-            });
-
-            // 그래프 탭 활성화 (초기 그래프 로드)
-            graphTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    graphTabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    const type = this.getAttribute('data-type');
-                    // script_graph.js의 createGraph 함수 호출 (전역 스코프에 있다고 가정)
-                    if (typeof createGraph === 'function') {
-                        createGraph({ xKey: "픽률", yKey: "RP 획득", radiusKey: "승률", title: "픽률 / RP 획득" }); // 초기 그래프
-                        if (type === 'pick-win') {
-                            createGraph({ xKey: "픽률", yKey: "승률", radiusKey: "RP 획득", title: "픽률 / 승률" });
-                        } else if (type === 'rp-win') {
-                            createGraph({ xKey: "RP 획득", yKey: "승률", radiusKey: "픽률", title: "RP 획득 / 승률" });
-                        }
-                    }
-                });
-            });
-
-            // 초기 그래프 탭 활성화
-            document.querySelector('.graph-tab[data-target="graph-area"][data-type="pick-rp"]').click();
-
-            // 팝업 닫기 함수 (공통)
-            window.closePopup = function(popupId) {
-                const popup = document.getElementById(popupId);
-                if (popup) {
-                    popup.style.display = 'none';
+            } else {
+                // 티어표 캡처
+                const tierTable = tierTableContainer.querySelector('.tier-table');
+                if (tierTable) {
+                    html2canvas(tierTable, {
+                        width: tierTable.offsetWidth,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: tierTable.offsetWidth,
+                        windowHeight: tierTable.offsetHeight
+                    }).then(canvas => {
+                        popup.style.display = 'block';
+                        popupImage.src = canvas.toDataURL();
+                        popupImage.alt = '티어표 이미지';
+                    });
                 }
-            };
+            }
         });
+    });
     </script>
 </body>
 </html>
