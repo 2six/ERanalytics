@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그래프</title>
+    <title>실험체 통계</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* 통합된 스타일 (기존 graph.html, tier_table.html 스타일 포함) */
         nav ul {
             list-style: none;
             padding: 0;
@@ -16,6 +17,14 @@
             display: inline;
             margin: 0 10px;
         }
+        .graph-container {
+            margin-bottom: 20px;
+        }
+        .graph-tab {
+            margin: 0 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
         canvas {
             display: block;
             margin-top: 10px;
@@ -23,7 +32,49 @@
             height: auto;
             max-height: 900px;
             max-width: 100%;
-        }        
+        }
+        .tier-table {
+            width: 100%; /* 부모 컨테이너에 맞춰 자동 조정 */
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            border: 1px solid white; /* 표 전체 테두리 추가 */
+        }
+        .tier-row th {
+            padding: 10px;
+            text-align: center;
+            font-size: 1.2em;
+            color: #fff;
+            border: 1px solid white; /* 셀 테두리 색상 변경 */
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        }
+        .tier-row th:first-child { background-color: rgb(255, 127, 127); } /* S+ */
+        .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); } /* S */
+        .tier-row:nth-child(3) th:first-child { background-color: rgb(255, 223, 127); } /* A */
+        .tier-row:nth-child(4) th:first-child { background-color: rgb(255, 255, 127); } /* B */
+        .tier-row:nth-child(5) th:first-child { background-color: rgb(191, 255, 127); } /* C */
+        .tier-row:nth-child(6) th:first-child { background-color: rgb(127, 255, 127); } /* D */
+        .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); } /* F */
+        .tier-row td {
+            padding: 0px;
+            border: 1px solid white; /* 셀 테두리 색상 변경 */
+            display: block;
+            gap: 0px;
+            background-color: #1a1a17; /* 이미지 부분 배경색 흰색 고정 */
+        }
+        .tier-row td > div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0px;
+            padding: 0px;
+        }
+        .tier-row td img {
+            vertical-align: middle;
+            width: 70px; /* 이미지 크기 조정 */
+            height: auto;
+            cursor: pointer;
+            margin: 5px; /* 이미지 간 간격 추가 */
+        }
         .image-popup {
             display: none;
             position: fixed;
@@ -51,25 +102,117 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .content-switcher button { /* 그래프/티어표 전환 버튼 스타일 */
+            margin: 0 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        #graph-area { display: block; } /* 초기에는 그래프 표시 */
+        #tier-table-area { display: none; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">홈</a></li>
+                <li><a href="statistics.html">실험체 통계</a></li>
+                <li><a href="#">그래프 / 티어표</a></li>
+            </ul>
+        </nav>
+        <h1>실험체 통계</h1>
+    </header>
+
     <main>
-        <div style="margin-bottom: 10px;">
-            <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
-            <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
-            <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
+        <div class="content-switcher" style="margin-bottom: 10px;">
+            <button class="graph-tab active" data-target="graph-area" data-type="pick-rp">픽률 / RP 획득</button>
+            <button class="graph-tab" data-target="graph-area" data-type="pick-win">픽률 / 승률</button>
+            <button class="graph-tab" data-target="graph-area" data-type="rp-win">RP 획득 / 승률</button>
+            <button class="content-tab" data-target="tier-table-area">티어표</button>
         </div>
-        <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
-        <div id="image-popup" class="image-popup">
-            <span class="image-popup-close">&times;</span>
-            <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
+
+        <div id="graph-area">
+            <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
+            <div id="image-popup" class="image-popup">
+                <span class="image-popup-close" onclick="closePopup('image-popup')">&times;</span>
+                <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
+            </div>
+            <button id="popup-graph-button">그래프 이미지 팝업</button>
         </div>
-        <button id="popup-graph-button">그래프 이미지 팝업</button>
+
+        <div id="tier-table-area">
+            <section id="tier-table-container"></section>
+            <div id="image-popup-table" class="image-popup">
+                <span class="image-popup-close" onclick="closePopup('image-popup-table')">&times;</span>
+                <img class="image-popup-content" id="popup-table-image" alt="티어표 이미지">
+            </div>
+            <br><button id="popup-table-button">표 이미지 팝업</button>
+        </div>
     </main>
-    <script src="script_graph_p.js"></script>
+
+    <footer>
+        <p>© 2025 나만의 실험체 통계</p>
+    </footer>
+
+    <script src="script_graph.js"></script>
+    <script src="script_tier_table.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const graphArea = document.getElementById('graph-area');
+            const tierTableArea = document.getElementById('tier-table-area');
+            const contentTabs = document.querySelectorAll('.content-switcher button');
+            const graphTabs = document.querySelectorAll('.graph-tab[data-target="graph-area"]');
+            const tierTableTab = document.querySelector('.content-tab[data-target="tier-table-area"]');
+
+            // 초기 상태: 그래프 영역 보이기, 티어표 영역 숨기기
+            graphArea.style.display = 'block';
+            tierTableArea.style.display = 'none';
+            contentTabs.forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.graph-tab[data-target="graph-area"].active').classList.add('active');
+
+            // 콘텐츠 전환 (그래프/티어표)
+            contentTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    contentTabs.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    const targetId = this.getAttribute('data-target');
+                    graphArea.style.display = targetId === 'graph-area' ? 'block' : 'none';
+                    tierTableArea.style.display = targetId === 'tier-table-area' ? 'block' : 'none';
+                });
+            });
+
+            // 그래프 탭 활성화 (초기 그래프 로드)
+            graphTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    graphTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    const type = this.getAttribute('data-type');
+                    // script_graph.js의 createGraph 함수 호출 (전역 스코프에 있다고 가정)
+                    if (typeof createGraph === 'function') {
+                        createGraph({ xKey: "픽률", yKey: "RP 획득", radiusKey: "승률", title: "픽률 / RP 획득" }); // 초기 그래프
+                        if (type === 'pick-win') {
+                            createGraph({ xKey: "픽률", yKey: "승률", radiusKey: "RP 획득", title: "픽률 / 승률" });
+                        } else if (type === 'rp-win') {
+                            createGraph({ xKey: "RP 획득", yKey: "승률", radiusKey: "픽률", title: "RP 획득 / 승률" });
+                        }
+                    }
+                });
+            });
+
+            // 초기 그래프 탭 활성화
+            document.querySelector('.graph-tab[data-target="graph-area"][data-type="pick-rp"]').click();
+
+            // 팝업 닫기 함수 (공통)
+            window.closePopup = function(popupId) {
+                const popup = document.getElementById(popupId);
+                if (popup) {
+                    popup.style.display = 'none';
+                }
+            };
+        });
+    </script>
 </body>
 </html>
