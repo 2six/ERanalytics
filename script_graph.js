@@ -109,6 +109,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const 가중평균RP = chartData.reduce((acc, d) => acc + d["RP 획득"] * (d["표본수"] / 전체표본수), 0);
         const 가중평균승률 = chartData.reduce((acc, d) => acc + d["승률"] * (d["표본수"] / 전체표본수), 0);
 
+        const isXPercent = xKey === "픽률" || xKey === "승률";
+        const isYPercent = yKey === "픽률" || yKey === "승률";
+
         Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
 
         myChart = new Chart(ctx, {
@@ -198,9 +201,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             text: xKey
                         },
                         ticks: {
-                            callback: value => xKey === "픽률" ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: 0.005
-                        }
+                            callback: value => isXPercent ? (value * 100).toFixed(1) + '%' : value,
+                            stepSize: isXPercent ? 0.01 : 1
+                        },
+                        min: isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100 : Math.floor(Math.min(...xValues)) - 1,
+                        max: isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100 : Math.ceil(Math.max(...xValues)) + 1
                     },
                     y: {
                         type: 'linear',
@@ -210,11 +215,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             text: yKey
                         },
                         ticks: {
-                            callback: value => yKey === "픽률" ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: 1
+                            callback: value => isYPercent ? (value * 100).toFixed(1) + '%' : value,
+                            stepSize: isYPercent ? 0.01 : 1
                         },
-                        min: Math.floor(Math.min(...yValues)) - 1,
-                        max: Math.ceil(Math.max(...yValues)) + 1
+                        min: isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100 : Math.floor(Math.min(...yValues)) - 1,
+                        max: isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100 : Math.ceil(Math.max(...yValues)) + 1
                     }
                 }
             }
