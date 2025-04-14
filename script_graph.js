@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const canvas = document.getElementById('pickRateRPChart');
 
-    // ==================== 공통 플러그인 ====================
     const labelPlugin = {
         id: 'labelPlugin',
         afterDatasetsDraw(chart) {
@@ -110,23 +109,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const isXPercent = xKey === "픽률" || xKey === "승률";
         const isYPercent = yKey === "픽률" || yKey === "승률";
 
-        // ✅ 픽률: xMin 고정 0, max는 0.25 단위 올림
         const xMin = xKey === "픽률" ? 0
             : isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100
-            : Math.floor(Math.min(...xValues)) - 1;
+            : Math.floor(Math.min(...xValues)); // RP일 경우 9.6 → 9
+
         const xMax = xKey === "픽률"
-            ? Math.ceil(Math.max(...xValues) * 400) / 400  // 0.0025 단위 올림
+            ? Math.ceil(Math.max(...xValues) * 500) / 500  // ✅ 0.002 단위 → 0.2%
             : isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100
-            : Math.ceil(Math.max(...xValues)) + 1;
+            : Math.ceil(Math.max(...xValues)); // RP일 경우 20.6 → 21
 
         const yMin = yKey === "픽률"
             ? 0
             : isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100
-            : Math.floor(Math.min(...yValues)) - 1;
+            : Math.floor(Math.min(...yValues));
+
         const yMax = yKey === "픽률"
-            ? Math.ceil(Math.max(...yValues) * 400) / 400
+            ? Math.ceil(Math.max(...yValues) * 500) / 500
             : isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100
-            : Math.ceil(Math.max(...yValues)) + 1;
+            : Math.ceil(Math.max(...yValues));
 
         Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
 
@@ -150,14 +150,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
-                        const 기준크기 = 20; // ✅ 원 크기 기준 확대
-                        const 최소크기 = 4;
+                        const 기준크기 = 30; // ✅ 원 크기 크게 확대
+                        const 최소크기 = 6;
 
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
                     },
-                    pointHoverRadius: 8
+                    pointHoverRadius: 10
                 }]
             },
             options: {
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => isXPercent ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: xKey === "픽률" ? 0.002 : isXPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
+                            stepSize: xKey === "픽률" ? 0.002 : isXPercent ? 0.01 : 1 // ✅ 0.2% 단위
                         },
                         min: xMin,
                         max: xMax
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => isYPercent ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: yKey === "픽률" ? 0.002 : isYPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
+                            stepSize: yKey === "픽률" ? 0.002 : isYPercent ? 0.01 : 1
                         },
                         min: yMin,
                         max: yMax
