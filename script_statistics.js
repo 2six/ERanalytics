@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             return {
                 "실험체": item["실험체"],
-                "점수": 보정점수,
+                "점수": 보정점수.toFixed(2),  // ✅ 소숫점 2자리 고정
                 "티어": tier,
                 "픽률": (pickRate * 100).toFixed(2) + '%',
                 "RP 획득": item["RP 획득"].toFixed(1), // ✅ 소숫점 1자리까지
