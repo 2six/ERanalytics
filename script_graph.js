@@ -110,17 +110,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const isXPercent = xKey === "픽률" || xKey === "승률";
         const isYPercent = yKey === "픽률" || yKey === "승률";
 
-        const xMin = isXPercent
-            ? Math.floor(Math.min(...xValues) * 100) / 100
+        // ✅ 픽률: xMin 고정 0, max는 0.25 단위 올림
+        const xMin = xKey === "픽률" ? 0
+            : isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100
             : Math.floor(Math.min(...xValues)) - 1;
-        const xMax = isXPercent
-            ? Math.ceil(Math.max(...xValues) * 100) / 100
+        const xMax = xKey === "픽률"
+            ? Math.ceil(Math.max(...xValues) * 400) / 400  // 0.0025 단위 올림
+            : isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100
             : Math.ceil(Math.max(...xValues)) + 1;
-        const yMin = isYPercent
-            ? Math.floor(Math.min(...yValues) * 100) / 100
+
+        const yMin = yKey === "픽률"
+            ? 0
+            : isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100
             : Math.floor(Math.min(...yValues)) - 1;
-        const yMax = isYPercent
-            ? Math.ceil(Math.max(...yValues) * 100) / 100
+        const yMax = yKey === "픽률"
+            ? Math.ceil(Math.max(...yValues) * 400) / 400
+            : isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100
             : Math.ceil(Math.max(...yValues)) + 1;
 
         Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
@@ -145,8 +150,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
-                        const 기준크기 = 15;
-                        const 최소크기 = 2;
+                        const 기준크기 = 20; // ✅ 원 크기 기준 확대
+                        const 최소크기 = 4;
 
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
@@ -212,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => isXPercent ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: isXPercent ? 0.01 : 1
+                            stepSize: xKey === "픽률" ? 0.0025 : isXPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
                         },
                         min: xMin,
                         max: xMax
@@ -226,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => isYPercent ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: isYPercent ? 0.01 : 1
+                            stepSize: yKey === "픽률" ? 0.0025 : isYPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
                         },
                         min: yMin,
                         max: yMax
@@ -262,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
             chartData = data;
             setupGraphPopup();
             setupGraphTabs();
-            document.querySelector('[data-type="pick-rp"]').click(); // 기본 그래프 표시
+            document.querySelector('[data-type="pick-rp"]').click(); // 기본 그래프
         })
         .catch(error => {
             console.error('data.json 파일을 불러오는 중 오류 발생:', error);
