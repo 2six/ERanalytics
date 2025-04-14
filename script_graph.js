@@ -158,7 +158,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
                     },
                     pointHoverRadius: function(context) {
-                        return this.pointRadius(context);
+                        const val = radiusValues[context.dataIndex];
+                        const min = Math.min(...radiusValues);
+                        const max = Math.max(...radiusValues);
+                        const 기준크기 = 30; // ✅ 원 크기 크게 확대
+                        const 최소크기 = 6;
+
+                        if (max === min) return 기준크기;
+                        const 비율 = (val - min) / (max - min);
+                        return 최소크기 + 비율 * (기준크기 - 최소크기);
                     }
                 }]
             },

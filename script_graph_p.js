@@ -156,8 +156,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         return max === min ? 기준크기 : 최소크기 + ((val - min) / (max - min)) * (기준크기 - 최소크기);
                     },
                     pointHoverRadius: function(context) {
-                        // pointRadius와 동일한 로직 재사용
-                        return this.pointRadius(context);
+                        const val = radiusValues[context.dataIndex];
+                        const min = Math.min(...radiusValues);
+                        const max = Math.max(...radiusValues);
+                        const 기준크기 = 30;
+                        const 최소크기 = 6;
+                        return max === min ? 기준크기 : 최소크기 + ((val - min) / (max - min)) * (기준크기 - 최소크기);
                     }
                 }]
             },
