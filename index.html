@@ -174,6 +174,43 @@
     
     <!-- 뷰 전환을 위한 간단한 스크립트 -->
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 차트 플러그인 오버라이드 (기존 코드 보존)
+            const originalCornerTextPlugin = {
+                id: 'cornerTextPlugin',
+                afterDraw(chart) {
+                    const { ctx, chartArea } = chart;
+                    const left = chartArea.left;
+                    const top = chartArea.top;
+                    const right = chartArea.right;
+        
+                    // 기본값 설정 (오류 방지)
+                    const safeValue = (value, defaultValue = 0) => 
+                        (value !== undefined && value !== null) ? value : defaultValue;
+        
+                    ctx.save();
+                    ctx.font = '14px sans-serif';
+                    ctx.fillStyle = 'black';
+        
+                    ctx.textAlign = 'left';
+                    ctx.fillText(safeValue(chart.config._제목, ''), left + 10, top + 20);
+        
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`평균 픽률: ${(safeValue(chart.config._평균픽률) * 100).toFixed(2)}%`, right - 10, top + 20);
+                    ctx.fillText(`평균 RP: ${safeValue(chart.config._가중평균RP).toFixed(1)}`, right - 10, top + 40);
+                    ctx.fillText(`평균 승률: ${(safeValue(chart.config._가중평균승률) * 100).toFixed(2)}%`, right - 10, top + 60);
+        
+                    ctx.restore();
+                }
+            };
+        
+            // 기존 플러그인 덮어쓰기
+            Chart.register(originalCornerTextPlugin);
+            
+            // 나머지 기존 코드...
+        });
+        </script>
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
         const graphTabs = document.querySelectorAll('.graph-tab');
         const tierTableBtn = document.getElementById('tier-table-button');
