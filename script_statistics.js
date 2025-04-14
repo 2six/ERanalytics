@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const line of lines) {
             const trimmedLine = line.trim();
             if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) {
-                continue; // 빈 줄 또는 주석 무시
+                continue;
             }
 
             const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentSection) {
                     config[currentSection][key] = value;
                 } else {
-                    config[key] = value; // 섹션 없는 키-값 쌍 처리 (선택 사항)
+                    config[key] = value;
                 }
             }
         }
@@ -55,7 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function calculateAndSortScores(data, tierConfig) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
+        const averagePickRate = totalSampleCount > 0
+            ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length)
+            : 0;
 
         let weightedSumRP = 0;
         let weightedSumWinRate = 0;
@@ -72,7 +74,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const averageTop3 = weightedSumTop3;
 
         const averageScore = (Math.log(averageRP + 1) * 3) + (averageWinRate * 9) + (averageTop3 * 3);
-
         const k = 1.5;
 
         const scoredData = data.map(item => {
@@ -105,15 +106,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 "점수": 보정점수,
                 "티어": tier,
                 "픽률": (pickRate * 100).toFixed(2) + '%',
-                "RP 획득": item["RP 획득"],
-                "승률": item["승률"],
-                "TOP 3": item["TOP 3"],
-                "평균 순위": item["평균 순위"]
+                "RP 획득": item["RP 획득"].toFixed(1), // ✅ 소숫점 1자리까지
+                "승률": (item["승률"] * 100).toFixed(2) + '%', // ✅ 퍼센트 변환
+                "TOP 3": (item["TOP 3"] * 100).toFixed(2) + '%', // ✅ 퍼센트 변환
+                "평균 순위": item["평균 순위"].toFixed(1)
             };
         });
 
-        scoredData.sort((a, b) => b.점수 - a.점수); // 점수 내림차순 정렬
-
+        scoredData.sort((a, b) => b.점수 - a.점수);
         return scoredData;
     }
 
@@ -149,15 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data.forEach(item => {
             html += '<tr>';
             columnsToShow.forEach(column => {
-                let value = item[column];
-                if (typeof value === 'number') {
-                    if (column === "평균 순위") {
-                        value = value.toFixed(1);
-                    } else {
-                        value = value.toFixed(2);
-                    }
-                }
-                html += `<td>${value}</td>`;
+                html += `<td>${item[column]}</td>`;
             });
             html += '</tr>';
         });
