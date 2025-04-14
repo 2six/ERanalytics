@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => isXPercent ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: xKey === "픽률" ? 0.0025 : isXPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
+                            stepSize: xKey === "픽률" ? 0.002 : isXPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
                         },
                         min: xMin,
                         max: xMax
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         ticks: {
                             callback: value => isYPercent ? (value * 100).toFixed(1) + '%' : value,
-                            stepSize: yKey === "픽률" ? 0.0025 : isYPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
+                            stepSize: yKey === "픽률" ? 0.002 : isYPercent ? 0.01 : 1 // ✅ 픽률 0.25%, 승률 1%
                         },
                         min: yMin,
                         max: yMax
