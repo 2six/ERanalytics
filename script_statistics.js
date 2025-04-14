@@ -28,9 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const lines = iniString.split('\n');
         for (const line of lines) {
             const trimmedLine = line.trim();
-            if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) {
-                continue;
-            }
+            if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) continue;
 
             const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
             if (sectionMatch) {
@@ -51,6 +49,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return config;
+    }
+
+    function getRPScore(rp) {
+        if (rp >= 0) {
+            return Math.log(rp + 1) * 3;
+        } else {
+            return -Math.log(-rp + 1) * 2;
+        }
     }
 
     function calculateAndSortScores(data, tierConfig) {
@@ -88,27 +94,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
 
+            const rpScore = getRPScore(item["RP 획득"]);
+
             let 보정점수;
             if (item["표본수"] < totalSampleCount * averagePickRate) {
                 보정점수 = (
-                    (Math.log(item["RP 획득"] + 1) * 3) + (item["승률"] * 9) + (item["TOP 3"] * 3)
+                    rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)
                 ) * (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
                 averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
                 보정점수 *= 픽률보정계수;
             } else {
-                보정점수 = ((Math.log(item["RP 획득"] + 1) * 3) + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
+                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
             const tier = calculateTier(보정점수, averageScore, tierConfig);
 
             return {
                 "실험체": item["실험체"],
-                "점수": 보정점수.toFixed(2),  // ✅ 소숫점 2자리 고정
+                "점수": 보정점수.toFixed(2),
                 "티어": tier,
                 "픽률": (pickRate * 100).toFixed(2) + '%',
-                "RP 획득": item["RP 획득"].toFixed(1), // ✅ 소숫점 1자리까지
-                "승률": (item["승률"] * 100).toFixed(2) + '%', // ✅ 퍼센트 변환
-                "TOP 3": (item["TOP 3"] * 100).toFixed(2) + '%', // ✅ 퍼센트 변환
+                "RP 획득": item["RP 획득"].toFixed(1),
+                "승률": (item["승률"] * 100).toFixed(2) + '%',
+                "TOP 3": (item["TOP 3"] * 100).toFixed(2) + '%',
                 "평균 순위": item["평균 순위"].toFixed(1)
             };
         });
@@ -119,21 +127,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function calculateTier(score, averageScore, config) {
         const diff = score - averageScore;
-        if (diff > averageScore * parseFloat(config["S+"])) {
-            return "S+";
-        } else if (diff > averageScore * parseFloat(config["S"])) {
-            return "S";
-        } else if (diff > averageScore * parseFloat(config["A"])) {
-            return "A";
-        } else if (diff > averageScore * parseFloat(config["B"])) {
-            return "B";
-        } else if (diff > averageScore * parseFloat(config["C"])) {
-            return "C";
-        } else if (diff > averageScore * parseFloat(config["D"])) {
-            return "D";
-        } else {
-            return "F";
-        }
+        if (diff > averageScore * parseFloat(config["S+"])) return "S+";
+        if (diff > averageScore * parseFloat(config["S"])) return "S";
+        if (diff > averageScore * parseFloat(config["A"])) return "A";
+        if (diff > averageScore * parseFloat(config["B"])) return "B";
+        if (diff > averageScore * parseFloat(config["C"])) return "C";
+        if (diff > averageScore * parseFloat(config["D"])) return "D";
+        return "F";
     }
 
     function displaySelectedData(data) {
