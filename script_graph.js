@@ -157,7 +157,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         const 비율 = (val - min) / (max - min);
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
                     },
-                    pointHoverRadius: 10
+                    pointHoverRadius: function(context) {
+                        return this.pointRadius(context);
+                    }
                 }]
             },
             options: {

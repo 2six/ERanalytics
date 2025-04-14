@@ -155,6 +155,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         const 기준크기 = 30;
                         const 최소크기 = 6;
                         return max === min ? 기준크기 : 최소크기 + ((val - min) / (max - min)) * (기준크기 - 최소크기);
+                    },
+                    pointHoverRadius: function(context) {
+                        return this.pointRadius(context);
                     }
                 }]
             },
