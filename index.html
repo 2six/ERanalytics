@@ -20,20 +20,24 @@
         
         /* 그래프 스타일 */
         #graph-container {
+            width: 1865px !important;
+            height: 900px !important;
+            overflow: hidden !important;
+            resize: none !important;
             margin-bottom: 20px;
         }
         #pickRateRPChart {
+            width: 1865px !important;
+            height: 900px !important;
+            min-width: 1865px !important;
+            min-height: 900px !important;
             display: block;
             margin-top: 10px;
-            width: 100%;
-            height: auto;
-            max-height: 900px;
-            max-width: 100%;
         }
         
         /* 티어표 스타일 */
         #tier-table-container {
-            display: none; /* 처음에는 숨김 */
+            display: none;
             margin-top: 20px;
         }
         .tier-table {
@@ -52,13 +56,13 @@
             white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
-        .tier-row th:first-child { background-color: rgb(255, 127, 127); } /* S+ */
-        .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); } /* S */
-        .tier-row:nth-child(3) th:first-child { background-color: rgb(255, 223, 127); } /* A */
-        .tier-row:nth-child(4) th:first-child { background-color: rgb(255, 255, 127); } /* B */
-        .tier-row:nth-child(5) th:first-child { background-color: rgb(191, 255, 127); } /* C */
-        .tier-row:nth-child(6) th:first-child { background-color: rgb(127, 255, 127); } /* D */
-        .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); } /* F */
+        .tier-row th:first-child { background-color: rgb(255, 127, 127); }
+        .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); }
+        .tier-row:nth-child(3) th:first-child { background-color: rgb(255, 223, 127); }
+        .tier-row:nth-child(4) th:first-child { background-color: rgb(255, 255, 127); }
+        .tier-row:nth-child(5) th:first-child { background-color: rgb(191, 255, 127); }
+        .tier-row:nth-child(6) th:first-child { background-color: rgb(127, 255, 127); }
+        .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); }
         .tier-row td {
             padding: 0px;
             border: 1px solid white;
@@ -79,7 +83,7 @@
             cursor: pointer;
         }
         
-        /* 팝업 스타일 */
+        /* 팝업 스타일 (수정됨) */
         .image-popup {
             display: none;
             position: fixed;
@@ -89,7 +93,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.9);
         }
         .image-popup-content {
             display: block;
@@ -106,18 +110,49 @@
             font-size: 40px;
             font-weight: bold;
             cursor: pointer;
+            z-index: 1001;
         }
-        #graph-container {
-        width: 1865px !important;
-        height: 900px !important;
-        overflow: hidden !important;
-        resize: none !important;
+        .image-popup-close:hover {
+            color: #ddd;
         }
-        #pickRateRPChart {
-            width: 1865px !important;
-            height: 900px !important;
-            min-width: 1865px !important;
-            min-height: 900px !important;
+        
+        /* 버튼 스타일 */
+        .button-group {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .button-group button {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .graph-tab {
+            background-color: #f0f0f0;
+        }
+        .graph-tab.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tier-table-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .tier-table-btn.active {
+            background-color: #0b7dda;
+        }
+        #popup-button {
+            padding: 10px 20px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -130,7 +165,6 @@
     </header>
 
     <main>
-        <!-- 그래프/티어표 전환 탭 -->
         <div class="button-group">
             <button class="graph-tab active" data-type="pick-rp">픽률 / RP 획득</button>
             <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
@@ -138,78 +172,83 @@
             <button class="tier-table-btn" id="tier-table-button">티어표</button>
         </div>
         
-        <!-- 그래프 영역 -->
         <div id="graph-container">
-            <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
+            <canvas id="pickRateRPChart" width="1865" height="900"></canvas>
         </div>
         
-        <!-- 티어표 영역 -->
         <div id="tier-table-container" style="display: none;"></div>
         
-        <!-- 이미지 팝업 -->
         <div id="image-popup" class="image-popup">
             <span class="image-popup-close">&times;</span>
             <img class="image-popup-content" id="popup-image" alt="팝업 이미지">
         </div>
         
-        <!-- 팝업 버튼 -->
         <button id="popup-button">이미지 팝업</button>
     </main>
 
     <footer>
         <p>© 2025 나만의 실험체 통계</p>
     </footer>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 차트 플러그인 오버라이드 (기존 코드 보존)
-        const originalCornerTextPlugin = {
-            id: 'cornerTextPlugin',
-            afterDraw(chart) {
-                const { ctx, chartArea } = chart;
-                const left = chartArea.left;
-                const top = chartArea.top;
-                const right = chartArea.right;
-    
-                // 기본값 설정 (오류 방지)
-                const safeValue = (value, defaultValue = 0) => 
-                    (value !== undefined && value !== null) ? value : defaultValue;
-    
-                ctx.save();
-                ctx.font = '14px sans-serif';
-                ctx.fillStyle = 'black';
-    
-                ctx.textAlign = 'left';
-                ctx.fillText(safeValue(chart.config._제목, ''), left + 10, top + 20);
-    
-                ctx.textAlign = 'right';
-                ctx.fillText(`평균 픽률: ${(safeValue(chart.config._평균픽률) * 100).toFixed(2)}%`, right - 10, top + 20);
-                ctx.fillText(`평균 RP: ${safeValue(chart.config._가중평균RP).toFixed(1)}`, right - 10, top + 40);
-                ctx.fillText(`평균 승률: ${(safeValue(chart.config._가중평균승률) * 100).toFixed(2)}%`, right - 10, top + 60);
-    
-                ctx.restore();
-            }
-        };
-    
-        // 기존 플러그인 덮어쓰기
-        Chart.register(originalCornerTextPlugin);
-        
-        // 나머지 기존 코드...
-    });
+    // 차트 플러그인 안전화
+    const safeCornerTextPlugin = {
+        id: 'safeCornerTextPlugin',
+        afterDraw(chart) {
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return;
+            
+            const safeValue = (val, def = 0) => (val !== undefined && val !== null) ? val : def;
+            
+            ctx.save();
+            ctx.font = '14px sans-serif';
+            ctx.fillStyle = 'black';
+            
+            ctx.textAlign = 'left';
+            ctx.fillText(safeValue(chart.config._제목, ''), chartArea.left + 10, chartArea.top + 20);
+            
+            ctx.textAlign = 'right';
+            ctx.fillText(`평균 픽률: ${(safeValue(chart.config._평균픽률) * 100).toFixed(2)}%`, chartArea.right - 10, chartArea.top + 20);
+            ctx.fillText(`평균 RP: ${safeValue(chart.config._가중평균RP).toFixed(1)}`, chartArea.right - 10, chartArea.top + 40);
+            ctx.fillText(`평균 승률: ${(safeValue(chart.config._가중평균승률) * 100).toFixed(2)}%`, chartArea.right - 10, chartArea.top + 60);
+            
+            ctx.restore();
+        }
+    };
+    Chart.register(safeCornerTextPlugin);
     </script>
 
-    <!-- 분리된 JavaScript 파일 참조 -->
     <script src="script_graph.js"></script>
     <script src="script_tier_table.js"></script>
     
-    <!-- 뷰 전환을 위한 간단한 스크립트 -->
-     
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 요소 선택
         const graphTabs = document.querySelectorAll('.graph-tab');
         const tierTableBtn = document.getElementById('tier-table-button');
         const graphContainer = document.getElementById('graph-container');
         const tierTableContainer = document.getElementById('tier-table-container');
         const popupButton = document.getElementById('popup-button');
+        const popup = document.getElementById('image-popup');
+        const popupImage = document.getElementById('popup-image');
+        const closeButton = document.querySelector('.image-popup-close');
+
+        // 팝업 닫기 함수
+        function closePopup() {
+            popup.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // 닫기 이벤트 설정
+        closeButton.addEventListener('click', closePopup);
+        popup.addEventListener('click', function(e) {
+            if (e.target === popup) closePopup();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && popup.style.display === 'block') {
+                closePopup();
+            }
+        });
 
         // 뷰 전환 함수
         function switchToGraph() {
@@ -228,48 +267,37 @@
             popupButton.textContent = '티어표 이미지 팝업';
         }
 
-        // 그래프 탭 버튼 이벤트
+        // 버튼 이벤트
         graphTabs.forEach(tab => {
             tab.addEventListener('click', function() {
                 switchToGraph();
                 this.classList.add('active');
-                // 기존의 그래프 전환 로직은 script_graph.js에서 처리
+            });
+        });
+        tierTableBtn.addEventListener('click', switchToTierTable);
+
+        // 팝업 버튼 이벤트
+        popupButton.addEventListener('click', function() {
+            const target = graphContainer.style.display !== 'none' 
+                ? document.getElementById('pickRateRPChart') 
+                : document.querySelector('.tier-table');
+            
+            if (!target) return;
+            
+            html2canvas(target, {
+                scale: 1,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                popupImage.src = canvas.toDataURL();
+                popup.style.display = 'block';
+                document.body.style.overflow = 'hidden';
             });
         });
 
-        // 티어표 버튼 이벤트
-        tierTableBtn.addEventListener('click', switchToTierTable);
-
-        // 팝업 버튼 이벤트 (기존과 동일)
-        popupButton.addEventListener('click', function() {
-            const popup = document.getElementById('image-popup');
-            const popupImage = document.getElementById('popup-image');
-            
-            if (graphContainer.style.display !== 'none') {
-                // 그래프 캡처
-                html2canvas(document.getElementById('pickRateRPChart')).then(canvas => {
-                    popup.style.display = 'block';
-                    popupImage.src = canvas.toDataURL();
-                    popupImage.alt = '그래프 이미지';
-                });
-            } else {
-                // 티어표 캡처
-                const tierTable = tierTableContainer.querySelector('.tier-table');
-                if (tierTable) {
-                    html2canvas(tierTable, {
-                        width: tierTable.offsetWidth,
-                        scrollX: 0,
-                        scrollY: 0,
-                        windowWidth: tierTable.offsetWidth,
-                        windowHeight: tierTable.offsetHeight
-                    }).then(canvas => {
-                        popup.style.display = 'block';
-                        popupImage.src = canvas.toDataURL();
-                        popupImage.alt = '티어표 이미지';
-                    });
-                }
-            }
-        });
+        // 초기화
+        switchToGraph();
+        document.querySelector('.graph-tab.active').click();
     });
     </script>
 </body>
