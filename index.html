@@ -109,16 +109,22 @@
         }
         
         /* 탭 버튼 스타일 */
-        .tab-buttons {
+        .button-group {
             margin-bottom: 10px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
         }
-        .tab-buttons button {
+        .button-group button {
             padding: 8px 16px;
-            margin-right: 5px;
             cursor: pointer;
         }
-        .tab-buttons button.active {
+        .button-group button.active {
             background-color: #4CAF50;
+            color: white;
+        }
+        .button-group button.tier-table-btn {
+            background-color: #2196F3;
             color: white;
         }
     </style>
@@ -128,39 +134,25 @@
 </head>
 <body>
     <header>
-        <nav>
-            <ul>
-                <li><a href="index.html">홈</a></li>
-                <li><a href="statistics.html">실험체 통계</a></li>
-                <li><a href="tier_table.html">티어표</a></li>
-                <li><a href="graph.html">그래프</a></li>
-            </ul>
-        </nav>
-        <h1>통합 그래프 & 티어표</h1>
+        <h1>그래프 & 티어표</h1>
     </header>
 
     <main>
         <!-- 그래프/티어표 전환 탭 -->
-        <div class="tab-buttons">
-            <button id="graph-tab-btn" class="active">그래프 보기</button>
-            <button id="tier-table-tab-btn">티어표 보기</button>
+        <div class="button-group">
+            <button class="graph-tab active" data-type="pick-rp">픽률 / RP 획득</button>
+            <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
+            <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
+            <button class="tier-table-btn" id="tier-table-button">티어표</button>
         </div>
         
         <!-- 그래프 영역 -->
         <div id="graph-container">
-            <!-- 그래프 전환 탭 -->
-            <div style="margin-bottom: 10px;">
-                <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
-                <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
-                <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
-            </div>
-        
-            <!-- 그래프 캔버스 -->
             <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
         </div>
         
         <!-- 티어표 영역 -->
-        <div id="tier-table-container"></div>
+        <div id="tier-table-container" style="display: none;"></div>
         
         <!-- 이미지 팝업 -->
         <div id="image-popup" class="image-popup">
@@ -183,34 +175,42 @@
     <!-- 뷰 전환을 위한 간단한 스크립트 -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const graphTabBtn = document.getElementById('graph-tab-btn');
-        const tierTableTabBtn = document.getElementById('tier-table-tab-btn');
+        const graphTabs = document.querySelectorAll('.graph-tab');
+        const tierTableBtn = document.getElementById('tier-table-button');
         const graphContainer = document.getElementById('graph-container');
         const tierTableContainer = document.getElementById('tier-table-container');
         const popupButton = document.getElementById('popup-button');
 
         // 뷰 전환 함수
-        function switchView(view) {
-            if (view === 'graph') {
-                graphContainer.style.display = 'block';
-                tierTableContainer.style.display = 'none';
-                graphTabBtn.classList.add('active');
-                tierTableTabBtn.classList.remove('active');
-                popupButton.textContent = '그래프 이미지 팝업';
-            } else {
-                graphContainer.style.display = 'none';
-                tierTableContainer.style.display = 'block';
-                graphTabBtn.classList.remove('active');
-                tierTableTabBtn.classList.add('active');
-                popupButton.textContent = '티어표 이미지 팝업';
-            }
+        function switchToGraph() {
+            graphContainer.style.display = 'block';
+            tierTableContainer.style.display = 'none';
+            graphTabs.forEach(tab => tab.classList.remove('active'));
+            tierTableBtn.classList.remove('active');
+            popupButton.textContent = '그래프 이미지 팝업';
         }
 
-        // 탭 버튼 이벤트 리스너
-        graphTabBtn.addEventListener('click', () => switchView('graph'));
-        tierTableTabBtn.addEventListener('click', () => switchView('table'));
+        function switchToTierTable() {
+            graphContainer.style.display = 'none';
+            tierTableContainer.style.display = 'block';
+            graphTabs.forEach(tab => tab.classList.remove('active'));
+            tierTableBtn.classList.add('active');
+            popupButton.textContent = '티어표 이미지 팝업';
+        }
 
-        // 팝업 버튼 이벤트 리스너
+        // 그래프 탭 버튼 이벤트
+        graphTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                switchToGraph();
+                this.classList.add('active');
+                // 기존의 그래프 전환 로직은 script_graph.js에서 처리
+            });
+        });
+
+        // 티어표 버튼 이벤트
+        tierTableBtn.addEventListener('click', switchToTierTable);
+
+        // 팝업 버튼 이벤트 (기존과 동일)
         popupButton.addEventListener('click', function() {
             const popup = document.getElementById('image-popup');
             const popupImage = document.getElementById('popup-image');
