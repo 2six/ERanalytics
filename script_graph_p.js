@@ -141,10 +141,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         label: item["실험체"],
                         승률: item["승률"]
                     })),
-                    backgroundColor: function (context) {
-                        const index = context.dataIndex;
-                        const hue = (index * 360 / chartData.length) % 360;
-                        return `hsl(${hue}, 60%, 70%, 0.8)`;
+                    backgroundColor: function(context) {
+                        const vibrantColors = [
+                            '#FF0000', '#00FF00', '#0000FF', '#FFD700',
+                            '#FF00FF', '#00FFFF', '#FF8C00', '#32CD32'
+                        ];
+                        return vibrantColors[context.dataIndex % vibrantColors.length];
                     },
                     pointRadius: function (context) {
                         const val = radiusValues[context.dataIndex];
