@@ -148,7 +148,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         return `hsl(${hue}, 65%, 60%, 0.8)`; // 채도 65%, 명도 60%
                     },
                     pointRadius: function(context) {
-                        // 기존 radius 계산 로직 유지
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
@@ -157,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         return max === min ? 기준크기 : 최소크기 + ((val - min) / (max - min)) * (기준크기 - 최소크기);
                     },
                     pointHoverRadius: function(context) {
+                        // pointRadius와 동일한 로직 재사용
                         return this.pointRadius(context);
                     }
                 }]
