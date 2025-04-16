@@ -1,23 +1,24 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     fetch('temp.json')
         .then(response => response.json())
-        .then(data => {
+        .then(json => {
+            const entries = json["데이터"]; // ✅ 핵심 데이터만 추출
             fetch('config.ini')
                 .then(response => response.text())
                 .then(iniString => {
                     const parsedConfig = parseINI(iniString);
                     const tierConfig = parsedConfig.tiers;
-                    const sortedData = calculateAndSortScores(data, tierConfig);
+                    const sortedData = calculateAndSortScores(entries, tierConfig);
                     displaySelectedData(sortedData);
                 })
                 .catch(error => {
                     console.error('config.ini 파일을 불러오는 중 오류 발생:', error);
-                    const sortedData = calculateAndSortScores(data, {});
+                    const sortedData = calculateAndSortScores(entries, {});
                     displaySelectedData(sortedData);
                 });
         })
         .catch(error => {
-            console.error('data.json 파일을 불러오는 중 오류 발생:', error);
+            console.error('temp.json 파일을 불러오는 중 오류 발생:', error);
             document.getElementById('data-container').innerText = '데이터를 불러오는 데 실패했습니다.';
         });
 
@@ -86,12 +87,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const pickRate = (item["표본수"] / totalSampleCount);
             const r = pickRate / averagePickRate;
 
-            const 원점반영 = r <= 1/3 ?
+            const 원점반영 = r <= 1 / 3 ?
                 (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))) :
-                (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)));
+                (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
 
             const 평균반영 = 1 - 원점반영;
-
             const 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
 
             const rpScore = getRPScore(item["RP 획득"]);
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 보정점수 = (
                     rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)
                 ) * (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
-                averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
+                    averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
                 보정점수 *= 픽률보정계수;
             } else {
                 보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
