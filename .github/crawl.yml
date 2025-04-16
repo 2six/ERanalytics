@@ -1,0 +1,36 @@
+name: Crawl Dak.gg
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 매일 오전 3시 UTC (한국 시간 12시)
+  workflow_dispatch:      # 수동 실행도 가능하게 함
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v3
+
+      - name: 파이썬 설치
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install --with-deps
+
+      - name: 크롤링 실행
+        run: python crawl_dakgg.py
+
+      - name: 결과 파일 커밋 및 푸시
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add temp.json
+          git commit -m "자동 업데이트: temp.json"
+          git push
