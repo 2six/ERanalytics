@@ -23,9 +23,10 @@ def main():
         버전 = 버전_요소.get_text(strip=True) if 버전_요소 else "알 수 없음"
 
         # 티어 정보 추출
-        티어_요소 = soup.select_one("details:nth-of-type(2) summary img")
-        티어 = 티어_요소.get("alt", "알 수 없음") if 티어_요소 else "알 수 없음"
+        티어_요소 = soup.select_one("details:nth-of-type(2) summary .css-1ddaams")
+        티어 = 티어_요소.get_text(strip=True) if 티어_요소 else "알 수 없음"
 
+        
         data = []
         for row in rows:
             cols = row.select("td")
