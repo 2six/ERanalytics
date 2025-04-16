@@ -2,8 +2,8 @@ name: Crawl Dak.gg
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # 매일 오전 3시 UTC (한국 시간 12시)
-  workflow_dispatch:      # 수동 실행도 가능하게 함
+    - cron: '0 3 * * *'
+  workflow_dispatch:
 
 jobs:
   crawl:
@@ -13,7 +13,7 @@ jobs:
       - name: 저장소 체크아웃
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # ✅ 푸시 권한 포함
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 파이썬 설치
         uses: actions/setup-python@v4
@@ -33,9 +33,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add temp.json
+          git add data/
           git diff --cached --quiet && echo "변경사항 없음, 푸시 생략" || (
-            git commit -m "자동 업데이트: temp.json"
+            git commit -m "자동 업데이트: 크롤링 결과"
             git push
           )
-
