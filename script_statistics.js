@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    fetch('data.json')
+    fetch('temp.json')
         .then(response => response.json())
         .then(data => {
             fetch('config.ini')
