@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: 저장소 체크아웃
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}  # ✅ 푸시 권한 포함
 
       - name: 파이썬 설치
         uses: actions/setup-python@v4
@@ -29,8 +31,8 @@ jobs:
 
       - name: 결과 파일 커밋 및 푸시
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add temp.json
-          git commit -m "자동 업데이트: temp.json"
+          git commit -m "자동 업데이트: temp.json" || echo "변경사항 없음"
           git push
