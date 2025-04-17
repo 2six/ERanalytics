@@ -93,7 +93,7 @@ function calculateAndSortScores(data, tierConfig) {
         const r = pickRate / averagePickRate;
         const 원점반영 = r <= 1 / 3
             ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
-            : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k));
+            : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
         const 평균반영 = 1 - 원점반영;
         const 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
         const rpScore = getRPScore(item["RP 획득"]);
