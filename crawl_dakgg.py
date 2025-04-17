@@ -5,7 +5,10 @@ from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 
 def parse_percentage(value: str) -> float:
-    return float(value.strip().replace('%', '')) / 100
+    # '-'가 포함되어 있으면 0.0으로 처리
+    if '-' in value:
+        return 0.0
+    return float(value.strip().replace('%', '').split()[0]) / 100
 
 def crawl_tier_data(tier_key: str, display_name: str):
     with sync_playwright() as p:
