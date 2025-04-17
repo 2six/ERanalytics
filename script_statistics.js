@@ -19,13 +19,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function initDropdowns(versionsData) {
-        const sortedVersions = Object.keys(versionsData).sort().reverse();
-        sortedVersions.forEach(v => versionSelect.innerHTML += `<option value="${v}">${v}</option>`);
-
+        // versionsData가 배열이라고 가정하고 그대로 반복
+        versionsData.sort().reverse().forEach(v => {
+            versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
+        });
+    
         ['platinum_plus', 'diamond_plus', 'meteorite_plus', 'mithril_plus', 'in1000'].forEach(tier => {
             tierSelect.innerHTML += `<option value="${tier}">${tier}</option>`;
         });
-
+    
         periodSelect.innerHTML = `
             <option value="latest">버전 전체</option>
             <option value="3day">최근 3일</option>
