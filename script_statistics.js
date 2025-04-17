@@ -1,4 +1,4 @@
-""document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
     const periodSelect = document.getElementById('period-select');
