@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
         iniString.split('\n').forEach(line => {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return;
-            const section = trimmed.match(/^(.*)$/);
+            const section = trimmed.match(/^\[(.*)\]$/);  // ✅ 정확한 정규식
             if (section) {
                 currentSection = section[1];
                 config[currentSection] = {};
