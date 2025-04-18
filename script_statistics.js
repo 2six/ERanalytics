@@ -93,7 +93,7 @@ function calculateAndSortScores(data, tierConfig) {
         const base = getRPScore(d["RP 획득"]) + d["승률"] * 9 + d["TOP 3"] * 3;
         const 원점 = r <= 1 / 3
             ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
-            : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k));
+            : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
         const 평균 = 1 - 원점;
         const 보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
 
