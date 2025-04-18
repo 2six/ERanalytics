@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
     const periodSelect = document.getElementById('period-select');
-    const loadButton = document.getElementById('load-button');
+    const gradientCheckbox = document.getElementById('gradient-checkbox');
 
     Promise.all([
         fetch('config.ini').then(r => r.text()),
@@ -11,28 +11,32 @@ document.addEventListener('DOMContentLoaded', function () {
         const tierConfig = parseINI(iniString).tiers;
         initDropdowns(versionList);
 
-        loadButton.addEventListener('click', () => {
-            const version = versionSelect.value;
-            const tier = tierSelect.value;
-            const period = periodSelect.value;
-            loadAndRender(version, tier, period, tierConfig);
+        // 드롭다운 값이 바뀌면 자동으로 불러오기
+        [versionSelect, tierSelect, periodSelect].forEach(select => {
+            select.addEventListener('change', () => {
+                loadAndRender(versionSelect.value, tierSelect.value, periodSelect.value, tierConfig);
+            });
         });
+
+        // 초기 로드
+        loadAndRender(versionSelect.value, tierSelect.value, periodSelect.value, tierConfig);
     });
 
     function initDropdowns(versionList) {
         versionList.sort().reverse().forEach(v => {
-            versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
+            const option = document.createElement('option');
+            option.value = v;
+            option.textContent = v;
+            versionSelect.appendChild(option);
         });
 
-        ['platinum_plus', 'diamond_plus', 'meteorite_plus', 'mithril_plus', 'in1000'].forEach(tier => {
-            tierSelect.innerHTML += `<option value="${tier}">${tier}</option>`;
+        const tiers = ['platinum_plus', 'diamond_plus', 'meteorite_plus', 'mithril_plus', 'in1000'];
+        tiers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            tierSelect.appendChild(opt);
         });
-
-        periodSelect.innerHTML = `
-            <option value="latest">버전 전체</option>
-            <option value="3day">최근 3일</option>
-            <option value="7day">최근 7일</option>
-        `;
     }
 
     function loadAndRender(version, tier, period, tierConfig) {
@@ -58,12 +62,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (period === 'latest') return latestData;
 
         const days = period === '3day' ? 3 : 7;
-        const latestDate = new Date(latestKey.replace(/_/g, ':').replace(/-/g, '/'));
+        const latestDate = new Date(latestKey.replace('_', 'T'));
         const pastDate = new Date(latestDate);
         pastDate.setDate(pastDate.getDate() - days);
 
         const pastKey = timestamps.reverse().find(ts => {
-            const d = new Date(ts.replace(/_/g, ':').replace(/-/g, '/'));
+            const d = new Date(ts.replace('_', 'T'));
             return d <= pastDate;
         });
 
@@ -100,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
         iniString.split('\n').forEach(line => {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return;
-            const section = trimmed.match(/^\[(.*)\]$/);  // ✅ 정확한 정규식
+            const section = trimmed.match(/^\[(.*)\]$/);
             if (section) {
                 currentSection = section[1];
                 config[currentSection] = {};
@@ -135,8 +139,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const pickRate = item["표본수"] / totalSample;
             const r = pickRate / avgPickRate;
             const 원점반영 = r <= 1 / 3
-    ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
-    : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
+                ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
+                : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
             const 평균반영 = 1 - 원점반영;
             const 픽률보정 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
             const rpScore = getRPScore(item["RP 획득"]);
