@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>실험체 통계</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <header>
@@ -20,21 +21,23 @@
     </header>
 
     <main>
-        <div id="controls" style="text-align: center; margin-bottom: 20px;">
+        <div id="controls" style="margin: 20px 0; text-align: center;">
             <select id="version-select"></select>
             <select id="period-select">
                 <option value="latest">버전 전체</option>
-                <option value="3day">최근 3일</option>
-                <option value="7day">최근 7일</option>
+                <option value="3days">최근 3일</option>
+                <option value="7days">최근 7일</option>
             </select>
             <select id="tier-select">
+                <option value="diamond_plus">다이아+</option>
                 <option value="platinum_plus">플래티넘+</option>
-                <option value="diamond_plus">다이아몬드+</option>
-                <option value="meteorite_plus">메테오라이트+</option>
+                <option value="meteorite_plus">메테오+</option>
                 <option value="mithril_plus">미스릴+</option>
                 <option value="in1000">in1000</option>
             </select>
-            <button id="load-button">불러오기</button>
+            <label style="margin-left: 10px;">
+                <input type="checkbox" id="gradient-checkbox"> 색상 강조
+            </label>
         </div>
 
         <section>
@@ -42,7 +45,7 @@
         </section>
     </main>
 
-    <footer style="text-align: center; margin-top: 40px;">
+    <footer>
         <p>© 2025 나만의 실험체 통계</p>
     </footer>
 
