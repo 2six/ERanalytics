@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function () {
             versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
         });
 
-        // 사용자 친숙한 이름을 사용한 티어 드롭다운 수정
         const tierMap = {
             "platinum_plus": "플래티넘+",
             "diamond_plus": "다이아몬드+",
@@ -150,11 +149,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const avgScore = getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
-        const k = 1.5;
 
-        return data.map(item => {
+        const scoreList = data.map(item => {
             const pickRate = item["표본수"] / totalSample;
             const r = pickRate / avgPickRate;
+            const k = 1.5;
             const 원점반영 = r <= 1 / 3
                 ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
                 : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
@@ -173,12 +172,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 score = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정;
             }
 
-            const tier = calculateTier(score, avgScore, tierConfig);
+            return { item, score };
+        });
+
+        const 평균 = scoreList.reduce((a, b) => a + b.score, 0) / scoreList.length;
+        const 분산 = scoreList.reduce((a, b) => a + (b.score - 평균) ** 2, 0) / scoreList.length;
+        const 표준편차 = Math.sqrt(분산);
+
+        return scoreList.map(({ item, score }) => {
+            const tier = getTierByStd(score, 평균, 표준편차, tierConfig);
             return {
                 "실험체": item["실험체"],
                 "점수": parseFloat(score.toFixed(2)),
                 "티어": tier,
-                "픽률": parseFloat((pickRate * 100).toFixed(2)),
+                "픽률": parseFloat((item["표본수"] / totalSample * 100).toFixed(2)),
                 "RP 획득": parseFloat(item["RP 획득"].toFixed(1)),
                 "승률": parseFloat((item["승률"] * 100).toFixed(2)),
                 "TOP 3": parseFloat((item["TOP 3"] * 100).toFixed(2)),
@@ -187,14 +194,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function calculateTier(score, avgScore, config) {
-        const diff = score - avgScore;
-        if (diff > avgScore * parseFloat(config["S+"])) return "S+";
-        if (diff > avgScore * parseFloat(config["S"])) return "S";
-        if (diff > avgScore * parseFloat(config["A"])) return "A";
-        if (diff > avgScore * parseFloat(config["B"])) return "B";
-        if (diff > avgScore * parseFloat(config["C"])) return "C";
-        if (diff > avgScore * parseFloat(config["D"])) return "D";
+    function getTierByStd(score, mean, std, config) {
+        const z = (score - mean) / std;
+        if (z >= parseFloat(config["S+"])) return "S+";
+        if (z >= parseFloat(config["S"])) return "S";
+        if (z >= parseFloat(config["A"])) return "A";
+        if (z >= parseFloat(config["B"])) return "B";
+        if (z >= parseFloat(config["C"])) return "C";
+        if (z >= parseFloat(config["D"])) return "D";
         return "F";
     }
 
@@ -257,55 +264,51 @@ document.addEventListener('DOMContentLoaded', function () {
         const container = document.querySelector('#data-container');
         const table = container.querySelector('table');
         if (!table) return;
-    
+
         const rows = [...table.querySelectorAll('tbody tr')];
         const headers = [...table.querySelectorAll('thead th')];
-    
+
         const goodCols = ["점수", "픽률", "RP 획득", "승률", "TOP 3"];
         const badCols = ["평균 순위"];
-    
+
         headers.forEach((th, i) => {
             const col = th.dataset.column;
             if (![...goodCols, ...badCols].includes(col)) return;
-    
+
             const values = rows.map(row => parseFloat(row.children[i].textContent.replace('%', '')));
             const average = values.reduce((a, b) => a + b, 0) / values.length;
             const min = Math.min(...values);
             const max = Math.max(...values);
-    
+
             rows.forEach((row, idx) => {
                 const val = values[idx];
                 const cell = row.children[i];
                 let ratio, color;
-    
-                // 평균 순위는 낮을수록 좋은 지표
+
                 const isBadCol = badCols.includes(col);
-    
+
                 if ((isBadCol && val <= average) || (!isBadCol && val >= average)) {
-                    // 좋은 쪽 (빨강)
                     ratio = isBadCol
                         ? (average - val) / (average - min || 1)
                         : (val - average) / (max - average || 1);
-                    color = getGradientColor(ratio, false); // 빨강 계열
+                    color = getGradientColor(ratio, false);
                 } else {
-                    // 나쁜 쪽 (파랑)
                     ratio = isBadCol
                         ? (val - average) / (max - average || 1)
                         : (average - val) / (average - min || 1);
-                    color = getGradientColor(ratio, true); // 파랑 계열
+                    color = getGradientColor(ratio, true);
                 }
-    
+
                 ratio = Math.max(0, Math.min(1, ratio));
                 cell.style.backgroundColor = color;
             });
         });
     }
-    
+
     function getGradientColor(ratio, isBad) {
-        // 파랑 → 하양 or 하양 → 빨강
-        const start = isBad ? [230, 240, 255] : [255, 255, 255]; // 파랑 또는 하양
-        const end = isBad ? [164, 194, 244] : [230, 124, 115];   // 하양 또는 빨강
+        const start = isBad ? [230, 240, 255] : [255, 255, 255];
+        const end = isBad ? [164, 194, 244] : [230, 124, 115];
         const rgb = start.map((s, i) => Math.round(s + (end[i] - s) * ratio));
         return `rgb(${rgb.join(',')})`;
-    }    
+    }
 });
