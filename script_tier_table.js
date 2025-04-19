@@ -216,28 +216,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tiers.forEach(tier => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
-            tierGroups[tier]
-                .sort((a, b) => b.점수 - a.점수)
-                .forEach((entry, i) => {
-                    const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
-                    const tooltipHTML = `
-                        <div class="tooltip-box">
-                            ${entry.실험체}<br>
-                            픽률: ${(entry["표본수"] / totalSampleCount * 100).toFixed(2)}%<br>
-                            RP: ${entry["RP 획득"].toFixed(1)}<br>
-                            승률: ${(entry["승률"] * 100).toFixed(1)}%
-                        </div>
-                    `;
-                    html += `
-                        <span class="tooltip-container">
-                            <img src="image/${imgName}.png" alt="${entry.실험체}">
-                            ${tooltipHTML}
-                        </span>
-                    `;
-                    if ((i + 1) % imagesPerRow === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
-                });
+        
+            if (tierGroups[tier].length === 0) {
+                html += `<span class="no-data">실험체 없음</span>`;
+            } else {
+                tierGroups[tier]
+                    .sort((a, b) => b.점수 - a.점수)
+                    .forEach((entry, i) => {
+                        const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
+                        const tooltipHTML = `
+                            <div class="tooltip-box">
+                                ${entry.실험체}<br>
+                                픽률: ${(entry["표본수"] / totalSampleCount * 100).toFixed(2)}%<br>
+                                RP: ${entry["RP 획득"].toFixed(1)}<br>
+                                승률: ${(entry["승률"] * 100).toFixed(1)}%
+                            </div>
+                        `;
+                        html += `
+                            <span class="tooltip-container">
+                                <img src="image/${imgName}.png" alt="${entry.실험체}">
+                                ${tooltipHTML}
+                            </span>
+                        `;
+                        if ((i + 1) % imagesPerRow === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
+                    });
+            }
+        
             html += '</div></td></tr>';
         });
+        
 
         table.innerHTML = html;
     }
