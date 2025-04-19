@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const tierMap = {
-            "platinum_plus": "플래티넘+",
-            "diamond_plus": "다이아몬드+",
+            "platinum_plus": "유스트리델+",
+            "diamond_plus": "다이아모드+",
             "meteorite_plus": "메테오라이트+",
             "mithril_plus": "미스릴+",
             "in1000": "in1000"
@@ -41,9 +41,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <option value="7day">최근 7일</option>
         `;
 
-        versionSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal)); // ✅ 수정
-        tierSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));    // ✅ 수정
-        periodSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));  // ✅ 수정
+        versionSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));
+        tierSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));
+        periodSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));
     }
 
     function triggerLoad(tierConfig) {
@@ -174,59 +174,57 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function displayTierTable(scoredData) {
-        const tierGroups = {};
-        const orderedTiers = ["S+", "S", "A", "B", "C", "D", "F"];
-        const imagesPerRow = 15;
-    
-        // 티어별 전체 정보 저장
-        scoredData.forEach(item => {
-            const tier = item["티어"];
-            if (!tierGroups[tier]) {
-                tierGroups[tier] = [];
-            }
-            tierGroups[tier].push(item); // ✅ 실험체 전체 정보 저장
-        });
-    
-        const container = document.getElementById('tier-table-container');
-        let html = '<table class="tier-table">';
-    
-        orderedTiers.forEach(tier => {
-            html += '<tr class="tier-row">';
-            html += `<th>${tier}</th>`;
-            html += '<td><div>';
-            if (tierGroups[tier]) {
-                tierGroups[tier].forEach((entry, index) => {
-                    const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
-                    const tooltipHTML = `
-                        <div class="tooltip-box">
-                            ${entry.실험체}<br>
-                            점수: ${entry.점수.toFixed(2)}<br>
-                            RP: ${entry["RP 획득"]}<br>
-                            승률: ${(entry["승률"] * 100).toFixed(1)}%<br>
-                            TOP3: ${(entry["TOP 3"] * 100).toFixed(1)}%<br>
-                            평균 순위: ${entry["평균 순위"]}
-                        </div>
-                    `;
-                    html += `
-                        <span class="tooltip-container">
-                            <img src="image/${imgName}.png" alt="${entry.실험체}">
-                            ${tooltipHTML}
-                        </span>
-                    `;
-                    if ((index + 1) % imagesPerRow === 0 && index !== tierGroups[tier].length - 1) {
-                        html += '</div><div>';
-                    }
-                });
-            }
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    
-        html += '</table>';
-        container.innerHTML = html;
+    function calculateTier(score, averageScore, config) {
+        const diff = score - averageScore;
+        if (diff > averageScore * parseFloat(config["S+"])) return "S+";
+        if (diff > averageScore * parseFloat(config["S"])) return "S";
+        if (diff > averageScore * parseFloat(config["A"])) return "A";
+        if (diff > averageScore * parseFloat(config["B"])) return "B";
+        if (diff > averageScore * parseFloat(config["C"])) return "C";
+        if (diff > averageScore * parseFloat(config["D"])) return "D";
+        return "F";
     }
-    
+
+    function displayTierTable(data) {
+        const tiers = ["S+", "S", "A", "B", "C", "D", "F"];
+        const tierGroups = {};
+        tiers.forEach(t => tierGroups[t] = []);
+
+        data.forEach(entry => {
+            const tier = entry.티어;
+            tierGroups[tier].push(entry);
+        });
+
+        const table = document.getElementById('tier-table');
+        let html = '';
+
+        tiers.forEach(tier => {
+            html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
+            tierGroups[tier].sort((a, b) => b.점수 - a.점수).forEach((entry, i) => {
+                const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
+                const tooltipHTML = `
+                    <div class="tooltip-box">
+                        ${entry.실험체}<br>
+                        점수: ${entry.점수.toFixed(2)}<br>
+                        RP: ${entry["RP 획득"]}<br>
+                        승률: ${(entry["승률"] * 100).toFixed(1)}%<br>
+                        TOP3: ${(entry["TOP 3"] * 100).toFixed(1)}%<br>
+                        평균 순위: ${entry["평균 순위"]}
+                    </div>
+                `;
+                html += `
+                    <span class="tooltip-container">
+                        <img src="image/${imgName}.png" alt="${entry.실험체}">
+                        ${tooltipHTML}
+                    </span>
+                `;
+                if ((i + 1) % 10 === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
+            });
+            html += '</div></td></tr>';
+        });
+
+        table.innerHTML = html;
+    }
 
     function setupTablePopup() {
         const popup = document.getElementById('image-popup');
