@@ -188,41 +188,26 @@ document.addEventListener('DOMContentLoaded', function () {
         return "F";
     }
 
+    let currentSortColumn = null;
+    let currentSortAsc = true;
+    let lastSortedData = [];
+
     function displaySelectedData(data) {
         const container = document.getElementById('data-container');
         const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
+        // 테이블 헤더 (정렬 가능)
         let html = '<table><thead><tr>';
         columns.forEach(col => {
-            html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`;
+            html += `<th style="cursor:pointer;" data-column="${col}">${col}</th>`;
         });
         html += '</tr></thead><tbody>';
 
-        const maxMin = {};
-        if (document.getElementById('gradient-checkbox').checked) {
-            columns.forEach(col => {
-                if (col === "실험체" || col === "티어") return;
-                const values = data.map(d => parseFloat(d[col]));
-                maxMin[col] = { max: Math.max(...values), min: Math.min(...values) };
-            });
-        }
-
+        // 테이블 본문
         data.forEach(item => {
             html += '<tr>';
             columns.forEach(col => {
-                const raw = item[col];
-                const value = typeof raw === 'number' ? raw.toFixed(2) : raw;
-                let style = '';
-
-                if (maxMin[col]) {
-                    const { max, min } = maxMin[col];
-                    const ratio = (raw - min) / (max - min);
-                    const red = Math.round(255 * (1 - ratio));
-                    const blue = Math.round(255 * ratio);
-                    style = `style="background-color: rgb(${red},0,${blue},0.2)"`;
-                }
-
-                html += `<td ${style}>${value}</td>`;
+                html += `<td>${item[col]}</td>`;
             });
             html += '</tr>';
         });
@@ -230,16 +215,73 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</tbody></table>';
         container.innerHTML = html;
 
+        // 헤더 클릭 이벤트 등록
         container.querySelectorAll('th').forEach(th => {
             th.addEventListener('click', () => {
-                const col = th.getAttribute('data-col');
-                const asc = th.classList.toggle('asc');
-                const sorted = [...data].sort((a, b) => {
-                    const va = a[col], vb = b[col];
-                    return asc ? va - vb : vb - va;
-                });
+                const column = th.dataset.column;
+                if (currentSortColumn === column) {
+                    currentSortAsc = !currentSortAsc; // 방향 토글
+                } else {
+                    currentSortColumn = column;
+                    currentSortAsc = true;
+                }
+                const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
                 displaySelectedData(sorted);
+                if (document.getElementById('gradient-checkbox').checked) {
+                    applyGradientColors();
+                }
+            });
+        });
+
+        lastSortedData = [...data]; // 현재 데이터 저장
+
+        if (document.getElementById('gradient-checkbox').checked) {
+            applyGradientColors();
+        }
+    }
+
+    function sortData(data, column, asc) {
+        const numericCols = ["점수", "RP 획득", "승률", "TOP 3", "평균 순위"];
+        const sorted = [...data].sort((a, b) => {
+            const aVal = numericCols.includes(column) ? parseFloat(a[column]) : a[column];
+            const bVal = numericCols.includes(column) ? parseFloat(b[column]) : b[column];
+            return asc ? aVal - bVal : bVal - aVal;
+        });
+        return sorted;
+    }
+
+    function applyGradientColors() {
+        const rows = document.querySelectorAll('#data-container tbody tr');
+        const cells = document.querySelectorAll('#data-container thead th');
+
+        const getNumeric = str => parseFloat(str.replace('%', ''));
+
+        cells.forEach((th, index) => {
+            const colName = th.dataset.column;
+            if (!["점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"].includes(colName)) return;
+
+            const values = Array.from(rows).map(row => getNumeric(row.children[index].textContent));
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+
+            rows.forEach(row => {
+                const cell = row.children[index];
+                const val = getNumeric(cell.textContent);
+                const ratio = (val - min) / (max - min);
+                const red = Math.round(255 * (1 - ratio));
+                const blue = Math.round(255 * ratio);
+                cell.style.backgroundColor = `rgb(${red}, ${red}, ${blue})`;
             });
         });
     }
+
+    // 색상 강조 체크 시 다시 반영 (정렬 유지)
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('gradient-checkbox').addEventListener('change', () => {
+            if (lastSortedData.length > 0) {
+                const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
+                displaySelectedData(sorted);
+            }
+        });
+    });
 });
