@@ -19,10 +19,8 @@ document.addEventListener('DOMContentLoaded', function () {
         tierSelect.addEventListener('change', triggerLoad);
         periodSelect.addEventListener('change', triggerLoad);
         gradientCheckbox.addEventListener('change', () => {
-            if (lastSortedData.length > 0) {
-                const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
-                displaySelectedData(sorted);
-            }
+            const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
+            displaySelectedData(sorted);
         });
 
         triggerLoad();
@@ -133,6 +131,57 @@ document.addEventListener('DOMContentLoaded', function () {
         return rp >= 0 ? Math.log(rp + 1) * 3 : -Math.log(-rp + 1) * 2;
     }
 
+    function calculateAndSortScores(data, tierConfig) {
+        const totalSample = data.reduce((sum, item) => sum + item["표본수"], 0);
+        const avgPickRate = totalSample > 0 ? data.reduce((sum, i) => sum + i["표본수"] / totalSample, 0) / data.length : 0;
+
+        let sumRP = 0, sumWin = 0, sumTop3 = 0;
+        data.forEach(i => {
+            const w = i["표본수"] / totalSample;
+            sumRP += i["RP 획득"] * w;
+            sumWin += i["승률"] * w;
+            sumTop3 += i["TOP 3"] * w;
+        });
+
+        const avgScore = getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
+        const k = 1.5;
+
+        return data.map(item => {
+            const pickRate = item["표본수"] / totalSample;
+            const r = pickRate / avgPickRate;
+            const 원점반영 = r <= 1 / 3
+                ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
+                : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
+            const 평균반영 = 1 - 원점반영;
+            const 픽률보정 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
+            const rpScore = getRPScore(item["RP 획득"]);
+
+            let 보정점수;
+            if (item["표본수"] < totalSample * avgPickRate) {
+                보정점수 = (
+                    rpScore + item["승률"] * 9 + item["TOP 3"] * 3
+                ) * (원점반영 + 평균반영 * Math.min(1, pickRate / avgPickRate)) +
+                    avgScore * 평균반영 * (1 - Math.min(1, pickRate / avgPickRate));
+                보정점수 *= 픽률보정;
+            } else {
+                보정점수 = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정;
+            }
+
+            const tier = calculateTier(보정점수, avgScore, tierConfig);
+
+            return {
+                "실험체": item["실험체"],
+                "점수": parseFloat(보정점수.toFixed(2)),
+                "티어": tier,
+                "픽률": parseFloat((pickRate * 100).toFixed(2)),
+                "RP 획득": parseFloat(item["RP 획득"].toFixed(1)),
+                "승률": parseFloat((item["승률"] * 100).toFixed(2)),
+                "TOP 3": parseFloat((item["TOP 3"] * 100).toFixed(2)),
+                "평균 순위": parseFloat(item["평균 순위"].toFixed(1))
+            };
+        });
+    }
+
     function calculateTier(score, avgScore, config) {
         const diff = score - avgScore;
         if (diff > avgScore * parseFloat(config["S+"])) return "S+";
@@ -145,18 +194,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function sortData(data, column, asc) {
-        if (!column) return [...data];
         const numericCols = ["점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
-        const sorted = [...data].sort((a, b) => {
+        return [...data].sort((a, b) => {
             const aVal = numericCols.includes(column) ? parseFloat(a[column]) : a[column];
             const bVal = numericCols.includes(column) ? parseFloat(b[column]) : b[column];
             return asc ? aVal - bVal : bVal - aVal;
         });
-        lastSortedData = [...sorted];
-        return sorted;
     }
 
     function displaySelectedData(data) {
+        lastSortedData = [...data];
+
         const container = document.getElementById('data-container');
         const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
@@ -169,12 +217,11 @@ document.addEventListener('DOMContentLoaded', function () {
         data.forEach(item => {
             html += '<tr>';
             columns.forEach(col => {
-                let val = item[col];
-                if (["점수", "RP 획득", "승률", "TOP 3", "평균 순위", "픽률"].includes(col)) {
-                    val = parseFloat(val).toFixed(2);
-                    if (["승률", "TOP 3", "픽률"].includes(col)) val += "%";
-                }
-                html += `<td>${val}</td>`;
+                const val = item[col];
+                const displayVal = ["픽률", "승률", "TOP 3"].includes(col)
+                    ? `${val.toFixed(2)}%`
+                    : val.toFixed ? val.toFixed(col === "RP 획득" || col === "평균 순위" ? 1 : 2) : val;
+                html += `<td>${displayVal}</td>`;
             });
             html += '</tr>';
         });
@@ -182,14 +229,13 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</tbody></table>';
         container.innerHTML = html;
 
-        container.querySelectorAll('th').forEach(th => {
+        document.querySelectorAll('#data-container th').forEach(th => {
             th.addEventListener('click', () => {
-                const column = th.dataset.column;
-                if (currentSortColumn === column) {
-                    currentSortAsc = !currentSortAsc;
-                } else {
-                    currentSortColumn = column;
-                    currentSortAsc = true;
+                const col = th.dataset.column;
+                if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
+                else {
+                    currentSortColumn = col;
+                    currentSortAsc = false;
                 }
                 const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
                 displaySelectedData(sorted);
@@ -197,47 +243,36 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-        lastSortedData = [...data];
         if (gradientCheckbox.checked) applyGradientColors();
     }
 
     function applyGradientColors() {
         const rows = document.querySelectorAll('#data-container tbody tr');
-        const headers = document.querySelectorAll('#data-container thead th');
+        const ths = document.querySelectorAll('#data-container thead th');
 
         const getNumeric = str => parseFloat(str.replace('%', ''));
 
-        headers.forEach((th, index) => {
+        ths.forEach((th, index) => {
             const col = th.dataset.column;
             if (!["점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"].includes(col)) return;
 
             const values = Array.from(rows).map(row => getNumeric(row.children[index].textContent));
             const min = Math.min(...values);
             const max = Math.max(...values);
+            const reverse = col === "평균 순위";
 
             rows.forEach(row => {
                 const cell = row.children[index];
                 const val = getNumeric(cell.textContent);
                 const ratio = (val - min) / (max - min);
+                const relRatio = reverse ? 1 - ratio : ratio;
 
-                let r, g, b;
-                if (col === "평균 순위") ratio = 1 - ratio;
-
-                const white = [255, 255, 255];
-                const good = [230, 124, 115];
-                const bad = [164, 194, 244];
-                const mid = white;
-
-                const mix = ratio < 0.5
-                    ? interpolateColor(bad, mid, ratio * 2)
-                    : interpolateColor(mid, good, (ratio - 0.5) * 2);
-
-                cell.style.backgroundColor = `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
+                // 빨강(좋음) - 하양 - 파랑(나쁨)
+                const r = Math.round(230 + (255 - 230) * (1 - relRatio));
+                const g = Math.round(124 + (255 - 124) * (1 - relRatio));
+                const b = Math.round(115 + (255 - 115) * (1 - relRatio));
+                cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
             });
         });
-    }
-
-    function interpolateColor(c1, c2, t) {
-        return c1.map((v, i) => Math.round(v + (c2[i] - v) * t));
     }
 });
