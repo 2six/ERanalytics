@@ -197,6 +197,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const table = document.getElementById('tier-table');
         let html = '';
+        
+        const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0); // ✅ 툴팁 픽률 계산용
 
         tiers.forEach(tier => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
@@ -205,11 +207,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 const tooltipHTML = `
                     <div class="tooltip-box">
                         ${entry.실험체}<br>
-                        점수: ${entry.점수.toFixed(2)}<br>
-                        RP: ${entry["RP 획득"]}<br>
-                        승률: ${(entry["승률"] * 100).toFixed(1)}%<br>
-                        TOP3: ${(entry["TOP 3"] * 100).toFixed(1)}%<br>
-                        평균 순위: ${entry["평균 순위"]}
+                        픽률: ${(entry["표본수"] / totalSampleCount * 100).toFixed(2)}%<br>
+                        RP: ${entry["RP 획득"].toFixed(1)}<br>
+                        승률: ${(entry["승률"] * 100).toFixed(1)}%
                     </div>
                 `;
                 html += `
