@@ -144,41 +144,49 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
         const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
         const k = 1.5;
-
-        return data.map(item => {
-            const pickRate = (item["표본수"] / totalSampleCount);
+    
+        // ✅ 표준편차 계산
+        const scoreList = data.map(item => {
+            const pickRate = item["표본수"] / totalSampleCount;
             const r = pickRate / averagePickRate;
             const 원점반영 = r <= 1/3 ?
                 (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))) :
                 (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)));
             const 평균반영 = 1 - 원점반영;
             const 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
-
+    
             const rpScore = getRPScore(item["RP 획득"]);
-            let 보정점수;
-
+            let score;
+    
             if (item["표본수"] < totalSampleCount * averagePickRate) {
-                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 
-                            (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
-                            averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
-                보정점수 *= 픽률보정계수;
+                score = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 
+                        (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
+                        averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
+                score *= 픽률보정계수;
             } else {
-                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
+                score = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
-
-            const tier = calculateTier(보정점수, averageScore, config);
-            return { ...item, "티어": tier, "점수": 보정점수 };
+            return score;
+        });
+    
+        const mean = scoreList.reduce((sum, s) => sum + s, 0) / scoreList.length;
+        const std = Math.sqrt(scoreList.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scoreList.length);
+    
+        return data.map((item, i) => {
+            const score = scoreList[i];
+            const tier = calculateTierByStd(score, mean, std, config);
+            return { ...item, "점수": score, "티어": tier };
         });
     }
-
-    function calculateTier(score, averageScore, config) {
-        const diff = score - averageScore;
-        if (diff > averageScore * parseFloat(config["S+"])) return "S+";
-        if (diff > averageScore * parseFloat(config["S"])) return "S";
-        if (diff > averageScore * parseFloat(config["A"])) return "A";
-        if (diff > averageScore * parseFloat(config["B"])) return "B";
-        if (diff > averageScore * parseFloat(config["C"])) return "C";
-        if (diff > averageScore * parseFloat(config["D"])) return "D";
+    
+    function calculateTierByStd(score, mean, std, config) {
+        const diff = (score - mean) / std;
+        if (diff > parseFloat(config["S+"])) return "S+";
+        if (diff > parseFloat(config["S"])) return "S";
+        if (diff > parseFloat(config["A"])) return "A";
+        if (diff > parseFloat(config["B"])) return "B";
+        if (diff > parseFloat(config["C"])) return "C";
+        if (diff > parseFloat(config["D"])) return "D";
         return "F";
     }
 
