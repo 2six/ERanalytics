@@ -118,46 +118,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const tierGroups = {};
         const orderedTiers = ["S+", "S", "A", "B", "C", "D", "F"];
         const imagesPerRow = 15;
-
-        const tooltipHTML = `
-            <div class="tooltip-box">
-                ${entry.실험체}<br>
-                점수: ${entry.점수.toFixed(2)}<br>
-                RP: ${entry["RP 획득"]}<br>
-                승률: ${(entry["승률"] * 100).toFixed(1)}%<br>
-                TOP3: ${(entry["TOP 3"] * 100).toFixed(1)}%<br>
-                평균 순위: ${entry["평균 순위"]}
-            </div>
-        `;
-
-        html += `
-            <span class="tooltip-container">
-                <img src="image/${imgName}.png" alt="${entry.실험체}">
-                ${tooltipHTML}
-            </span>
-        `;
-
+    
+        // 티어별 전체 정보 저장
         scoredData.forEach(item => {
             const tier = item["티어"];
             if (!tierGroups[tier]) {
                 tierGroups[tier] = [];
             }
-            tierGroups[tier].push(item["실험체"]);
+            tierGroups[tier].push(item); // ✅ 실험체 전체 정보 저장
         });
-
+    
         const container = document.getElementById('tier-table-container');
         let html = '<table class="tier-table">';
-
+    
         orderedTiers.forEach(tier => {
             html += '<tr class="tier-row">';
             html += `<th>${tier}</th>`;
             html += '<td><div>';
             if (tierGroups[tier]) {
-                tierGroups[tier].forEach((experiment, index) => {
-                    const imageName = convertExperimentNameToImageName(experiment);
-                    const imageSrc = `image/${imageName}.png`;
-                    html += `<img src="${imageSrc}" alt="${experiment}">`;
-                    if ((index + 1) % imagesPerRow === 0 && index !== 0 && index !== tierGroups[tier].length - 1) {
+                tierGroups[tier].forEach((entry, index) => {
+                    const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
+                    const tooltipHTML = `
+                        <div class="tooltip-box">
+                            ${entry.실험체}<br>
+                            점수: ${entry.점수.toFixed(2)}<br>
+                            RP: ${entry["RP 획득"]}<br>
+                            승률: ${(entry["승률"] * 100).toFixed(1)}%<br>
+                            TOP3: ${(entry["TOP 3"] * 100).toFixed(1)}%<br>
+                            평균 순위: ${entry["평균 순위"]}
+                        </div>
+                    `;
+                    html += `
+                        <span class="tooltip-container">
+                            <img src="image/${imgName}.png" alt="${entry.실험체}">
+                            ${tooltipHTML}
+                        </span>
+                    `;
+                    if ((index + 1) % imagesPerRow === 0 && index !== tierGroups[tier].length - 1) {
                         html += '</div><div>';
                     }
                 });
@@ -165,10 +162,11 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '</div></td>';
             html += '</tr>';
         });
-
+    
         html += '</table>';
         container.innerHTML = html;
     }
+    
 
     function setupTablePopup() {
         const popup = document.getElementById('image-popup');
