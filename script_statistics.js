@@ -257,43 +257,61 @@ document.addEventListener('DOMContentLoaded', function () {
         const container = document.querySelector('#data-container');
         const table = container.querySelector('table');
         if (!table) return;
-
+    
         const rows = [...table.querySelectorAll('tbody tr')];
         const headers = [...table.querySelectorAll('thead th')];
-
+    
         const goodCols = ["점수", "픽률", "RP 획득", "승률", "TOP 3"];
         const badCols = ["평균 순위"];
-
+    
         headers.forEach((th, i) => {
             const col = th.dataset.column;
             if (![...goodCols, ...badCols].includes(col)) return;
-
+    
             const values = rows.map(row => parseFloat(row.children[i].textContent.replace('%', '')));
-
-            const average = (col === "점수" || col === "픽률")
-                ? values.reduce((a, b) => a + b, 0) / values.length
-                : values.reduce((a, b) => a + b, 0) / values.length;
-
+            const average = values.reduce((a, b) => a + b, 0) / values.length;
             const min = Math.min(...values);
             const max = Math.max(...values);
-
+    
             rows.forEach((row, idx) => {
                 const val = values[idx];
                 const cell = row.children[i];
-                let ratio = (val - min) / (max - min);
-                if (col === "평균 순위") ratio = 1 - ratio; // 평균 순위는 낮을수록 빨간색
-
+                let ratio, color;
+    
+                if (col === "평균 순위") {
+                    // 낮을수록 좋음 → 반대 방향
+                    if (val <= average) {
+                        // 좋은 값: 파랑 → 하양
+                        ratio = (average - val) / (average - min || 1);
+                        color = getGradientColor(ratio, true); // true = 파랑
+                    } else {
+                        // 나쁜 값: 하양 → 빨강
+                        ratio = (val - average) / (max - average || 1);
+                        color = getGradientColor(ratio, false); // false = 빨강
+                    }
+                } else {
+                    // 높을수록 좋음 → 일반 방향
+                    if (val >= average) {
+                        // 좋은 값: 하양 → 빨강
+                        ratio = (val - average) / (max - average || 1);
+                        color = getGradientColor(ratio, false); // false = 빨강
+                    } else {
+                        // 나쁜 값: 파랑 → 하양
+                        ratio = (average - val) / (average - min || 1);
+                        color = getGradientColor(ratio, true); // true = 파랑
+                    }
+                }
+    
                 ratio = Math.max(0, Math.min(1, ratio));
-                const color = getGradientColor(ratio, val < average);
                 cell.style.backgroundColor = color;
             });
         });
     }
-
+    
     function getGradientColor(ratio, isLowerHalf) {
-        const start = isLowerHalf ? [164, 194, 244] : [255, 255, 255];
-        const end = isLowerHalf ? [255, 255, 255] : [230, 124, 115];
+        const start = isLowerHalf ? [164, 194, 244] : [255, 255, 255]; // 파랑 → 하양
+        const end = isLowerHalf ? [255, 255, 255] : [230, 124, 115];   // 하양 → 빨강
         const rgb = start.map((s, i) => Math.round(s + (end[i] - s) * ratio));
         return `rgb(${rgb.join(',')})`;
-    }
+    }    
 });
