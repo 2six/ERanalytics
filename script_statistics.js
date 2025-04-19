@@ -199,11 +199,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         return sorted;
     }
+    
+    const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
     function displaySelectedData(data) {
         lastSortedData = data;
         const container = document.getElementById('data-container');
-        const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
         let html = '<table><thead><tr>';
         columns.forEach(col => {
