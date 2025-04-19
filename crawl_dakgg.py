@@ -1,8 +1,11 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
+
+# 한국 표준시 (UTC+9) 적용
+KST = timezone(timedelta(hours=9))
 
 def parse_percentage(value: str) -> float:
     if '-' in value:
@@ -25,7 +28,8 @@ def crawl_tier_data(tier_key: str, display_name: str):
         version_elem = soup.select_one("details:nth-of-type(1) summary span")
         version = version_elem.get_text(strip=True) if version_elem else "unknown"
 
-        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        # 현재 시각을 한국 표준시(KST)로 가져오기
+        now = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
 
         data = []
         for row in rows:
@@ -68,7 +72,11 @@ def crawl_tier_data(tier_key: str, display_name: str):
             }
 
         # 현재 시각 데이터 추가
-        existing["통계"][now] = data
+        if now not in existing["통계"]:
+            existing["통계"][now] = data
+        else:
+            # 데이터가 이미 있으면 병합
+            existing["통계"][now].extend(data)
 
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
