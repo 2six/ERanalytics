@@ -83,7 +83,7 @@ def crawl_tier_data(tier_key: str, display_name: str):
                 "통계": {}
             }
 
-        # 현재 시각 데이터 추가
+        # 현재 시각 데이터 추가 (중복되는 타임스탬프 처리)
         if now not in existing["통계"]:
             existing["통계"][now] = data
         else:
@@ -93,8 +93,32 @@ def crawl_tier_data(tier_key: str, display_name: str):
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
 
+        # versions.json 자동 갱신
+        update_versions_json(version)
+
         print(f"[{tier_key}] {len(data)}개 실험체 데이터 저장 완료.")
         browser.close()
+
+def update_versions_json(version):
+    versions_file_path = "versions.json"  # 루트 폴더에 위치한 versions.json 파일 경로로 수정
+    
+    # 기존 versions.json 로드
+    if os.path.exists(versions_file_path):
+        with open(versions_file_path, "r", encoding="utf-8") as f:
+            versions = json.load(f)
+    else:
+        versions = []
+    
+    # 새로운 버전 추가 (중복 체크)
+    if version not in versions:
+        versions.append(version)
+
+    # 최신 버전 순으로 정렬 (내림차순)
+    versions.sort(reverse=True)
+
+    # versions.json 파일에 저장
+    with open(versions_file_path, "w", encoding="utf-8") as f:
+        json.dump(versions, f, ensure_ascii=False, indent=2)
 
 def main():
     tier_map = {
