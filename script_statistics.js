@@ -11,32 +11,36 @@ document.addEventListener('DOMContentLoaded', function () {
         const tierConfig = parseINI(iniString).tiers;
         initDropdowns(versionList);
 
-        // 드롭다운 값이 바뀌면 자동으로 불러오기
-        [versionSelect, tierSelect, periodSelect].forEach(select => {
-            select.addEventListener('change', () => {
-                loadAndRender(versionSelect.value, tierSelect.value, periodSelect.value, tierConfig);
-            });
+        versionSelect.addEventListener('change', triggerLoad);
+        tierSelect.addEventListener('change', triggerLoad);
+        periodSelect.addEventListener('change', triggerLoad);
+        gradientCheckbox.addEventListener('change', () => {
+            triggerLoad();
         });
 
-        // 초기 로드
-        loadAndRender(versionSelect.value, tierSelect.value, periodSelect.value, tierConfig);
+        triggerLoad(); // 초기 로딩
+        function triggerLoad() {
+            const version = versionSelect.value;
+            const tier = tierSelect.value;
+            const period = periodSelect.value;
+            loadAndRender(version, tier, period, tierConfig);
+        }
     });
 
     function initDropdowns(versionList) {
         versionList.sort().reverse().forEach(v => {
-            const option = document.createElement('option');
-            option.value = v;
-            option.textContent = v;
-            versionSelect.appendChild(option);
+            versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
         });
 
-        const tiers = ['platinum_plus', 'diamond_plus', 'meteorite_plus', 'mithril_plus', 'in1000'];
-        tiers.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t;
-            opt.textContent = t;
-            tierSelect.appendChild(opt);
+        ['platinum_plus', 'diamond_plus', 'meteorite_plus', 'mithril_plus', 'in1000'].forEach(tier => {
+            tierSelect.innerHTML += `<option value="${tier}">${tier}</option>`;
         });
+
+        periodSelect.innerHTML = `
+            <option value="latest">버전 전체</option>
+            <option value="3day">최근 3일</option>
+            <option value="7day">최근 7일</option>
+        `;
     }
 
     function loadAndRender(version, tier, period, tierConfig) {
@@ -62,12 +66,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (period === 'latest') return latestData;
 
         const days = period === '3day' ? 3 : 7;
-        const latestDate = new Date(latestKey.replace('_', 'T'));
+        const latestDate = new Date(latestKey.replace(/_/g, ':').replace(/-/g, '/'));
         const pastDate = new Date(latestDate);
         pastDate.setDate(pastDate.getDate() - days);
 
         const pastKey = timestamps.reverse().find(ts => {
-            const d = new Date(ts.replace('_', 'T'));
+            const d = new Date(ts.replace(/_/g, ':').replace(/-/g, '/'));
             return d <= pastDate;
         });
 
@@ -160,17 +164,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
             return {
                 "실험체": item["실험체"],
-                "점수": 보정점수.toFixed(2),
+                "점수": 보정점수,
                 "티어": tier,
-                "픽률": (pickRate * 100).toFixed(2) + '%',
-                "RP 획득": item["RP 획득"].toFixed(1),
-                "승률": (item["승률"] * 100).toFixed(2) + '%',
-                "TOP 3": (item["TOP 3"] * 100).toFixed(2) + '%',
-                "평균 순위": item["평균 순위"].toFixed(1)
+                "픽률": pickRate * 100,
+                "RP 획득": item["RP 획득"],
+                "승률": item["승률"] * 100,
+                "TOP 3": item["TOP 3"] * 100,
+                "평균 순위": item["평균 순위"]
             };
         });
 
-        scored.sort((a, b) => b.점수 - a.점수);
         return scored;
     }
 
@@ -190,16 +193,53 @@ document.addEventListener('DOMContentLoaded', function () {
         const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
         let html = '<table><thead><tr>';
-        columns.forEach(col => html += `<th>${col}</th>`);
+        columns.forEach(col => {
+            html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`;
+        });
         html += '</tr></thead><tbody>';
+
+        const maxMin = {};
+        if (document.getElementById('gradient-checkbox').checked) {
+            columns.forEach(col => {
+                if (col === "실험체" || col === "티어") return;
+                const values = data.map(d => parseFloat(d[col]));
+                maxMin[col] = { max: Math.max(...values), min: Math.min(...values) };
+            });
+        }
 
         data.forEach(item => {
             html += '<tr>';
-            columns.forEach(col => html += `<td>${item[col]}</td>`);
+            columns.forEach(col => {
+                const raw = item[col];
+                const value = typeof raw === 'number' ? raw.toFixed(2) : raw;
+                let style = '';
+
+                if (maxMin[col]) {
+                    const { max, min } = maxMin[col];
+                    const ratio = (raw - min) / (max - min);
+                    const red = Math.round(255 * (1 - ratio));
+                    const blue = Math.round(255 * ratio);
+                    style = `style="background-color: rgb(${red},0,${blue},0.2)"`;
+                }
+
+                html += `<td ${style}>${value}</td>`;
+            });
             html += '</tr>';
         });
 
         html += '</tbody></table>';
         container.innerHTML = html;
+
+        container.querySelectorAll('th').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.getAttribute('data-col');
+                const asc = th.classList.toggle('asc');
+                const sorted = [...data].sort((a, b) => {
+                    const va = a[col], vb = b[col];
+                    return asc ? va - vb : vb - va;
+                });
+                displaySelectedData(sorted);
+            });
+        });
     }
 });
