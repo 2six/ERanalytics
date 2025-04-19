@@ -15,6 +15,29 @@ document.addEventListener('DOMContentLoaded', function () {
         triggerLoad(tierConfigGlobal);
     });
 
+    function parseINI(iniString) {
+        const config = {};
+        let currentSection = null;
+        const lines = iniString.split('\n');
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) continue;
+            const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
+            if (sectionMatch) {
+                currentSection = sectionMatch[1];
+                config[currentSection] = {};
+                continue;
+            }
+            const keyValueMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
+            if (keyValueMatch) {
+                const key = keyValueMatch[1].trim();
+                const value = keyValueMatch[2].trim();
+                if (currentSection) config[currentSection][key] = value;
+            }
+        }
+        return config;
+    }
+
     function initDropdowns(versionList) {
         versionList.sort().reverse().forEach(v => {
             versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
@@ -93,34 +116,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const averageScore = calculateAverageScore(dataToUse);
-                const stdDev = calculateStandardDeviation(dataToUse, averageScore);
-                const scoredData = calculateTiers(dataToUse, averageScore, stdDev, tierConfig);
+                const stddev = calculateStandardDeviation(dataToUse, averageScore);
+                const scoredData = calculateTiers(dataToUse, averageScore, stddev, tierConfig);
                 displayTierTable(scoredData);
                 setupTablePopup();
             });
-    }
-
-    function parseINI(iniString) {
-        const config = {};
-        let currentSection = null;
-        const lines = iniString.split('\n');
-        for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) continue;
-            const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
-            if (sectionMatch) {
-                currentSection = sectionMatch[1];
-                config[currentSection] = {};
-                continue;
-            }
-            const keyValueMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
-            if (keyValueMatch) {
-                const key = keyValueMatch[1].trim();
-                const value = keyValueMatch[2].trim();
-                if (currentSection) config[currentSection][key] = value;
-            }
-        }
-        return config;
     }
 
     function getRPScore(rp) {
@@ -141,27 +141,28 @@ document.addEventListener('DOMContentLoaded', function () {
         return getRPScore(weightedSumRP) + weightedSumWinRate * 9 + weightedSumTop3 * 3;
     }
 
-    function calculateStandardDeviation(data, averageScore) {
+    function calculateStandardDeviation(data, avg) {
         const totalSample = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const variance = data.reduce((sum, item) => {
-            const weight = item["표본수"] / totalSample;
+        return Math.sqrt(data.reduce((sum, item) => {
             const score = getRPScore(item["RP 획득"]) + item["승률"] * 9 + item["TOP 3"] * 3;
-            return sum + weight * Math.pow(score - averageScore, 2);
-        }, 0);
-        return Math.sqrt(variance);
+            return sum + Math.pow(score - avg, 2) * (item["표본수"] / totalSample);
+        }, 0));
     }
 
-    function calculateTiers(data, averageScore, stdDev, config) {
+    function calculateTiers(data, averageScore, stddev, config) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
+        const averagePickRate = totalSampleCount > 0
+            ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length)
+            : 0;
         const k = 1.5;
 
         return data.map(item => {
             const pickRate = (item["표본수"] / totalSampleCount);
             const r = pickRate / averagePickRate;
-            const 원점반영 = r <= 1/3 ?
-                (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))) :
-                (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)));
+
+            const 원점반영 = r <= 1/3
+                ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
+                : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)));
             const 평균반영 = 1 - 원점반영;
 
             let 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
@@ -173,27 +174,27 @@ document.addEventListener('DOMContentLoaded', function () {
             let 보정점수;
 
             if (item["표본수"] < totalSampleCount * averagePickRate) {
-                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 
-                            (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
-                            averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
+                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) *
+                    (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
+                    averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
                 보정점수 *= 픽률보정계수;
             } else {
                 보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
-            const tier = calculateTierByStd(보정점수, averageScore, stdDev, config);
+            const tier = calculateTier(보정점수, averageScore, stddev, config);
             return { ...item, "티어": tier, "점수": 보정점수 };
         });
     }
 
-    function calculateTierByStd(score, avg, std, config) {
-        const z = (score - avg) / std;
-        if (z > parseFloat(config["S+"])) return "S+";
-        if (z > parseFloat(config["S"])) return "S";
-        if (z > parseFloat(config["A"])) return "A";
-        if (z > parseFloat(config["B"])) return "B";
-        if (z > parseFloat(config["C"])) return "C";
-        if (z > parseFloat(config["D"])) return "D";
+    function calculateTier(score, avg, std, config) {
+        const diff = score - avg;
+        if (diff > std * parseFloat(config["S+"])) return "S+";
+        if (diff > std * parseFloat(config["S"])) return "S";
+        if (diff > std * parseFloat(config["A"])) return "A";
+        if (diff > std * parseFloat(config["B"])) return "B";
+        if (diff > std * parseFloat(config["C"])) return "C";
+        if (diff > std * parseFloat(config["D"])) return "D";
         return "F";
     }
 
@@ -201,22 +202,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const tiers = ["S+", "S", "A", "B", "C", "D", "F"];
         const tierGroups = {};
         tiers.forEach(t => tierGroups[t] = []);
-    
+
         data.forEach(entry => {
             const tier = entry.티어;
             tierGroups[tier].push(entry);
         });
-    
+
         const table = document.getElementById('tier-table');
         let html = '';
-    
+
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const imagesPerRow = 15; // ✅ 추가: 한 줄에 최대 15개 표시
-    
+        const imagesPerRow = 15;
+
         tiers.forEach(tier => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
             tierGroups[tier]
-                .sort((a, b) => b.점수 - a.점수) // ✅ 점수 내림차순 정렬
+                .sort((a, b) => b.점수 - a.점수)
                 .forEach((entry, i) => {
                     const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
                     const tooltipHTML = `
@@ -233,14 +234,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${tooltipHTML}
                         </span>
                     `;
-                    if ((i + 1) % imagesPerRow === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>'; // ✅ 줄바꿈 조건 수정
+                    if ((i + 1) % imagesPerRow === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
                 });
             html += '</div></td></tr>';
         });
-    
+
         table.innerHTML = html;
     }
-    
 
     function setupTablePopup() {
         const popup = document.getElementById('image-popup');
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tableContainer = document.getElementById('tier-table-container');
         const popupTableButton = document.getElementById('popup-table-button');
         const tierTable = tableContainer.querySelector('.tier-table');
-    
+
         if (popupTableButton && tierTable && popup && popupImage && closeButton) {
             popupTableButton.addEventListener('click', function () {
                 html2canvas(tierTable, {
@@ -259,23 +259,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     windowWidth: tierTable.offsetWidth,
                     windowHeight: tierTable.offsetHeight
                 }).then(canvas => {
-                    const version = document.getElementById('version-select').value; // ✅ 자동 파일명 구성
+                    const version = document.getElementById('version-select').value;
                     const tier = document.getElementById('tier-select').value;
                     const period = document.getElementById('period-select').value;
                     const now = new Date();
-                    const timestamp = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+                    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
                     const filename = `${version}_${tier}_${period}_${timestamp}.png`;
-    
+
                     popup.style.display = 'block';
                     popupImage.src = canvas.toDataURL();
-                    popupImage.alt = filename; // ✅ 저장 시 자동 파일명 지정
+                    popupImage.alt = filename;
                 });
             });
-    
+
             closeButton.addEventListener('click', function () {
                 popup.style.display = 'none';
             });
-    
+
             window.addEventListener('click', function (event) {
                 if (event.target === popup) {
                     popup.style.display = 'none';
