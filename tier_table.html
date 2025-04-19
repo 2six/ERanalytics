@@ -95,6 +95,32 @@
         margin: 0 10px;
         padding: 4px;
     }
+
+    .tooltip-container {
+        position: relative;
+        display: inline-block;
+    }
+    .tooltip-box {
+        visibility: hidden;
+        background-color: #333;
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 6px 10px;
+        position: absolute;
+        z-index: 100;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .tooltip-container:hover .tooltip-box {
+        visibility: visible;
+        opacity: 1;
+    }    
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>

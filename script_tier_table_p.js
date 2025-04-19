@@ -119,6 +119,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const orderedTiers = ["S+", "S", "A", "B", "C", "D", "F"];
         const imagesPerRow = 15;
 
+        const tooltipHTML = `
+            <div class="tooltip-box">
+                ${entry.실험체}<br>
+                점수: ${entry.점수.toFixed(2)}<br>
+                RP: ${entry["RP 획득"]}<br>
+                승률: ${(entry["승률"] * 100).toFixed(1)}%<br>
+                TOP3: ${(entry["TOP 3"] * 100).toFixed(1)}%<br>
+                평균 순위: ${entry["평균 순위"]}
+            </div>
+        `;
+
+        html += `
+            <span class="tooltip-container">
+                <img src="image/${imgName}.png" alt="${entry.실험체}">
+                ${tooltipHTML}
+            </span>
+        `;
+
         scoredData.forEach(item => {
             const tier = item["티어"];
             if (!tierGroups[tier]) {
