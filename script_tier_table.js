@@ -188,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function displayTierTable(data) {
         const tiers = ["S+", "S", "A", "B", "C", "D", "F"];
         const tierGroups = {};
+        const imagesPerRow = 15; // ✅ 한 줄에 표시할 이미지 수
         tiers.forEach(t => tierGroups[t] = []);
 
         data.forEach(entry => {
@@ -218,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${tooltipHTML}
                     </span>
                 `;
-                if ((i + 1) % 10 === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
+                if ((i + 1) % imagesPerRow === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
             });
             html += '</div></td></tr>';
         });
