@@ -192,8 +192,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         data.forEach(entry => {
             const tier = entry.티어;
+            if (!tierGroups[tier]) tierGroups[tier] = [];
             tierGroups[tier].push(entry);
         });
+        
+        // ✅ 각 티어 내부에서 점수 순서대로 정렬 (높은 순)
+        for (const tier in tierGroups) {
+            tierGroups[tier].sort((a, b) => b.점수 - a.점수); // ✅ 추가
+        }
+        
 
         const table = document.getElementById('tier-table');
         let html = '';
