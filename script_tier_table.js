@@ -218,9 +218,15 @@ document.addEventListener('DOMContentLoaded', function () {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
         
             const entries = tierGroups[tier].sort((a, b) => b.점수 - a.점수);
-            const hasData = entries.length > 0;
         
-            if (hasData) {
+            if (entries.length === 0) {
+                // ✅ 빈 줄에 투명 이미지 삽입 (미리 준비한 투명 PNG 이미지 사용)
+                html += `
+                    <span class="tooltip-container">
+                        <img src="image/placeholder.png" alt="빈 슬롯" style="opacity: 0;">
+                    </span>
+                `;
+            } else {
                 entries.forEach((entry, i) => {
                     const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
                     const tooltipHTML = `
@@ -239,12 +245,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     if ((i + 1) % imagesPerRow === 0 && i !== entries.length - 1) html += '</div><div>';
                 });
-            } else {
-                html += '&nbsp;'; // ✅ 빈 줄에도 최소한의 공간을 줘서 배경색 유지
             }
         
             html += '</div></td></tr>';
-        });        
+        });
+        
 
         table.innerHTML = html;
     }
