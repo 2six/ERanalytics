@@ -149,16 +149,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const avgScore = getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
+        const k = 1.5;
 
-        const scoreList = data.map(item => {
+        return data.map(item => {
             const pickRate = item["표본수"] / totalSample;
             const r = pickRate / avgPickRate;
-            const k = 1.5;
             const 원점반영 = r <= 1 / 3
                 ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
                 : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
             const 평균반영 = 1 - 원점반영;
-            const 픽률보정 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
+
+            const base = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
+            let 픽률보정;
+            if (r <= 5) {
+                픽률보정 = base;
+            } else if (r <= 10) {
+                const extra = 0.03 * (r - 5);
+                픽률보정 = base + extra;
+            } else {
+                픽률보정 = base + 0.15;
+            }
+
             const rpScore = getRPScore(item["RP 획득"]);
 
             let score;
@@ -172,20 +183,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 score = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정;
             }
 
-            return { item, score };
-        });
-
-        const 평균 = scoreList.reduce((a, b) => a + b.score, 0) / scoreList.length;
-        const 분산 = scoreList.reduce((a, b) => a + (b.score - 평균) ** 2, 0) / scoreList.length;
-        const 표준편차 = Math.sqrt(분산);
-
-        return scoreList.map(({ item, score }) => {
-            const tier = getTierByStd(score, 평균, 표준편차, tierConfig);
+            const tier = calculateTier(score, avgScore, tierConfig);
             return {
                 "실험체": item["실험체"],
                 "점수": parseFloat(score.toFixed(2)),
                 "티어": tier,
-                "픽률": parseFloat((item["표본수"] / totalSample * 100).toFixed(2)),
+                "픽률": parseFloat((pickRate * 100).toFixed(2)),
                 "RP 획득": parseFloat(item["RP 획득"].toFixed(1)),
                 "승률": parseFloat((item["승률"] * 100).toFixed(2)),
                 "TOP 3": parseFloat((item["TOP 3"] * 100).toFixed(2)),
@@ -194,14 +197,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function getTierByStd(score, mean, std, config) {
-        const z = (score - mean) / std;
-        if (z >= parseFloat(config["S+"])) return "S+";
-        if (z >= parseFloat(config["S"])) return "S";
-        if (z >= parseFloat(config["A"])) return "A";
-        if (z >= parseFloat(config["B"])) return "B";
-        if (z >= parseFloat(config["C"])) return "C";
-        if (z >= parseFloat(config["D"])) return "D";
+    function calculateTier(score, avgScore, config) {
+        const diff = score - avgScore;
+        if (diff > avgScore * parseFloat(config["S+"])) return "S+";
+        if (diff > avgScore * parseFloat(config["S"])) return "S";
+        if (diff > avgScore * parseFloat(config["A"])) return "A";
+        if (diff > avgScore * parseFloat(config["B"])) return "B";
+        if (diff > avgScore * parseFloat(config["C"])) return "C";
+        if (diff > avgScore * parseFloat(config["D"])) return "D";
         return "F";
     }
 

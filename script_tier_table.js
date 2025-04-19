@@ -1,18 +1,18 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const versionSelect = document.getElementById('version-select'); // ✅ 추가: 버전 드롭다운
-    const tierSelect = document.getElementById('tier-select');       // ✅ 추가: 티어 드롭다운
-    const periodSelect = document.getElementById('period-select');   // ✅ 추가: 구간 드롭다운
+    const versionSelect = document.getElementById('version-select');
+    const tierSelect = document.getElementById('tier-select');
+    const periodSelect = document.getElementById('period-select');
 
-    let tierConfigGlobal = null; // ✅ 전역 변수 추가
+    let tierConfigGlobal = null;
 
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
         const config = parseINI(iniString);
-        tierConfigGlobal = config.tiers; // ✅ 전역 변수에 저장
+        tierConfigGlobal = config.tiers;
         initDropdowns(versionList);
-        triggerLoad(tierConfigGlobal); // ✅ 초기 호출
+        triggerLoad(tierConfigGlobal);
     });
 
     function initDropdowns(versionList) {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
             "meteorite_plus": "메테오라이트+",
             "mithril_plus": "미스릴+",
             "in1000": "in1000"
-        };        
+        };
 
         Object.entries(tierMap).forEach(([key, val]) => {
             tierSelect.innerHTML += `<option value="${key}">${val}</option>`;
@@ -144,49 +144,45 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
         const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
         const k = 1.5;
-    
-        // ✅ 표준편차 계산
-        const scoreList = data.map(item => {
-            const pickRate = item["표본수"] / totalSampleCount;
+
+        return data.map(item => {
+            const pickRate = (item["표본수"] / totalSampleCount);
             const r = pickRate / averagePickRate;
             const 원점반영 = r <= 1/3 ?
                 (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))) :
                 (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)));
             const 평균반영 = 1 - 원점반영;
-            const 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
-    
-            const rpScore = getRPScore(item["RP 획득"]);
-            let score;
-    
-            if (item["표본수"] < totalSampleCount * averagePickRate) {
-                score = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 
-                        (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
-                        averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
-                score *= 픽률보정계수;
-            } else {
-                score = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
+
+            let 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
+            if (r > 5) {
+                픽률보정계수 += 0.05 * (1 - Math.min((r - 5) / 5, 1));
             }
-            return score;
-        });
-    
-        const mean = scoreList.reduce((sum, s) => sum + s, 0) / scoreList.length;
-        const std = Math.sqrt(scoreList.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scoreList.length);
-    
-        return data.map((item, i) => {
-            const score = scoreList[i];
-            const tier = calculateTierByStd(score, mean, std, config);
-            return { ...item, "점수": score, "티어": tier };
+
+            const rpScore = getRPScore(item["RP 획득"]);
+            let 보정점수;
+
+            if (item["표본수"] < totalSampleCount * averagePickRate) {
+                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 
+                            (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
+                            averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
+                보정점수 *= 픽률보정계수;
+            } else {
+                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
+            }
+
+            const tier = calculateTier(보정점수, averageScore, config);
+            return { ...item, "티어": tier, "점수": 보정점수 };
         });
     }
-    
-    function calculateTierByStd(score, mean, std, config) {
-        const diff = (score - mean) / std;
-        if (diff > parseFloat(config["S+"])) return "S+";
-        if (diff > parseFloat(config["S"])) return "S";
-        if (diff > parseFloat(config["A"])) return "A";
-        if (diff > parseFloat(config["B"])) return "B";
-        if (diff > parseFloat(config["C"])) return "C";
-        if (diff > parseFloat(config["D"])) return "D";
+
+    function calculateTier(score, averageScore, config) {
+        const diff = score - averageScore;
+        if (diff > averageScore * parseFloat(config["S+"])) return "S+";
+        if (diff > averageScore * parseFloat(config["S"])) return "S";
+        if (diff > averageScore * parseFloat(config["A"])) return "A";
+        if (diff > averageScore * parseFloat(config["B"])) return "B";
+        if (diff > averageScore * parseFloat(config["C"])) return "C";
+        if (diff > averageScore * parseFloat(config["D"])) return "D";
         return "F";
     }
 
