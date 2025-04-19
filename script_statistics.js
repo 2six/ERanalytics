@@ -1,3 +1,5 @@
+// ✅ 픽률 보정 구조 및 표준편차 기반 티어 산정 적용
+
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
@@ -107,29 +109,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 "RP 획득": (curr["RP 획득"] * curr["표본수"] - prev["RP 획득"] * prev["표본수"]) / diffSample,
                 "승률": (curr["승률"] * curr["표본수"] - prev["승률"] * prev["표본수"]) / diffSample,
                 "TOP 3": (curr["TOP 3"] * curr["표본수"] - prev["TOP 3"] * prev["표본수"]) / diffSample,
-                "평균 순위": (curr["평균 순위"] * curr["표본수"] - prev["평균 순위"] * prev["표본수"]) / diffSample,
+                "평균 순위": (curr["평균 순위"] * curr["표본수"] - prev["평균 순위"] * prev["표본수"]) / diffSample
             });
         }
 
         return delta;
-    }
-
-    function parseINI(iniString) {
-        const config = {};
-        let currentSection = null;
-        iniString.split('\n').forEach(line => {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return;
-            const section = trimmed.match(/^\[(.*)\]$/);
-            if (section) {
-                currentSection = section[1];
-                config[currentSection] = {};
-                return;
-            }
-            const kv = trimmed.match(/^([^=]+)=(.*)$/);
-            if (kv) config[currentSection][kv[1].trim()] = kv[2].trim();
-        });
-        return config;
     }
 
     function getRPScore(rp) {
@@ -149,6 +133,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const avgScore = getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
+        const stddev = Math.sqrt(data.reduce((sum, i) => {
+            const s = getRPScore(i["RP 획득"]) + i["승률"] * 9 + i["TOP 3"] * 3;
+            return sum + Math.pow(s - avgScore, 2) * (i["표본수"] / totalSample);
+        }, 0));
+
         const k = 1.5;
 
         return data.map(item => {
@@ -160,18 +149,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const 평균반영 = 1 - 원점반영;
 
             const base = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
-            let 픽률보정;
-            if (r <= 5) {
-                픽률보정 = base;
-            } else if (r <= 10) {
-                const extra = 0.03 * (r - 5);
-                픽률보정 = base + extra;
-            } else {
-                픽률보정 = base + 0.15;
+            let 픽률보정 = base;
+            if (r > 5 && r <= 10) {
+                픽률보정 += 0.05 * (1 - (r - 5) / 5);
+            } else if (r > 10) {
+                픽률보정 += 0.0;
             }
 
             const rpScore = getRPScore(item["RP 획득"]);
-
             let score;
             if (item["표본수"] < totalSample * avgPickRate) {
                 score = (
@@ -183,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 score = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정;
             }
 
-            const tier = calculateTier(score, avgScore, tierConfig);
+            const tier = calculateTier(score, avgScore, stddev, tierConfig);
             return {
                 "실험체": item["실험체"],
                 "점수": parseFloat(score.toFixed(2)),
@@ -197,14 +182,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function calculateTier(score, avgScore, config) {
-        const diff = score - avgScore;
-        if (diff > avgScore * parseFloat(config["S+"])) return "S+";
-        if (diff > avgScore * parseFloat(config["S"])) return "S";
-        if (diff > avgScore * parseFloat(config["A"])) return "A";
-        if (diff > avgScore * parseFloat(config["B"])) return "B";
-        if (diff > avgScore * parseFloat(config["C"])) return "C";
-        if (diff > avgScore * parseFloat(config["D"])) return "D";
+    function calculateTier(score, avg, std, config) {
+        const diff = score - avg;
+        if (diff > std * parseFloat(config["S+"])) return "S+";
+        if (diff > std * parseFloat(config["S"])) return "S";
+        if (diff > std * parseFloat(config["A"])) return "A";
+        if (diff > std * parseFloat(config["B"])) return "B";
+        if (diff > std * parseFloat(config["C"])) return "C";
+        if (diff > std * parseFloat(config["D"])) return "D";
         return "F";
     }
 
