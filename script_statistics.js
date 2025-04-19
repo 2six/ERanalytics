@@ -4,6 +4,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const periodSelect = document.getElementById('period-select');
     const gradientCheckbox = document.getElementById('gradient-checkbox');
 
+    let currentSortColumn = null;
+    let currentSortAsc = true;
+    let lastSortedData = [];
+
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
@@ -15,10 +19,14 @@ document.addEventListener('DOMContentLoaded', function () {
         tierSelect.addEventListener('change', triggerLoad);
         periodSelect.addEventListener('change', triggerLoad);
         gradientCheckbox.addEventListener('change', () => {
-            triggerLoad();
+            if (lastSortedData.length > 0) {
+                const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
+                displaySelectedData(sorted);
+            }
         });
 
-        triggerLoad(); // 초기 로딩
+        triggerLoad();
+
         function triggerLoad() {
             const version = versionSelect.value;
             const tier = tierSelect.value;
@@ -50,7 +58,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const history = json["통계"];
                 const entries = getEntriesFromPeriod(history, period);
                 const scored = calculateAndSortScores(entries, tierConfig);
-                displaySelectedData(scored);
+                const sorted = sortData(scored, currentSortColumn || "점수", currentSortAsc);
+                displaySelectedData(sorted);
             })
             .catch(err => {
                 console.error('불러오기 실패:', err);
@@ -188,26 +197,37 @@ document.addEventListener('DOMContentLoaded', function () {
         return "F";
     }
 
-    let currentSortColumn = null;
-    let currentSortAsc = true;
-    let lastSortedData = [];
+    function sortData(data, column, asc) {
+        if (!column) return [...data];
+        const numericCols = ["점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
+        const sorted = [...data].sort((a, b) => {
+            const aVal = numericCols.includes(column) ? parseFloat(a[column]) : a[column];
+            const bVal = numericCols.includes(column) ? parseFloat(b[column]) : b[column];
+            return asc ? aVal - bVal : bVal - aVal;
+        });
+        lastSortedData = [...sorted];
+        return sorted;
+    }
 
     function displaySelectedData(data) {
         const container = document.getElementById('data-container');
         const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
-        // 테이블 헤더 (정렬 가능)
         let html = '<table><thead><tr>';
         columns.forEach(col => {
             html += `<th style="cursor:pointer;" data-column="${col}">${col}</th>`;
         });
         html += '</tr></thead><tbody>';
 
-        // 테이블 본문
         data.forEach(item => {
             html += '<tr>';
             columns.forEach(col => {
-                html += `<td>${item[col]}</td>`;
+                let val = item[col];
+                if (["점수", "RP 획득", "승률", "TOP 3", "평균 순위"].includes(col)) {
+                    val = parseFloat(val).toFixed(2);
+                    if (["승률", "TOP 3", "픽률"].includes(col)) val += "%";
+                }
+                html += `<td>${val}</td>`;
             });
             html += '</tr>';
         });
@@ -215,50 +235,34 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '</tbody></table>';
         container.innerHTML = html;
 
-        // 헤더 클릭 이벤트 등록
         container.querySelectorAll('th').forEach(th => {
             th.addEventListener('click', () => {
                 const column = th.dataset.column;
                 if (currentSortColumn === column) {
-                    currentSortAsc = !currentSortAsc; // 방향 토글
+                    currentSortAsc = !currentSortAsc;
                 } else {
                     currentSortColumn = column;
                     currentSortAsc = true;
                 }
                 const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
                 displaySelectedData(sorted);
-                if (document.getElementById('gradient-checkbox').checked) {
-                    applyGradientColors();
-                }
+                if (gradientCheckbox.checked) applyGradientColors();
             });
         });
 
-        lastSortedData = [...data]; // 현재 데이터 저장
-
-        if (document.getElementById('gradient-checkbox').checked) {
-            applyGradientColors();
-        }
-    }
-
-    function sortData(data, column, asc) {
-        const numericCols = ["점수", "RP 획득", "승률", "TOP 3", "평균 순위"];
-        const sorted = [...data].sort((a, b) => {
-            const aVal = numericCols.includes(column) ? parseFloat(a[column]) : a[column];
-            const bVal = numericCols.includes(column) ? parseFloat(b[column]) : b[column];
-            return asc ? aVal - bVal : bVal - aVal;
-        });
-        return sorted;
+        lastSortedData = [...data];
+        if (gradientCheckbox.checked) applyGradientColors();
     }
 
     function applyGradientColors() {
         const rows = document.querySelectorAll('#data-container tbody tr');
-        const cells = document.querySelectorAll('#data-container thead th');
+        const headers = document.querySelectorAll('#data-container thead th');
 
         const getNumeric = str => parseFloat(str.replace('%', ''));
 
-        cells.forEach((th, index) => {
-            const colName = th.dataset.column;
-            if (!["점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"].includes(colName)) return;
+        headers.forEach((th, index) => {
+            const col = th.dataset.column;
+            if (!["점수", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"].includes(col)) return;
 
             const values = Array.from(rows).map(row => getNumeric(row.children[index].textContent));
             const min = Math.min(...values);
@@ -270,18 +274,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const ratio = (val - min) / (max - min);
                 const red = Math.round(255 * (1 - ratio));
                 const blue = Math.round(255 * ratio);
-                cell.style.backgroundColor = `rgb(${red}, ${red}, ${blue})`;
+                cell.style.backgroundColor = `rgb(${red}, 0, ${blue})`;
             });
         });
     }
-
-    // 색상 강조 체크 시 다시 반영 (정렬 유지)
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('gradient-checkbox').addEventListener('change', () => {
-            if (lastSortedData.length > 0) {
-                const sorted = sortData(lastSortedData, currentSortColumn, currentSortAsc);
-                displaySelectedData(sorted);
-            }
-        });
-    });
 });
