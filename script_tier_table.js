@@ -239,6 +239,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     if ((i + 1) % imagesPerRow === 0 && i !== entries.length - 1) html += '</div><div>';
                 });
+            } else {
+                html += '&nbsp;'; // ✅ 빈 줄에도 최소한의 공간을 줘서 배경색 유지
             }
         
             html += '</div></td></tr>';
