@@ -1,5 +1,3 @@
-// ✅ 픽률 보정 구조 및 표준편차 기반 티어 산정 적용
-
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
@@ -24,6 +22,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
         triggerLoad(tierConfig);
     });
+
+    function parseINI(iniString) {
+        const config = {};
+        let currentSection = null;
+        iniString.split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return;
+            const section = trimmed.match(/^\[(.*)\]$/);
+            if (section) {
+                currentSection = section[1];
+                config[currentSection] = {};
+                return;
+            }
+            const kv = trimmed.match(/^([^=]+)=(.*)$/);
+            if (kv) config[currentSection][kv[1].trim()] = kv[2].trim();
+        });
+        return config;
+    }
 
     function initDropdowns(versionList) {
         versionList.sort().reverse().forEach(v => {
@@ -133,6 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const avgScore = getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
+
         const stddev = Math.sqrt(data.reduce((sum, i) => {
             const s = getRPScore(i["RP 획득"]) + i["승률"] * 9 + i["TOP 3"] * 3;
             return sum + Math.pow(s - avgScore, 2) * (i["표본수"] / totalSample);
@@ -143,35 +160,33 @@ document.addEventListener('DOMContentLoaded', function () {
         return data.map(item => {
             const pickRate = item["표본수"] / totalSample;
             const r = pickRate / avgPickRate;
+
             const 원점반영 = r <= 1 / 3
                 ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
                 : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
+
             const 평균반영 = 1 - 원점반영;
 
-            const base = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
-            let 픽률보정 = base;
-            if (r > 5 && r <= 10) {
-                픽률보정 += 0.05 * (1 - (r - 5) / 5);
-            } else if (r > 10) {
-                픽률보정 += 0.0;
+            let 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
+            if (r > 5) {
+                픽률보정계수 += 0.05 * (1 - Math.min((r - 5) / 5, 1));
             }
 
             const rpScore = getRPScore(item["RP 획득"]);
-            let score;
+            let 점수;
             if (item["표본수"] < totalSample * avgPickRate) {
-                score = (
-                    rpScore + item["승률"] * 9 + item["TOP 3"] * 3
-                ) * (원점반영 + 평균반영 * Math.min(1, pickRate / avgPickRate)) +
-                    avgScore * 평균반영 * (1 - Math.min(1, pickRate / avgPickRate));
-                score *= 픽률보정;
+                점수 = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) *
+                        (원점반영 + 평균반영 * Math.min(1, pickRate / avgPickRate)) +
+                        avgScore * 평균반영 * (1 - Math.min(1, pickRate / avgPickRate));
+                점수 *= 픽률보정계수;
             } else {
-                score = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정;
+                점수 = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정계수;
             }
 
-            const tier = calculateTier(score, avgScore, stddev, tierConfig);
+            const tier = calculateTier(점수, avgScore, stddev, tierConfig);
             return {
                 "실험체": item["실험체"],
-                "점수": parseFloat(score.toFixed(2)),
+                "점수": parseFloat(점수.toFixed(2)),
                 "티어": tier,
                 "픽률": parseFloat((pickRate * 100).toFixed(2)),
                 "RP 획득": parseFloat(item["RP 획득"].toFixed(1)),
@@ -194,14 +209,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function sortData(data, column, asc) {
-        const sorted = [...data].sort((a, b) => {
+        return [...data].sort((a, b) => {
             if (typeof a[column] === 'number') {
                 return asc ? a[column] - b[column] : b[column] - a[column];
             } else {
                 return asc ? a[column].localeCompare(b[column]) : b[column].localeCompare(a[column]);
             }
         });
-        return sorted;
     }
 
     const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
