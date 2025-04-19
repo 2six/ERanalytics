@@ -1,20 +1,18 @@
-// ✅ 원본 기반 + 새로운 JSON 구조와 구간 필터 기능 반영
-// ✅ 수정 사항은 모두 주석 처리
+// ✅ 원본 기반 + 새로운 JSON 구조와 구간 필터 기능 반영 + 원본 점수 계산 로직 유지 + 이름 변환 함수 복원
+// ✅ 모든 수정 사항 주석 명시
 
 document.addEventListener('DOMContentLoaded', function () {
-    const versionSelect = document.getElementById('version-select'); // ✅ 추가: 버전 드롭다운
-    const tierSelect = document.getElementById('tier-select');       // ✅ 추가: 티어 드롭다운
-    const periodSelect = document.getElementById('period-select');   // ✅ 추가: 구간 드롭다운
-
-    let tierConfig; // ✅ 전역 변수로 이동 (triggerLoad에서 접근하기 위해)
+    const versionSelect = document.getElementById('version-select'); // ✅ 추가
+    const tierSelect = document.getElementById('tier-select');       // ✅ 추가
+    const periodSelect = document.getElementById('period-select');   // ✅ 추가
 
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
-        tierConfig = parseINI(iniString).tiers;
+        const tierConfig = parseINI(iniString).tiers;
         initDropdowns(versionList);
-        triggerLoad();
+        triggerLoad(tierConfig);
     });
 
     function initDropdowns(versionList) {
@@ -45,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
         periodSelect.addEventListener('change', () => triggerLoad());
     }
 
-    function triggerLoad() {
+    function triggerLoad(tierConfig) {
         const version = versionSelect.value;
         const tier = tierSelect.value;
         const period = periodSelect.value;
@@ -125,34 +123,82 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function calculateAverageScore(data) {
-        const totalSample = data.reduce((sum, i) => sum + i["표본수"], 0);
-        const avgRP = data.reduce((s, i) => s + i["RP 획득"] * i["표본수"], 0) / totalSample;
-        const avgWin = data.reduce((s, i) => s + i["승률"] * i["표본수"], 0) / totalSample;
-        const avgTop3 = data.reduce((s, i) => s + i["TOP 3"] * i["표본수"], 0) / totalSample;
-        return getRPScore(avgRP) + avgWin * 9 + avgTop3 * 3;
+        const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
+        let weightedSumRP = 0;
+        let weightedSumWinRate = 0;
+        let weightedSumTop3 = 0;
+        data.forEach(item => {
+            weightedSumRP += item["RP 획득"] * (item["표본수"] / totalSampleCount);
+            weightedSumWinRate += item["승률"] * (item["표본수"] / totalSampleCount);
+            weightedSumTop3 += item["TOP 3"] * (item["표본수"] / totalSampleCount);
+        });
+        const averageRP = weightedSumRP;
+        const averageWinRate = weightedSumWinRate;
+        const averageTop3 = weightedSumTop3;
+        return (Math.log(averageRP + 1) * 3) + (averageWinRate * 9) + (averageTop3 * 3);
     }
 
     function getRPScore(rp) {
-        return rp >= 0 ? Math.log(rp + 1) * 3 : -Math.log(-rp + 1) * 2;
+        if (rp >= 0) return Math.log(rp + 1) * 3;
+        else return -Math.log(-rp + 1) * 2;
     }
 
-    function calculateTiers(data, avgScore, config) {
+    function calculateTiers(data, averageScore, config) {
+        const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
+        const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
+        const k = 1.5;
+
         return data.map(item => {
-            const score = getRPScore(item["RP 획득"]) + item["승률"] * 9 + item["TOP 3"] * 3;
-            const tier = calculateTier(score, avgScore, config);
-            return { ...item, 티어: tier, 점수: score };
+            const pickRate = (item["표본수"] / totalSampleCount);
+            const r = pickRate / averagePickRate;
+            const 원점반영 = r <= 1/3 ?
+                (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))) :
+                (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)));
+            const 평균반영 = 1 - 원점반영;
+            const 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
+
+            const rpScore = getRPScore(item["RP 획득"]);
+            let 보정점수;
+
+            if (item["표본수"] < totalSampleCount * averagePickRate) {
+                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 
+                            (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
+                            averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
+                보정점수 *= 픽률보정계수;
+            } else {
+                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
+            }
+
+            const tier = calculateTier(보정점수, averageScore, config);
+            return { ...item, "티어": tier };
         });
     }
 
-    function calculateTier(score, avgScore, config) {
-        const diff = score - avgScore;
-        if (diff > avgScore * parseFloat(config["S+"])) return "S+";
-        if (diff > avgScore * parseFloat(config["S"])) return "S";
-        if (diff > avgScore * parseFloat(config["A"])) return "A";
-        if (diff > avgScore * parseFloat(config["B"])) return "B";
-        if (diff > avgScore * parseFloat(config["C"])) return "C";
-        if (diff > avgScore * parseFloat(config["D"])) return "D";
+    function calculateTier(score, averageScore, config) {
+        const diff = score - averageScore;
+        if (diff > averageScore * parseFloat(config["S+"])) return "S+";
+        if (diff > averageScore * parseFloat(config["S"])) return "S";
+        if (diff > averageScore * parseFloat(config["A"])) return "A";
+        if (diff > averageScore * parseFloat(config["B"])) return "B";
+        if (diff > averageScore * parseFloat(config["C"])) return "C";
+        if (diff > averageScore * parseFloat(config["D"])) return "D";
         return "F";
+    }
+
+    function convertExperimentNameToImageName(experimentName) {
+        if (experimentName === "글러브 리 다이린") return "리다이린-글러브";
+        else if (experimentName === "쌍절곤 리 다이린") return "리다이린-쌍절곤";
+        else if (experimentName.startsWith("리 다이린 ")) {
+            const parts = experimentName.substring("리 다이린 ".length).split(" ");
+            return `리다이린-${parts.join("-")}`;
+        } else if (experimentName.startsWith("돌격 소총 ")) {
+            const parts = experimentName.substring("돌격 소총 ".length).split(" ");
+            return `${parts.join("-")}-돌격소총`;
+        } else if (experimentName.includes(" ")) {
+            const parts = experimentName.split(" ");
+            if (parts.length >= 2) return `${parts[1]}-${parts[0]}`;
+        }
+        return experimentName;
     }
 
     function displayTierTable(data) {
@@ -168,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const table = document.getElementById('tier-table');
         let html = '';
 
-        tiers.forEach((tier) => {
+        tiers.forEach(tier => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
             tierGroups[tier].forEach((entry, i) => {
                 const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
@@ -214,23 +260,5 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
-    }
-
-    function convertExperimentNameToImageName(experimentName) {
-        if (experimentName === "글러브 리 다이린") {
-            return "리다이린-글러브";
-        } else if (experimentName === "쌍절곤 리 다이린") {
-            return "리다이린-쌍절곤";
-        } else if (experimentName.startsWith("리 다이린 ")) {
-            const parts = experimentName.substring("리 다이린 ".length).split(" ");
-            return `리다이린-${parts.join("-")}`;
-        } else if (experimentName.startsWith("돌격 소총 ")) {
-            const parts = experimentName.substring("돌격 소총 ".length).split(" ");
-            return `${parts.join("-")}-돌격소총`;
-        } else if (experimentName.includes(" ")) {
-            const parts = experimentName.split(" ");
-            if (parts.length >= 2) return `${parts[1]}-${parts[0]}`;
-        }
-        return experimentName;
     }
 });
