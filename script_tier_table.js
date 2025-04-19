@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
     const periodSelect = document.getElementById('period-select');
-    const tierContainer = document.getElementById('tier-container');
 
     Promise.all([
         fetch('config.ini').then(r => r.text()),
@@ -10,10 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ]).then(([iniString, versionList]) => {
         const tierConfig = parseINI(iniString).tiers;
         initDropdowns(versionList);
-        versionSelect.addEventListener('change', triggerLoad);
-        tierSelect.addEventListener('change', triggerLoad);
-        periodSelect.addEventListener('change', triggerLoad);
-        triggerLoad();
+        triggerLoad(tierConfig);
     });
 
     function initDropdowns(versionList) {
@@ -28,15 +24,20 @@ document.addEventListener('DOMContentLoaded', function () {
             "mithril_plus": "미스릴+",
             "in1000": "in1000"
         };
-        Object.keys(tierMap).forEach(tier => {
-            tierSelect.innerHTML += `<option value="${tier}">${tierMap[tier]}</option>`;
+
+        Object.entries(tierMap).forEach(([key, val]) => {
+            tierSelect.innerHTML += `<option value="${key}">${val}</option>`;
         });
 
         periodSelect.innerHTML = `
-            <option value="latest">버전 전체</option>
-            <option value="3day">최근 3일</option>
-            <option value="7day">최근 7일</option>
+          <option value="latest">전체</option>
+          <option value="3day">최근 3일</option>
+          <option value="7day">최근 7일</option>
         `;
+
+        versionSelect.addEventListener('change', triggerLoad);
+        tierSelect.addEventListener('change', triggerLoad);
+        periodSelect.addEventListener('change', triggerLoad);
     }
 
     function triggerLoad() {
@@ -51,46 +52,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 const timestamps = Object.keys(history).sort();
                 const latestKey = timestamps[timestamps.length - 1];
                 const latestData = history[latestKey];
-                renderTierTable(latestData, tier);
+
+                let dataToUse = latestData;
+                if (period !== 'latest') {
+                    const days = period === '3day' ? 3 : 7;
+                    const latestDate = new Date(latestKey);
+                    const pastDate = new Date(latestDate);
+                    pastDate.setDate(pastDate.getDate() - days);
+
+                    const pastKey = timestamps.reverse().find(ts => new Date(ts) <= pastDate);
+                    if (pastKey && history[pastKey]) {
+                        const currMap = Object.fromEntries(latestData.map(d => [d.실험체, d]));
+                        const prevMap = Object.fromEntries(history[pastKey].map(d => [d.실험체, d]));
+
+                        const delta = [];
+                        for (const name in currMap) {
+                            const curr = currMap[name];
+                            const prev = prevMap[name];
+                            if (!prev) continue;
+
+                            const diffSample = curr["표본수"] - prev["표본수"];
+                            if (diffSample <= 0) continue;
+
+                            delta.push({
+                                "실험체": name,
+                                "표본수": diffSample,
+                                "RP 획득": (curr["RP 획득"] * curr["표본수"] - prev["RP 획득"] * prev["표본수"]) / diffSample,
+                                "승률": (curr["승률"] * curr["표본수"] - prev["승률"] * prev["표본수"]) / diffSample,
+                                "TOP 3": (curr["TOP 3"] * curr["표본수"] - prev["TOP 3"] * prev["표본수"]) / diffSample,
+                                "평균 순위": (curr["평균 순위"] * curr["표본수"] - prev["평균 순위"] * prev["표본수"]) / diffSample
+                            });
+                        }
+
+                        dataToUse = delta;
+                    }
+                }
+
+                drawTierTable(dataToUse);
             });
-    }
-
-    function renderTierTable(data, tierKey) {
-        const tiers = { S: [], A: [], B: [], C: [], D: [], F: [] };
-
-        const config = {
-            S: 0.15,
-            A: 0.05,
-            B: -0.05,
-            C: -0.15,
-            D: -0.25
-        };
-
-        const avgScore = data.reduce((a, b) => a + b["점수"] ?? 0, 0) / data.length;
-
-        data.forEach(entry => {
-            const score = entry["점수"] ?? 0;
-            const diff = score - avgScore;
-            let group = 'F';
-            if (diff > avgScore * config.S) group = 'S';
-            else if (diff > avgScore * config.A) group = 'A';
-            else if (diff > avgScore * config.B) group = 'B';
-            else if (diff > avgScore * config.C) group = 'C';
-            else if (diff > avgScore * config.D) group = 'D';
-            tiers[group].push(entry);
-        });
-
-        tierContainer.innerHTML = '';
-        Object.entries(tiers).forEach(([tier, list]) => {
-            let html = `<div class="tier-section"><h2 class="tier-title">${tier}</h2><div class="tier-list">`;
-            list.forEach(item => {
-                const name = item["실험체"];
-                const imgSrc = `https://cdn.dak.gg/er/characters/${encodeURIComponent(name)}.webp`;
-                html += `<div class="character"><img src="${imgSrc}" alt="${name}" title="${name}"/></div>`;
-            });
-            html += '</div></div>';
-            tierContainer.innerHTML += html;
-        });
     }
 
     function parseINI(iniString) {
@@ -109,5 +108,55 @@ document.addEventListener('DOMContentLoaded', function () {
             if (kv) config[currentSection][kv[1].trim()] = kv[2].trim();
         });
         return config;
+    }
+
+    function convertExperimentNameToImageName(experimentName) {
+        if (experimentName === "글러브 리 다이린") {
+            return "리다이린-글러브";
+        } else if (experimentName === "쌍절곤 리 다이린") {
+            return "리다이린-쌍절곤";
+        } else if (experimentName.startsWith("리 다이린 ")) {
+            const parts = experimentName.substring("리 다이린 ".length).split(" ");
+            return `리다이린-${parts.join("-")}`;
+        } else if (experimentName.startsWith("돌격 소총 ")) {
+            const parts = experimentName.substring("돌격 소총 ".length).split(" ");
+            return `${parts.join("-")}-돌격소총`;
+        } else if (experimentName.includes(" ")) {
+            const parts = experimentName.split(" ");
+            if (parts.length >= 2) {
+                return `${parts[1]}-${parts[0]}`;
+            }
+        }
+        return experimentName;
+    }
+
+    function drawTierTable(data) {
+        const tiers = ["S+", "S", "A", "B", "C", "D", "F"];
+        const tierGroups = {};
+        tiers.forEach(t => tierGroups[t] = []);
+
+        data.forEach(entry => {
+            const match = entry.실험체.match(/^(.*?) (.+)$/);
+            if (!match) return;
+            const [, weapon, name] = match;
+            const tier = entry.티어 || "F";
+            tierGroups[tier].push({ name, weapon, full: entry.실험체, score: entry.점수 });
+        });
+
+        const table = document.getElementById('tier-table');
+        let html = '';
+
+        tiers.forEach(tier => {
+            html += `<tr class="tier-row"><th>${tier}</th><td><div>`;
+            const sorted = tierGroups[tier].sort((a, b) => b.score - a.score);
+            sorted.forEach((e, i) => {
+                const imgName = convertExperimentNameToImageName(e.full).replace(/ /g, '_');
+                html += `<img src="image/${imgName}.png" alt="${e.full}" title="${e.full}">`;
+                if ((i + 1) % 10 === 0 && i !== sorted.length - 1) html += '</div><div>';
+            });
+            html += '</div></td></tr>';
+        });
+
+        table.innerHTML = html;
     }
 });
