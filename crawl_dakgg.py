@@ -1,26 +1,20 @@
-import os
-import json
-from datetime import datetime, timedelta, timezone
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
-
-# 한국 표준시 (UTC+9) 적용
-KST = timezone(timedelta(hours=9))
-
-def parse_percentage(value: str) -> float:
-    if '-' in value:
-        return 0.0
-    return float(value.strip().replace('%', '').split()[0]) / 100
-
 # 실험체 이름에서 "무기군"을 제거하고 이름을 기준으로 정렬
 def clean_and_sort_name(name: str) -> str:
-    # "무기군" 제거
-    if "무기군" in name:
-        name = name.split("무기군", 1)[-1].strip()
+    # "카메라" 등 무기 이름을 제거하고 실험체 이름만 남김
+    weapon_prefixes = [
+        "카메라", "방망이", "석궁", "저격총", "투척", "아르카나", "양손검", "권총", "단검", "레이피어", "글러브", "톤파", 
+        "망치", "쌍절곤", "창", "채찍", "기타", "도끼", "암기", "VF 의수", "쌍검", "돌격 소총", "활"
+    ]
     
-    # 정렬을 위한 키 반환 (띄어쓰기가 있어도 정상적으로 처리)
+    # 무기 이름이 실험체 앞에 있다면 이를 제외하고 실험체 이름만 남기기
+    for prefix in weapon_prefixes:
+        if name.startswith(prefix):
+            name = name[len(prefix):].strip()
+            break
+    
     return name
 
+# 실험체 데이터를 정렬하는 함수
 def crawl_tier_data(tier_key: str, display_name: str):
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -65,7 +59,7 @@ def crawl_tier_data(tier_key: str, display_name: str):
                 print(f"[{tier_key}] 오류 발생: {e}")
                 continue
 
-        # 실험체 이름을 기준으로 정렬
+        # 실험체 이름을 기준으로 정렬 (무기명 제거 후)
         data.sort(key=lambda x: clean_and_sort_name(x["실험체"]))
 
         # 파일 경로 생성
@@ -98,38 +92,3 @@ def crawl_tier_data(tier_key: str, display_name: str):
 
         print(f"[{tier_key}] {len(data)}개 실험체 데이터 저장 완료.")
         browser.close()
-
-def update_versions_json(version):
-    versions_file_path = "versions.json"  # 루트 폴더에 위치한 versions.json 파일 경로로 수정
-    
-    # 기존 versions.json 로드
-    if os.path.exists(versions_file_path):
-        with open(versions_file_path, "r", encoding="utf-8") as f:
-            versions = json.load(f)
-    else:
-        versions = []
-    
-    # 새로운 버전 추가 (중복 체크)
-    if version not in versions:
-        versions.append(version)
-
-    # 최신 버전 순으로 정렬 (내림차순)
-    versions.sort(reverse=True)
-
-    # versions.json 파일에 저장
-    with open(versions_file_path, "w", encoding="utf-8") as f:
-        json.dump(versions, f, ensure_ascii=False, indent=2)
-
-def main():
-    tier_map = {
-        "platinum_plus": "플래티넘+",
-        "diamond_plus": "다이아몬드+",
-        "meteorite_plus": "메테오라이트+",
-        "mithril_plus": "미스릴+",
-        "in1000": "in1000"
-    }
-    for key, name in tier_map.items():
-        crawl_tier_data(key, name)
-
-if __name__ == "__main__":
-    main()
