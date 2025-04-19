@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const periodSelect = document.getElementById('period-select');
     const gradientCheckbox = document.getElementById('gradient-checkbox');
 
-    let currentSortColumn = null;
-    let currentSortAsc = true;
+    let currentSortColumn = "점수";
+    let currentSortAsc = false;
     let lastSortedData = [];
 
     Promise.all([
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const history = json["통계"];
                 const entries = getEntriesFromPeriod(history, period);
                 const scored = calculateAndSortScores(entries, tierConfig);
-                const sorted = sortData(scored, currentSortColumn || "점수", currentSortAsc);
+                const sorted = sortData(scored, currentSortColumn, currentSortAsc);
                 displaySelectedData(sorted);
             })
             .catch(err => {
@@ -133,59 +133,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return rp >= 0 ? Math.log(rp + 1) * 3 : -Math.log(-rp + 1) * 2;
     }
 
-    function calculateAndSortScores(data, tierConfig) {
-        const totalSample = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const avgPickRate = totalSample > 0 ? data.reduce((sum, i) => sum + i["표본수"] / totalSample, 0) / data.length : 0;
-
-        let sumRP = 0, sumWin = 0, sumTop3 = 0;
-        data.forEach(i => {
-            const w = i["표본수"] / totalSample;
-            sumRP += i["RP 획득"] * w;
-            sumWin += i["승률"] * w;
-            sumTop3 += i["TOP 3"] * w;
-        });
-
-        const avgScore = getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
-        const k = 1.5;
-
-        const scored = data.map(item => {
-            const pickRate = item["표본수"] / totalSample;
-            const r = pickRate / avgPickRate;
-            const 원점반영 = r <= 1 / 3
-                ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
-                : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
-            const 평균반영 = 1 - 원점반영;
-            const 픽률보정 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
-            const rpScore = getRPScore(item["RP 획득"]);
-
-            let 보정점수;
-            if (item["표본수"] < totalSample * avgPickRate) {
-                보정점수 = (
-                    rpScore + item["승률"] * 9 + item["TOP 3"] * 3
-                ) * (원점반영 + 평균반영 * Math.min(1, pickRate / avgPickRate)) +
-                    avgScore * 평균반영 * (1 - Math.min(1, pickRate / avgPickRate));
-                보정점수 *= 픽률보정;
-            } else {
-                보정점수 = (rpScore + item["승률"] * 9 + item["TOP 3"] * 3) * 픽률보정;
-            }
-
-            const tier = calculateTier(보정점수, avgScore, tierConfig);
-
-            return {
-                "실험체": item["실험체"],
-                "점수": 보정점수,
-                "티어": tier,
-                "픽률": pickRate * 100,
-                "RP 획득": item["RP 획득"],
-                "승률": item["승률"] * 100,
-                "TOP 3": item["TOP 3"] * 100,
-                "평균 순위": item["평균 순위"]
-            };
-        });
-
-        return scored;
-    }
-
     function calculateTier(score, avgScore, config) {
         const diff = score - avgScore;
         if (diff > avgScore * parseFloat(config["S+"])) return "S+";
@@ -223,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '<tr>';
             columns.forEach(col => {
                 let val = item[col];
-                if (["점수", "RP 획득", "승률", "TOP 3", "평균 순위"].includes(col)) {
+                if (["점수", "RP 획득", "승률", "TOP 3", "평균 순위", "픽률"].includes(col)) {
                     val = parseFloat(val).toFixed(2);
                     if (["승률", "TOP 3", "픽률"].includes(col)) val += "%";
                 }
@@ -272,10 +219,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cell = row.children[index];
                 const val = getNumeric(cell.textContent);
                 const ratio = (val - min) / (max - min);
-                const red = Math.round(255 * (1 - ratio));
-                const blue = Math.round(255 * ratio);
-                cell.style.backgroundColor = `rgb(${red}, 0, ${blue})`;
+
+                let r, g, b;
+                if (col === "평균 순위") ratio = 1 - ratio;
+
+                const white = [255, 255, 255];
+                const good = [230, 124, 115];
+                const bad = [164, 194, 244];
+                const mid = white;
+
+                const mix = ratio < 0.5
+                    ? interpolateColor(bad, mid, ratio * 2)
+                    : interpolateColor(mid, good, (ratio - 0.5) * 2);
+
+                cell.style.backgroundColor = `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
             });
         });
+    }
+
+    function interpolateColor(c1, c2, t) {
+        return c1.map((v, i) => Math.round(v + (c2[i] - v) * t));
     }
 });
