@@ -278,28 +278,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cell = row.children[i];
                 let ratio, color;
     
-                if (col === "평균 순위") {
-                    // 낮을수록 좋음 → 반대 방향
-                    if (val <= average) {
-                        // 좋은 값: 파랑 → 하양
-                        ratio = (average - val) / (average - min || 1);
-                        color = getGradientColor(ratio, true); // true = 파랑
-                    } else {
-                        // 나쁜 값: 하양 → 빨강
-                        ratio = (val - average) / (max - average || 1);
-                        color = getGradientColor(ratio, false); // false = 빨강
-                    }
+                // 평균 순위는 낮을수록 좋은 지표
+                const isBadCol = badCols.includes(col);
+    
+                if ((isBadCol && val <= average) || (!isBadCol && val >= average)) {
+                    // 좋은 쪽 (빨강)
+                    ratio = isBadCol
+                        ? (average - val) / (average - min || 1)
+                        : (val - average) / (max - average || 1);
+                    color = getGradientColor(ratio, false); // 빨강 계열
                 } else {
-                    // 높을수록 좋음 → 일반 방향
-                    if (val >= average) {
-                        // 좋은 값: 하양 → 빨강
-                        ratio = (val - average) / (max - average || 1);
-                        color = getGradientColor(ratio, false); // false = 빨강
-                    } else {
-                        // 나쁜 값: 파랑 → 하양
-                        ratio = (average - val) / (average - min || 1);
-                        color = getGradientColor(ratio, true); // true = 파랑
-                    }
+                    // 나쁜 쪽 (파랑)
+                    ratio = isBadCol
+                        ? (val - average) / (max - average || 1)
+                        : (average - val) / (average - min || 1);
+                    color = getGradientColor(ratio, true); // 파랑 계열
                 }
     
                 ratio = Math.max(0, Math.min(1, ratio));
@@ -308,9 +301,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     
-    function getGradientColor(ratio, isLowerHalf) {
-        const start = isLowerHalf ? [164, 194, 244] : [255, 255, 255]; // 파랑 → 하양
-        const end = isLowerHalf ? [255, 255, 255] : [230, 124, 115];   // 하양 → 빨강
+    function getGradientColor(ratio, isBad) {
+        // 파랑 → 하양 or 하양 → 빨강
+        const start = isBad ? [230, 240, 255] : [255, 255, 255]; // 파랑 또는 하양
+        const end = isBad ? [164, 194, 244] : [230, 124, 115];   // 하양 또는 빨강
         const rgb = start.map((s, i) => Math.round(s + (end[i] - s) * ratio));
         return `rgb(${rgb.join(',')})`;
     }    
