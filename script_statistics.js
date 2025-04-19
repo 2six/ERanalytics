@@ -28,8 +28,17 @@ document.addEventListener('DOMContentLoaded', function () {
             versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
         });
 
-        ['platinum_plus', 'diamond_plus', 'meteorite_plus', 'mithril_plus', 'in1000'].forEach(tier => {
-            tierSelect.innerHTML += `<option value="${tier}">${tier}</option>`;
+        // 사용자 친숙한 이름을 사용한 티어 드롭다운 수정
+        const tierMap = {
+            "platinum_plus": "플래티넘+",
+            "diamond_plus": "다이아몬드+",
+            "meteorite_plus": "메테오라이트+",
+            "mithril_plus": "미스릴+",
+            "in1000": "in1000"
+        };
+
+        Object.keys(tierMap).forEach(tier => {
+            tierSelect.innerHTML += `<option value="${tier}">${tierMap[tier]}</option>`;
         });
 
         periodSelect.innerHTML = `
@@ -199,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         return sorted;
     }
-    
+
     const columns = ["실험체", "점수", "티어", "픽률", "RP 획득", "승률", "TOP 3", "평균 순위"];
 
     function displaySelectedData(data) {
@@ -260,12 +269,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (![...goodCols, ...badCols].includes(col)) return;
 
             const values = rows.map(row => parseFloat(row.children[i].textContent.replace('%', '')));
-            const weights = rows.map(row => parseFloat(row.children[columns.indexOf("픽률")].textContent.replace('%', '')));
-            const isGood = goodCols.includes(col);
 
             const average = (col === "점수" || col === "픽률")
                 ? values.reduce((a, b) => a + b, 0) / values.length
-                : values.reduce((a, b, idx) => a + b * weights[idx], 0) / weights.reduce((a, b) => a + b, 0);
+                : values.reduce((a, b) => a + b, 0) / values.length;
 
             const min = Math.min(...values);
             const max = Math.max(...values);
@@ -273,12 +280,9 @@ document.addEventListener('DOMContentLoaded', function () {
             rows.forEach((row, idx) => {
                 const val = values[idx];
                 const cell = row.children[i];
-                let ratio;
-                if (isGood) {
-                    ratio = val < average ? (val - min) / (average - min) : (val - average) / (max - average);
-                } else {
-                    ratio = val > average ? (val - average) / (max - average) : (average - val) / (average - min);
-                }
+                let ratio = (val - min) / (max - min);
+                if (col === "평균 순위") ratio = 1 - ratio; // 평균 순위는 낮을수록 빨간색
+
                 ratio = Math.max(0, Math.min(1, ratio));
                 const color = getGradientColor(ratio, val < average);
                 cell.style.backgroundColor = color;

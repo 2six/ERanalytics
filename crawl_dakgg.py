@@ -12,6 +12,15 @@ def parse_percentage(value: str) -> float:
         return 0.0
     return float(value.strip().replace('%', '').split()[0]) / 100
 
+# 실험체 이름에서 "무기군"을 제거하고 이름을 기준으로 정렬
+def clean_and_sort_name(name: str) -> str:
+    # "무기군" 제거
+    if "무기군" in name:
+        name = name.split("무기군", 1)[-1].strip()
+    
+    # 정렬을 위한 키 반환 (띄어쓰기가 있어도 정상적으로 처리)
+    return name
+
 def crawl_tier_data(tier_key: str, display_name: str):
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -55,6 +64,9 @@ def crawl_tier_data(tier_key: str, display_name: str):
             except Exception as e:
                 print(f"[{tier_key}] 오류 발생: {e}")
                 continue
+
+        # 실험체 이름을 기준으로 정렬
+        data.sort(key=lambda x: clean_and_sort_name(x["실험체"]))
 
         # 파일 경로 생성
         os.makedirs(f"data/{version}", exist_ok=True)
