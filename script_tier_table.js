@@ -6,13 +6,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const tierSelect = document.getElementById('tier-select');       // ✅ 추가: 티어 드롭다운
     const periodSelect = document.getElementById('period-select');   // ✅ 추가: 구간 드롭다운
 
+    let tierConfig; // ✅ 전역 변수로 이동 (triggerLoad에서 접근하기 위해)
+
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
-        const tierConfig = parseINI(iniString).tiers;
+        tierConfig = parseINI(iniString).tiers;
         initDropdowns(versionList);
-        triggerLoad(tierConfig);
+        triggerLoad();
     });
 
     function initDropdowns(versionList) {
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const table = document.getElementById('tier-table');
         let html = '';
 
-        tiers.forEach(tier => {
+        tiers.forEach((tier) => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
             tierGroups[tier].forEach((entry, i) => {
                 const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
