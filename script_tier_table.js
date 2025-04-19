@@ -93,7 +93,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const averageScore = calculateAverageScore(dataToUse);
-                const scoredData = calculateTiers(dataToUse, averageScore, tierConfig);
+                const stdDev = calculateStandardDeviation(dataToUse, averageScore);
+                const scoredData = calculateTiers(dataToUse, averageScore, stdDev, tierConfig);
                 displayTierTable(scoredData);
                 setupTablePopup();
             });
@@ -140,7 +141,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return getRPScore(weightedSumRP) + weightedSumWinRate * 9 + weightedSumTop3 * 3;
     }
 
-    function calculateTiers(data, averageScore, config) {
+    function calculateStandardDeviation(data, averageScore) {
+        const totalSample = data.reduce((sum, item) => sum + item["표본수"], 0);
+        const variance = data.reduce((sum, item) => {
+            const weight = item["표본수"] / totalSample;
+            const score = getRPScore(item["RP 획득"]) + item["승률"] * 9 + item["TOP 3"] * 3;
+            return sum + weight * Math.pow(score - averageScore, 2);
+        }, 0);
+        return Math.sqrt(variance);
+    }
+
+    function calculateTiers(data, averageScore, stdDev, config) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
         const averagePickRate = totalSampleCount > 0 ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length) : 0;
         const k = 1.5;
@@ -170,19 +181,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
             }
 
-            const tier = calculateTier(보정점수, averageScore, config);
+            const tier = calculateTierByStd(보정점수, averageScore, stdDev, config);
             return { ...item, "티어": tier, "점수": 보정점수 };
         });
     }
 
-    function calculateTier(score, averageScore, config) {
-        const diff = score - averageScore;
-        if (diff > averageScore * parseFloat(config["S+"])) return "S+";
-        if (diff > averageScore * parseFloat(config["S"])) return "S";
-        if (diff > averageScore * parseFloat(config["A"])) return "A";
-        if (diff > averageScore * parseFloat(config["B"])) return "B";
-        if (diff > averageScore * parseFloat(config["C"])) return "C";
-        if (diff > averageScore * parseFloat(config["D"])) return "D";
+    function calculateTierByStd(score, avg, std, config) {
+        const z = (score - avg) / std;
+        if (z > parseFloat(config["S+"])) return "S+";
+        if (z > parseFloat(config["S"])) return "S";
+        if (z > parseFloat(config["A"])) return "A";
+        if (z > parseFloat(config["B"])) return "B";
+        if (z > parseFloat(config["C"])) return "C";
+        if (z > parseFloat(config["D"])) return "D";
         return "F";
     }
 
