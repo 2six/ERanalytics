@@ -6,14 +6,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const tierSelect = document.getElementById('tier-select');       // ✅ 추가: 티어 드롭다운
     const periodSelect = document.getElementById('period-select');   // ✅ 추가: 구간 드롭다운
 
+    let tierConfigGlobal = null; // ✅ 전역 변수 추가
+
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
-        const parsedINI = parseINI(iniString);
-        const tierConfig = parsedINI.tiers || {}; // ✅ 보호코드 추가: tiers가 없을 경우 빈 객체
+        const config = parseINI(iniString);
+        tierConfigGlobal = config.tiers; // ✅ 전역 변수에 저장
         initDropdowns(versionList);
-        triggerLoad(tierConfig);
+        triggerLoad(tierConfigGlobal); // ✅ 초기 호출
     });
 
     function initDropdowns(versionList) {
@@ -22,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const tierMap = {
-            "platinum_plus": "플래티넛+",
+            "platinum_plus": "플래티넘+",
             "diamond_plus": "다이아몬드+",
             "meteorite_plus": "메테오라이트+",
             "mithril_plus": "미스릴+",
@@ -39,9 +41,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <option value="7day">최근 7일</option>
         `;
 
-        versionSelect.addEventListener('change', () => triggerLoad());
-        tierSelect.addEventListener('change', () => triggerLoad());
-        periodSelect.addEventListener('change', () => triggerLoad());
+        versionSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal)); // ✅ 수정
+        tierSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));    // ✅ 수정
+        periodSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));  // ✅ 수정
     }
 
     function triggerLoad(tierConfig) {
