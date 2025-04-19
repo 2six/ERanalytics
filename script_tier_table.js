@@ -1,16 +1,17 @@
-// ✅ 원본 기반 + 새로운 JSON 구조와 구간 필터 기능 반영 + 원본 점수 계산 로직 유지 + 이름 변환 함수 복원
-// ✅ 모든 수정 사항 주석 명시
+// ✅ 원본 기반 + 새로운 JSON 구조와 구간 필터 기능 반영
+// ✅ 수정 사항은 모두 주석 처리
 
 document.addEventListener('DOMContentLoaded', function () {
-    const versionSelect = document.getElementById('version-select'); // ✅ 추가
-    const tierSelect = document.getElementById('tier-select');       // ✅ 추가
-    const periodSelect = document.getElementById('period-select');   // ✅ 추가
+    const versionSelect = document.getElementById('version-select'); // ✅ 추가: 버전 드롭다운
+    const tierSelect = document.getElementById('tier-select');       // ✅ 추가: 티어 드롭다운
+    const periodSelect = document.getElementById('period-select');   // ✅ 추가: 구간 드롭다운
 
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
-        const tierConfig = parseINI(iniString).tiers;
+        const parsedINI = parseINI(iniString);
+        const tierConfig = parsedINI.tiers || {}; // ✅ 보호코드 추가: tiers가 없을 경우 빈 객체
         initDropdowns(versionList);
         triggerLoad(tierConfig);
     });
@@ -122,25 +123,22 @@ document.addEventListener('DOMContentLoaded', function () {
         return config;
     }
 
+    function getRPScore(rp) {
+        return rp >= 0 ? Math.log(rp + 1) * 3 : -Math.log(-rp + 1) * 2;
+    }
+
     function calculateAverageScore(data) {
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
         let weightedSumRP = 0;
         let weightedSumWinRate = 0;
         let weightedSumTop3 = 0;
         data.forEach(item => {
-            weightedSumRP += item["RP 획득"] * (item["표본수"] / totalSampleCount);
-            weightedSumWinRate += item["승률"] * (item["표본수"] / totalSampleCount);
-            weightedSumTop3 += item["TOP 3"] * (item["표본수"] / totalSampleCount);
+            const weight = item["표본수"] / totalSampleCount;
+            weightedSumRP += item["RP 획득"] * weight;
+            weightedSumWinRate += item["승률"] * weight;
+            weightedSumTop3 += item["TOP 3"] * weight;
         });
-        const averageRP = weightedSumRP;
-        const averageWinRate = weightedSumWinRate;
-        const averageTop3 = weightedSumTop3;
-        return (Math.log(averageRP + 1) * 3) + (averageWinRate * 9) + (averageTop3 * 3);
-    }
-
-    function getRPScore(rp) {
-        if (rp >= 0) return Math.log(rp + 1) * 3;
-        else return -Math.log(-rp + 1) * 2;
+        return getRPScore(weightedSumRP) + weightedSumWinRate * 9 + weightedSumTop3 * 3;
     }
 
     function calculateTiers(data, averageScore, config) {
@@ -170,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const tier = calculateTier(보정점수, averageScore, config);
-            return { ...item, "티어": tier };
+            return { ...item, "티어": tier, "점수": 보정점수 };
         });
     }
 
@@ -183,22 +181,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (diff > averageScore * parseFloat(config["C"])) return "C";
         if (diff > averageScore * parseFloat(config["D"])) return "D";
         return "F";
-    }
-
-    function convertExperimentNameToImageName(experimentName) {
-        if (experimentName === "글러브 리 다이린") return "리다이린-글러브";
-        else if (experimentName === "쌍절곤 리 다이린") return "리다이린-쌍절곤";
-        else if (experimentName.startsWith("리 다이린 ")) {
-            const parts = experimentName.substring("리 다이린 ".length).split(" ");
-            return `리다이린-${parts.join("-")}`;
-        } else if (experimentName.startsWith("돌격 소총 ")) {
-            const parts = experimentName.substring("돌격 소총 ".length).split(" ");
-            return `${parts.join("-")}-돌격소총`;
-        } else if (experimentName.includes(" ")) {
-            const parts = experimentName.split(" ");
-            if (parts.length >= 2) return `${parts[1]}-${parts[0]}`;
-        }
-        return experimentName;
     }
 
     function displayTierTable(data) {
@@ -260,5 +242,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
+    }
+
+    function convertExperimentNameToImageName(experimentName) {
+        if (experimentName === "글러브 리 다이린") {
+            return "리다이린-글러브";
+        } else if (experimentName === "쌍절곤 리 다이린") {
+            return "리다이린-쌍절곤";
+        } else if (experimentName.startsWith("리 다이린 ")) {
+            const parts = experimentName.substring("리 다이린 ".length).split(" ");
+            return `리다이린-${parts.join("-")}`;
+        } else if (experimentName.startsWith("돌격 소총 ")) {
+            const parts = experimentName.substring("돌격 소총 ".length).split(" ");
+            return `${parts.join("-")}-돌격소총`;
+        } else if (experimentName.includes(" ")) {
+            const parts = experimentName.split(" ");
+            if (parts.length >= 2) return `${parts[1]}-${parts[0]}`;
+        }
+        return experimentName;
     }
 });
