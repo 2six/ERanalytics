@@ -1,6 +1,3 @@
-// ✅ 원본 기반 + 새로운 JSON 구조와 구간 필터 기능 반영
-// ✅ 수정 사항은 모두 주석 처리
-
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select'); // ✅ 추가: 버전 드롭다운
     const tierSelect = document.getElementById('tier-select');       // ✅ 추가: 티어 드롭다운
@@ -188,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function displayTierTable(data) {
         const tiers = ["S+", "S", "A", "B", "C", "D", "F"];
         const tierGroups = {};
-        const imagesPerRow = 15; // ✅ 한 줄에 표시할 이미지 수
         tiers.forEach(t => tierGroups[t] = []);
 
         data.forEach(entry => {
@@ -198,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const table = document.getElementById('tier-table');
         let html = '';
-        
+
         const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0); // ✅ 툴팁 픽률 계산용
 
         tiers.forEach(tier => {
@@ -219,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${tooltipHTML}
                     </span>
                 `;
-                if ((i + 1) % imagesPerRow === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
+                if ((i + 1) % 10 === 0 && i !== tierGroups[tier].length - 1) html += '</div><div>';
             });
             html += '</div></td></tr>';
         });
@@ -244,9 +240,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     windowWidth: tierTable.offsetWidth,
                     windowHeight: tierTable.offsetHeight
                 }).then(canvas => {
-                    popup.style.display = 'block';
-                    popupImage.src = canvas.toDataURL();
-                    popupImage.alt = '티어표 이미지';
+                    const version = versionSelect.value;
+                    const tier = tierSelect.value;
+                    const period = periodSelect.value;
+                    const now = new Date();
+                    const pad = (n) => n.toString().padStart(2, '0');
+                    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                    const filename = `${version}_${tier}_${period}_${timestamp}.png`;
+
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = canvas.toDataURL();
+                    link.click();
                 });
             });
 
