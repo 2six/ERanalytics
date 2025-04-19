@@ -24,12 +24,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const tierMap = {
-            "platinum_plus": "유스트리델+",
-            "diamond_plus": "다이아모드+",
+            "platinum_plus": "플래티넘+",
+            "diamond_plus": "다이아몬드+",
             "meteorite_plus": "메테오라이트+",
             "mithril_plus": "미스릴+",
             "in1000": "in1000"
-        };
+        };        
 
         Object.entries(tierMap).forEach(([key, val]) => {
             tierSelect.innerHTML += `<option value="${key}">${val}</option>`;
