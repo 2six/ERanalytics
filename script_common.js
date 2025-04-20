@@ -34,6 +34,11 @@ function getTierName(code) {
     return tierNameMap[code] || code;
 }
 
+// ✅ 티어 전체 매핑 객체 반환 (getTierNameMap 호출용)
+function getTierNameMap() {
+    return tierNameMap; // 기존 tierNameMap 객체 그대로 반환
+}
+
 // ✅ 구간 드롭다운 초기화
 function populatePeriodDropdown(selectElement) {
     selectElement.innerHTML = `
