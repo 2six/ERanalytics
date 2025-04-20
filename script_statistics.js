@@ -1,4 +1,4 @@
-// script_statistics.js (공통 모듈 사용 버전)
+// script_statistics.js (공통 모듈 사용 + 그라디언트 수정 버전)
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentSortAsc = false;
     let lastSortedData = [];
 
-    // 공통 모듈(script_common.js)의 parseINI, dropdown 함수 사용
+    // 공통 모듈 로드
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (gradientCheckbox.checked) applyGradientColors();
     }
 
+    // 그라디언트 컬러 적용 (파랑-하양-빨강)
     function applyGradientColors() {
         const table = document.querySelector('#data-container table');
         if (!table) return;
@@ -182,29 +183,50 @@ document.addEventListener('DOMContentLoaded', function () {
         const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
         const badCols = ['평균 순위'];
 
-        headers.forEach((th,i) => {
+        headers.forEach((th, i) => {
             const col = th.dataset.column;
-            if (![...goodCols,...badCols].includes(col)) return;
+            if (![...goodCols, ...badCols].includes(col)) return;
+
             const values = rows.map(r => parseFloat(r.children[i].textContent.replace('%','')));
-            const avg = values.reduce((a,b)=>a+b,0)/values.length;
+            const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
             const min = Math.min(...values);
             const max = Math.max(...values);
-            rows.forEach((r,idx) => {
+
+            rows.forEach((r, idx) => {
                 const v = values[idx];
-                let ratio;
-                const isBad = badCols.includes(col);
-                if ((isBad && v<=avg) || (!isBad && v>=avg)) ratio = isBad ? (avg-v)/(avg-min||1) : (v-avg)/(max-avg||1);
-                else ratio = isBad ? (v-avg)/(max-avg||1) : (avg-v)/(avg-min||1);
-                const color = getGradientColor(Math.max(0,Math.min(1,ratio)), isBad);
+                let diff = v - avg;
+                let ratio, color;
+
+                // 좋은 컬럼: 높을수록 빨강, 낮을수록 파랑
+                if (goodCols.includes(col)) {
+                    if (diff >= 0) {
+                        ratio = max === avg ? 0 : diff / (max - avg);
+                        color = interpolateColor([255,255,255], [230,124,115], ratio);
+                    } else {
+                        ratio = min === avg ? 0 : (avg - v) / (avg - min);
+                        color = interpolateColor([255,255,255], [164,194,244], ratio);
+                    }
+                }
+                // 나쁜 컬럼: 낮을수록 빨강, 높을수록 파랑
+                else {
+                    if (diff <= 0) {
+                        ratio = min === avg ? 0 : (avg - v) / (avg - min);
+                        color = interpolateColor([255,255,255], [230,124,115], ratio);
+                    } else {
+                        ratio = max === avg ? 0 : diff / (max - avg);
+                        color = interpolateColor([255,255,255], [164,194,244], ratio);
+                    }
+                }
+
                 r.children[i].style.backgroundColor = color;
             });
         });
     }
 
-    function getGradientColor(ratio, isBad) {
-        const start = isBad ? [230,240,255] : [255,255,255];
-        const end   = isBad ? [164,194,244] : [230,124,115];
-        const rgb = start.map((s,i)=>Math.round(s+(end[i]-s)*ratio));
+    // RGB 보간 함수 (0: start, 1: end)
+    function interpolateColor(start, end, ratio) {
+        const t = Math.max(0, Math.min(1, ratio));
+        const rgb = start.map((s,i) => Math.round(s + (end[i] - s) * t));
         return `rgb(${rgb.join(',')})`;
     }
 });
