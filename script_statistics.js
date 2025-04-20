@@ -1,4 +1,4 @@
-// script_statistics.js (공통 모듈 사용 + 공통 티어 로직 호출 버전)
+// script_statistics.js (공통 모듈 사용 + applyGradientColors 정의 포함)
 document.addEventListener('DOMContentLoaded', function() {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSortAsc = false;
     let lastData = [];
 
-    // 1) 공통 모듈 로드
+    // 1) 공통 모듈 초기화
     Promise.all([
         fetch('config.ini').then(r => r.text()),
         fetch('versions.json').then(r => r.json())
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAndDisplay(tierConfig);
     });
 
-    // 2) 데이터 로드 및 표시
+    // 2) 데이터 로드 및 처리
     function loadAndDisplay(tierConfig) {
         const version = versionSelect.value;
         const tier = tierSelect.value;
@@ -51,19 +51,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderTable(scored);
             })
             .catch(err => {
-                console.error(err);
+                console.error('데이터 로드 실패:', err);
                 document.getElementById('data-container').innerText = '데이터를 불러오는데 실패했습니다.';
             });
     }
 
-    // 3) 추출: period 기준으로 데이터
+    // 3) 기간별 데이터 추출
     function extractPeriodEntries(history, period) {
         const keys = Object.keys(history).sort();
-        const latest = history[keys[keys.length - 1]];
+        const latestKey = keys[keys.length - 1];
+        const latest = history[latestKey];
         if (period === 'latest') return latest;
 
         const days = period === '3day' ? 3 : 7;
-        const latestDate = new Date(keys[keys.length - 1].replace(/_/g, ':').replace(/-/g, '/'));
+        const latestDate = new Date(latestKey.replace(/_/g, ':').replace(/-/g, '/'));
         const cutoff = new Date(latestDate);
         cutoff.setDate(cutoff.getDate() - days);
 
@@ -104,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '<tr>';
             cols.forEach(col => {
                 let val = row[col];
-                if (['픽률','승률','TOP 3'].includes(col)) val = val.toFixed(2) + '%';
+                if (col === '픽률' || col === '승률' || col === 'TOP 3') val = val.toFixed(2) + '%';
                 html += `<td>${val}</td>`;
             });
             html += '</tr>';
@@ -125,5 +126,55 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (gradientCheckbox.checked) applyGradientColors();
+    }
+
+    // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
+    function applyGradientColors() {
+        const table = document.querySelector('#data-container table');
+        if (!table) return;
+        const rows = [...table.querySelectorAll('tbody tr')];
+        const headers = [...table.querySelectorAll('thead th')];
+        const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
+        const badCols = ['평균 순위'];
+
+        headers.forEach((th, i) => {
+            const col = th.dataset.col;
+            if (![...goodCols, ...badCols].includes(col)) return;
+            const values = rows.map(r => parseFloat(r.children[i].textContent.replace('%','')));
+            const avg = values.reduce((a,b)=>a+b,0)/values.length;
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+
+            rows.forEach((r, idx) => {
+                const v = values[idx];
+                let ratio, color;
+                const isBad = badCols.includes(col);
+                if (!isBad) {
+                    if (v >= avg) {
+                        ratio = max===avg?0:(v-avg)/(max-avg);
+                        color = interpolateColor([255,255,255],[230,124,115],ratio);
+                    } else {
+                        ratio = avg===min?0:(avg-v)/(avg-min);
+                        color = interpolateColor([255,255,255],[164,194,244],ratio);
+                    }
+                } else {
+                    if (v <= avg) {
+                        ratio = avg===min?0:(avg-v)/(avg-min);
+                        color = interpolateColor([255,255,255],[230,124,115],ratio);
+                    } else {
+                        ratio = max===avg?0:(v-avg)/(max-avg);
+                        color = interpolateColor([255,255,255],[164,194,244],ratio);
+                    }
+                }
+                r.children[i].style.backgroundColor = color;
+            });
+        });
+    }
+
+    // 6) 색상 보간 헬퍼
+    function interpolateColor(start, end, ratio) {
+        const t = Math.max(0, Math.min(1, ratio));
+        const rgb = start.map((s,i) => Math.round(s + (end[i] - s) * t));
+        return `rgb(${rgb.join(',')})`;
     }
 });
