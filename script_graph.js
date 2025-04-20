@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
     let myChart;
     let chartData = [];
+
+    const versionSelect = document.getElementById('version-select');
+    const tierSelect = document.getElementById('tier-select');
+    const periodSelect = document.getElementById('period-select');
     const canvas = document.getElementById('graph-canvas');
 
     const labelPlugin = {
@@ -16,12 +20,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 const x = point.x;
                 const y = point.y;
                 const 실험체 = chartLabels[index];
+
                 ctx.font = '10px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
+
                 ctx.lineWidth = 2;
                 ctx.strokeStyle = 'white';
                 ctx.strokeText(실험체, x, y);
+
                 ctx.fillStyle = 'black';
                 ctx.fillText(실험체, x, y);
             });
@@ -36,15 +43,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const left = chartArea.left;
             const top = chartArea.top;
             const right = chartArea.right;
+
             ctx.save();
             ctx.font = '14px sans-serif';
             ctx.fillStyle = 'black';
+
             ctx.textAlign = 'left';
             ctx.fillText(chart.config._제목 || '', left + 10, top + 20);
+
             ctx.textAlign = 'right';
             ctx.fillText(`평균 픽률: ${(chart.config._평균픽률 * 100).toFixed(2)}%`, right - 10, top + 20);
             ctx.fillText(`평균 RP: ${chart.config._가중평균RP.toFixed(1)}`, right - 10, top + 40);
             ctx.fillText(`평균 승률: ${(chart.config._가중평균승률 * 100).toFixed(2)}%`, right - 10, top + 60);
+
             ctx.restore();
         }
     };
@@ -76,19 +87,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function createGraph({ xKey, yKey, radiusKey, title }) {
-        if (myChart) myChart.destroy();
+        if (myChart) {
+            myChart.destroy();
+        }
 
         const ctx = canvas.getContext('2d');
         const labels = chartData.map(d => d["실험체"]);
-        const totalSample = chartData.reduce((sum, d) => sum + d["표본수"], 0);
+        const 전체표본수 = chartData.reduce((sum, d) => sum + d["표본수"], 0);
 
-        const xValues = chartData.map(d => xKey === "픽률" ? d["표본수"] / totalSample : d[xKey]);
-        const yValues = chartData.map(d => yKey === "픽률" ? d["표본수"] / totalSample : d[yKey]);
-        const radiusValues = chartData.map(d => radiusKey === "픽률" ? d["표본수"] / totalSample : d[radiusKey]);
+        const xValues = chartData.map(d =>
+            xKey === "픽률" ? d["표본수"] / 전체표본수 : d[xKey]
+        );
+        const yValues = chartData.map(d =>
+            yKey === "픽률" ? d["표본수"] / 전체표본수 : d[yKey]
+        );
+        const radiusValues = chartData.map(d =>
+            radiusKey === "픽률" ? d["표본수"] / 전체표본수 : d[radiusKey]
+        );
 
-        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / totalSample), 0) / chartData.length;
-        const 가중평균RP = chartData.reduce((acc, d) => acc + d["RP 획득"] * (d["표본수"] / totalSample), 0);
-        const 가중평균승률 = chartData.reduce((acc, d) => acc + d["승률"] * (d["표본수"] / totalSample), 0);
+        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / 전체표본수), 0) / chartData.length;
+        const 가중평균RP = chartData.reduce((acc, d) => acc + d["RP 획득"] * (d["표본수"] / 전체표본수), 0);
+        const 가중평균승률 = chartData.reduce((acc, d) => acc + d["승률"] * (d["표본수"] / 전체표본수), 0);
 
         const isXPercent = xKey === "픽률" || xKey === "승률";
         const isYPercent = yKey === "픽률" || yKey === "승률";
@@ -120,16 +139,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
-                        const 기준크기 = 30, 최소크기 = 6;
+                        const 기준크기 = 30;
+                        const 최소크기 = 6;
+
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
                     },
-                    pointHoverRadius: function (context) {
+                    pointHoverRadius: function(context) {
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
-                        const 기준크기 = 30, 최소크기 = 6;
+                        const 기준크기 = 30;
+                        const 최소크기 = 6;
+
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
@@ -147,9 +170,10 @@ document.addEventListener('DOMContentLoaded', function () {
                             label: function (context) {
                                 const index = context.dataIndex;
                                 const label = chartData[index]["실험체"];
-                                const 픽률 = ((chartData[index]["표본수"] / totalSample) * 100).toFixed(2);
+                                const 픽률 = ((chartData[index]["표본수"] / 전체표본수) * 100).toFixed(2);
                                 const RP획득 = chartData[index]["RP 획득"];
                                 const 승률 = (chartData[index]["승률"] * 100).toFixed(2);
+
                                 return [
                                     `${label}`,
                                     `픽률: ${픽률}%`,
@@ -168,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderDash: [5, 5],
                                 scaleID: 'x',
                                 value: xKey === "픽률" ? 평균픽률 : (xKey === "RP 획득" ? 가중평균RP : 가중평균승률),
+                                label: { display: false }
                             },
                             {
                                 type: 'line',
@@ -176,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 borderDash: [5, 5],
                                 scaleID: 'y',
                                 value: yKey === "픽률" ? 평균픽률 : (yKey === "RP 획득" ? 가중평균RP : 가중평균승률),
+                                label: { display: false }
                             }
                         ]
                     }
@@ -228,22 +254,73 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    fetch('versions.json')
-        .then(res => res.json())
-        .then(versionList => {
-            const latestVersion = versionList.sort().reverse()[0];
-            return fetch(`data/${latestVersion}/in1000.json`);
-        })
-        .then(res => res.json())
-        .then(json => {
-            const data = json["통계"];
-            const latestKey = Object.keys(data).sort().pop();
-            chartData = data[latestKey];
-            setupGraphPopup();
-            setupGraphTabs();
-            document.querySelector('[data-type="pick-rp"]').click();
-        })
-        .catch(error => {
-            console.error('그래프 데이터 로딩 중 오류:', error);
+    Promise.all([
+        fetch('versions.json').then(res => res.json()),
+        fetch('data/latest/in1000.json').then(res => res.json()) // 기본값
+    ]).then(([versions, defaultJson]) => {
+        const versionDropdown = document.getElementById('version-select');
+        versions.sort().reverse().forEach(v => {
+            versionDropdown.innerHTML += `<option value="${v}">${v}</option>`;
         });
+
+        versionDropdown.addEventListener('change', loadData);
+        tierSelect.addEventListener('change', loadData);
+        periodSelect.addEventListener('change', loadData);
+
+        window.dataset = defaultJson;
+        loadData();
+    });
+
+    function loadData() {
+        const version = versionSelect.value;
+        const tier = tierSelect.value;
+        const period = periodSelect.value;
+
+        fetch(`data/${version}/${tier}.json`)
+            .then(res => res.json())
+            .then(json => {
+                const history = json["통계"];
+                const timestamps = Object.keys(history).sort();
+                const latest = history[timestamps[timestamps.length - 1]];
+                if (period === 'latest') {
+                    chartData = latest;
+                } else {
+                    const days = period === '3day' ? 3 : 7;
+                    const 기준일 = new Date(timestamps[timestamps.length - 1]);
+                    기준일.setDate(기준일.getDate() - days);
+                    const 과거키 = timestamps.reverse().find(ts => new Date(ts) <= 기준일);
+
+                    if (과거키) {
+                        const 이전 = history[과거키];
+                        const latestMap = Object.fromEntries(latest.map(d => [d.실험체, d]));
+                        const prevMap = Object.fromEntries(이전.map(d => [d.실험체, d]));
+
+                        const delta = [];
+                        for (const name in latestMap) {
+                            const curr = latestMap[name];
+                            const prev = prevMap[name];
+                            if (!prev) continue;
+                            const diff = curr["표본수"] - prev["표본수"];
+                            if (diff <= 0) continue;
+                            delta.push({
+                                "실험체": name,
+                                "표본수": diff,
+                                "RP 획득": (curr["RP 획득"] * curr["표본수"] - prev["RP 획득"] * prev["표본수"]) / diff,
+                                "승률": (curr["승률"] * curr["표본수"] - prev["승률"] * prev["표본수"]) / diff,
+                                "TOP 3": (curr["TOP 3"] * curr["표본수"] - prev["TOP 3"] * prev["표본수"]) / diff,
+                                "평균 순위": (curr["평균 순위"] * curr["표본수"] - prev["평균 순위"] * prev["표본수"]) / diff
+                            });
+                        }
+
+                        chartData = delta;
+                    } else {
+                        chartData = latest;
+                    }
+                }
+
+                setupGraphPopup();
+                setupGraphTabs();
+                document.querySelector('[data-type="pick-rp"]').click();
+            });
+    }
 });
