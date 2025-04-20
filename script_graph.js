@@ -1,4 +1,4 @@
-// script_graph.js (공통 모듈 사용 버전)
+// script_graph.js (공통 모듈 + totalSample 수정 적용 버전)
 document.addEventListener('DOMContentLoaded', function () {
     let myChart;
     let chartData = [];
@@ -12,22 +12,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const highPickrateCheckbox = document.getElementById('filter-high-pickrate');
     let currentTab = 'pick-rp';
 
-    // 1) 드롭다운 초기화 (공통)
-    fetch('versions.json')
-        .then(res => res.json())
-        .then(versions => {
-            populateVersionDropdown(versionSelect, versions);
-            populateTierDropdown(tierSelect);
-            populatePeriodDropdown(periodSelect);
+    // 1) 드롭다운 초기화
+    fetch('versions.json').then(res => res.json()).then(versions => {
+        populateVersionDropdown(versionSelect, versions);
+        populateTierDropdown(tierSelect);
+        populatePeriodDropdown(periodSelect);
 
-            versionSelect.addEventListener('change', loadData);
-            tierSelect.addEventListener('change', loadData);
-            periodSelect.addEventListener('change', loadData);
+        versionSelect.addEventListener('change', loadData);
+        tierSelect.addEventListener('change', loadData);
+        periodSelect.addEventListener('change', loadData);
 
-            loadData();
-        });
+        loadData();
+    });
 
-    // 2) 그래프 탭 및 필터 이벤트 셋업 (기존)
+    // 2) 탭 및 필터 셋업
     function setupGraphTabsAndFilters() {
         document.querySelectorAll('.graph-tab').forEach(button => {
             button.addEventListener('click', () => {
@@ -57,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => console.error('데이터 로드 실패:', err));
     }
 
-    // 4) 기간별 데이터 필터링 (공통 로직 재활용)
+    // 4) 기간별 추출 공통 로직
     function extractPeriodEntries(history, period) {
         const keys = Object.keys(history).sort();
         const latestKey = keys[keys.length - 1];
@@ -97,10 +95,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 5) 필터 적용
     function applyFilters() {
-        const total = chartData.reduce((sum, d) => sum + d['표본수'], 0);
-        const avgPickRate = chartData.reduce((acc, d) => acc + d['표본수'] / total, 0) / chartData.length;
+        const totalSample = chartData.reduce((sum, d) => sum + d['표본수'], 0);
+        const avgPickRate = chartData.reduce((acc, d) => acc + d['표본수'] / totalSample, 0) / chartData.length;
         filteredData = chartData.filter(d => {
-            const pr = d['표본수'] / total;
+            const pr = d['표본수'] / totalSample;
             if (lowPickrateCheckbox.checked && pr < avgPickRate / 4) return false;
             if (highPickrateCheckbox.checked && pr > avgPickRate * 5) return false;
             return true;
@@ -116,30 +114,88 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         const { xKey, yKey, radiusKey, title } = mappings[type];
 
-        if (myChart) myChart.destroy();
-        const ctx = canvas.getContext('2d');
-
-        // 평균/가중평균 계산 (공통 함수 활용 가능)
         const totalSample = chartData.reduce((sum, d) => sum + d['표본수'], 0);
         const avgPickRate = chartData.reduce((sum, d) => sum + d['표본수'] / totalSample, 0) / chartData.length;
         const weightedRP = chartData.reduce((sum, d) => sum + d['RP 획득'] * (d['표본수'] / totalSample), 0);
         const weightedWin = chartData.reduce((sum, d) => sum + d['승률'] * (d['표본수'] / totalSample), 0);
 
-        const labels   = filteredData.map(d => d['실험체']);
-        const xValues  = filteredData.map(d => xKey === '픽률' ? d['표본수'] / total : d[xKey]);
-        const yValues  = filteredData.map(d => yKey === '픽률' ? d['표본수'] / total : d[yKey]);
-        const rValues  = filteredData.map(d => radiusKey === '픽률' ? d['표본수'] / total : d[radiusKey]);
+        const labels = filteredData.map(d => d['실험체']);
+        const xValues = filteredData.map(d => xKey === '픽률' ? d['표본수'] / totalSample : d[xKey]);
+        const yValues = filteredData.map(d => yKey === '픽률' ? d['표본수'] / totalSample : d[yKey]);
+        const rValues = filteredData.map(d => radiusKey === '픽률' ? d['표본수'] / totalSample : d[radiusKey]);
+
+        if (myChart) myChart.destroy();
+        const ctx = canvas.getContext('2d');
 
         Chart.register(window['labelPlugin'], window['cornerTextPlugin'], window['chartjs-plugin-annotation']);
         myChart = new Chart(ctx, {
             type: 'scatter',
-            data: { labels, datasets: [{ data: filteredData.map((d,i) => ({ x: xValues[i], y: yValues[i], label: d['실험체'] })), backgroundColor: (ctx) => { const h = ctx.dataIndex * 360 / filteredData.length; return `hsl(${h},60%,70%,0.8)`; }, pointRadius: (ctx) => { const v=rValues[ctx.dataIndex]; const mn=Math.min(...rValues), mx=Math.max(...rValues); return mn===mx?15:6+((v-mn)/(mx-mn))*24; }, pointHoverRadius: (ctx) => { const v=rValues[ctx.dataIndex]; const mn=Math.min(...rValues), mx=Math.max(...rValues); return mn===mx?15:6+((v-mn)/(mx-mn))*24; } }] },
-            options: { responsive:true, maintainAspectRatio:false,
-                plugins: { legend:{display:false}, tooltip:{ callbacks:{ title:()=>'', label:ctx=>{ const d=filteredData[ctx.dataIndex]; return [`${d['실험체']}`, `픽률: ${(d['표본수']/total*100).toFixed(2)}%`, `RP 획득: ${d['RP 획득'].toFixed(2)}`, `승률: ${(d['승률']*100).toFixed(2)}%`]; } } }, annotation:{ annotations:[ { type:'line', scaleID:'x', value:xKey==='픽률'?avgPickRate:(xKey==='승률'?weightedWin:weightedRP) }, { type:'line', scaleID:'y', value:yKey==='픽률'?avgPickRate:(yKey==='승률'?weightedWin:weightedRP) } ] } },
-                scales:{ x:{ title:{display:true,text:xKey}, min:xKey==='픽률'?0:(typeof xValues[0]=== 'number'?Math.floor(Math.min(...xValues)):null), max:xKey==='픽률'?Math.ceil(Math.max(...xValues)*500)/500:null, ticks:{ callback:v=>xKey==='픽률'? (v*100).toFixed(1)+'%':v, stepSize:xKey==='픽률'?0.002:null } },
-                         y:{ title:{display:true,text:yKey}, min:yKey==='픽률'?0:(typeof yValues[0]=== 'number'?Math.floor(Math.min(...yValues)):null), max:yKey==='픽률'?Math.ceil(Math.max(...yValues)*500)/500:null, ticks:{ callback:v=>yKey==='픽률'? (v*100).toFixed(1)+'%':v, stepSize:yKey==='픽률'?0.002:null } } }
+            data: {
+                labels,
+                datasets: [{
+                    data: filteredData.map((d, i) => ({ x: xValues[i], y: yValues[i], label: d['실험체'] })),
+                    backgroundColor: ctx => {
+                        const idx = ctx.dataIndex;
+                        const hue = (idx * 360 / filteredData.length) % 360;
+                        return `hsl(${hue},60%,70%,0.8)`;
+                    },
+                    pointRadius: ctx => {
+                        const v = rValues[ctx.dataIndex];
+                        const min = Math.min(...rValues);
+                        const max = Math.max(...rValues);
+                        return min === max ? 15 : 6 + ((v - min) / (max - min)) * 24;
+                    },
+                    pointHoverRadius: ctx => {
+                        const v = rValues[ctx.dataIndex];
+                        const min = Math.min(...rValues);
+                        const max = Math.max(...rValues);
+                        return min === max ? 15 : 6 + ((v - min) / (max - min)) * 24;
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: () => '',
+                            label: context => {
+                                const d = filteredData[context.dataIndex];
+                                return [
+                                    `${d['실험체']}`,
+                                    `픽률: ${(d['표본수'] / totalSample * 100).toFixed(2)}%`,
+                                    `RP 획득: ${d['RP 획득'].toFixed(2)}`,
+                                    `승률: ${(d['승률'] * 100).toFixed(2)}%`
+                                ];
+                            }
+                        }
+                    },
+                    annotation: {
+                        annotations: [
+                            { type: 'line', scaleID: 'x', value: xKey === '픽률' ? avgPickRate : (xKey === '승률' ? weightedWin : weightedRP) },
+                            { type: 'line', scaleID: 'y', value: yKey === '픽률' ? avgPickRate : (yKey === '승률' ? weightedWin : weightedRP) }
+                        ]
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: xKey },
+                        min: xKey === '픽률' ? 0 : undefined,
+                        max: xKey === '픽률' ? Math.ceil(Math.max(...xValues) * 500) / 500 : undefined,
+                        ticks: { callback: v => xKey === '픽률' ? (v * 100).toFixed(1) + '%' : v, stepSize: xKey === '픽률' ? 0.002 : undefined }
+                    },
+                    y: {
+                        title: { display: true, text: yKey },
+                        min: yKey === '픽률' ? 0 : undefined,
+                        max: yKey === '픽률' ? Math.ceil(Math.max(...yValues) * 500) / 500 : undefined,
+                        ticks: { callback: v => yKey === '픽률' ? (v * 100).toFixed(1) + '%' : v, stepSize: yKey === '픽률' ? 0.002 : undefined }
+                    }
+                }
             }
         });
+
         myChart.config._제목 = title;
         myChart.config._평균픽률 = avgPickRate;
         myChart.config._가중평균RP = weightedRP;
