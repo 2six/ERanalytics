@@ -9,7 +9,7 @@ function parseINI(iniString) {
     let currentSection = null;
     iniString.split('\n').forEach(line => {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return; // 주석 및 빈 라인 무시
+        if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return;
         const sectionMatch = trimmed.match(/^\[(.*)\]$/);
         if (sectionMatch) {
             currentSection = sectionMatch[1];
@@ -74,19 +74,19 @@ function getRPScore(rp) {
         : -Math.log(-rp + 1) * 2;
 }
 
-// 4. 티어 기준 계산
+// 4. 티어 계산
 function calculateTier(score, avgScore, stddev, config) {
-    const d = score - avgScore;
-    if (d > stddev * parseFloat(config['S+'])) return 'S+';
-    if (d > stddev * parseFloat(config['S'])) return 'S';
-    if (d > stddev * parseFloat(config['A'])) return 'A';
-    if (d > stddev * parseFloat(config['B'])) return 'B';
-    if (d > stddev * parseFloat(config['C'])) return 'C';
-    if (d > stddev * parseFloat(config['D'])) return 'D';
+    const diff = score - avgScore;
+    if (diff > stddev * parseFloat(config['S+'])) return 'S+';
+    if (diff > stddev * parseFloat(config['S'])) return 'S';
+    if (diff > stddev * parseFloat(config['A'])) return 'A';
+    if (diff > stddev * parseFloat(config['B'])) return 'B';
+    if (diff > stddev * parseFloat(config['C'])) return 'C';
+    if (diff > stddev * parseFloat(config['D'])) return 'D';
     return 'F';
 }
 
-// 5. 공통 점수/티어 계산
+// 5. 평균 점수 계산
 function calculateAverageScore(data) {
     const total = data.reduce((sum, item) => sum + item['표본수'], 0);
     let sumRP = 0, sumWin = 0, sumTop3 = 0;
@@ -99,14 +99,18 @@ function calculateAverageScore(data) {
     return getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
 }
 
+// 6. 표준 편차 계산
 function calculateStandardDeviation(data, avgScore) {
     const total = data.reduce((sum, item) => sum + item['표본수'], 0);
-    return Math.sqrt(data.reduce((sum, item) => {
-        const s = getRPScore(item['RP 획득']) + item['승률'] * 9 + item['TOP 3'] * 3;
-        return sum + Math.pow(s - avgScore, 2) * (item['표본수'] / total);
-    }, 0));
+    return Math.sqrt(
+        data.reduce((sum, item) => {
+            const s = getRPScore(item['RP 획득']) + item['승률'] * 9 + item['TOP 3'] * 3;
+            return sum + Math.pow(s - avgScore, 2) * (item['표본수'] / total);
+        }, 0)
+    );
 }
 
+// 7. 점수 및 티어, 픽률 계산
 function calculateTiers(data, avgScore, stddev, config) {
     const total = data.reduce((sum, item) => sum + item['표본수'], 0);
     const avgPickRate = data.length
@@ -116,9 +120,10 @@ function calculateTiers(data, avgScore, stddev, config) {
     return data.map(item => {
         const pickRate = item['표본수'] / total;
         const r = avgPickRate ? pickRate / avgPickRate : 1;
-        const originWeight = r <= 1 / 3
-            ? 0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))
-            : 0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k));
+        const originWeight =
+            r <= 1/3
+                ? 0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))
+                : 0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k));
         const meanWeight = 1 - originWeight;
         let factor = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
         if (r > 5) {
@@ -127,8 +132,9 @@ function calculateTiers(data, avgScore, stddev, config) {
         const baseScore = getRPScore(item['RP 획득']) + item['승률'] * 9 + item['TOP 3'] * 3;
         let score;
         if (item['표본수'] < total * avgPickRate) {
-            score = baseScore * (originWeight + meanWeight * Math.min(1, pickRate / avgPickRate))
-                  + avgScore * meanWeight * (1 - Math.min(1, pickRate / avgPickRate));
+            score =
+                baseScore * (originWeight + meanWeight * Math.min(1, pickRate / avgPickRate)) +
+                avgScore * meanWeight * (1 - Math.min(1, pickRate / avgPickRate));
             score *= factor;
         } else {
             score = baseScore * factor;
@@ -137,12 +143,13 @@ function calculateTiers(data, avgScore, stddev, config) {
         return {
             ...item,
             '점수': parseFloat(score.toFixed(2)),
-            '티어': tierLabel
+            '티어': tierLabel,
+            '픽률': parseFloat((pickRate * 100).toFixed(2))
         };
     });
 }
 
-// 6. 데이터 정렬
+// 8. 데이터 정렬
 function sortData(data, column, asc) {
     return [...data].sort((a, b) => {
         const x = a[column];
