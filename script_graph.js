@@ -1,12 +1,34 @@
 // ✅ script_graph.js 전체 코드
 document.addEventListener('DOMContentLoaded', function () {
     let myChart;
-    let chartData = [];
+    let fullData = []; // 원본 데이터
+    let chartData = []; // 필터링 후 표시할 데이터
 
     const canvas = document.getElementById('graph-canvas');
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
     const periodSelect = document.getElementById('period-select');
+    const filterLowCheckbox = document.getElementById('filter-low-pickrate');
+    const filterHighCheckbox = document.getElementById('filter-high-pickrate');
+
+    function applyFilters() {
+        const 전체표본수 = fullData.reduce((sum, d) => sum + d["표본수"], 0);
+        const 평균픽률 = fullData.reduce((sum, d) => sum + (d["표본수"] / 전체표본수), 0) / fullData.length;
+
+        chartData = fullData.filter(d => {
+            const 픽률 = d["표본수"] / 전체표본수;
+            if (filterLowCheckbox.checked && 픽률 < 평균픽률 / 4) return false;
+            if (filterHighCheckbox.checked && 픽률 > 평균픽률 * 5) return false;
+            return true;
+        });
+    }
+
+    [filterLowCheckbox, filterHighCheckbox].forEach(box => {
+        box.addEventListener('change', () => {
+            applyFilters();
+            document.querySelector('[data-type="pick-rp"]').click(); // 기본 그래프 다시 그림
+        });
+    });
 
     const labelPlugin = {
         id: 'labelPlugin',
