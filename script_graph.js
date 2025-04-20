@@ -220,11 +220,24 @@ Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation'
                     },
                     annotation: {
                         annotations: [
-                            { type: 'line', scaleID: 'x', value: xKey === '픽률' ? avgPickRate : (xKey === '승률' ? weightedWin : weightedRP) },
-                            { type: 'line', scaleID: 'y', value: yKey === '픽률' ? avgPickRate : (yKey === '승률' ? weightedWin : weightedRP) }
+                            {
+                                type: 'line',
+                                scaleID: 'x',
+                                borderColor: '#ffac2b',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                value: xKey === '픽률' ? avgPickRate : (xKey === '승률' ? weightedWin : weightedRP)
+                            },
+                            {
+                                type: 'line',
+                                scaleID: 'y',
+                                borderColor: '#ffac2b',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                value: yKey === '픽률' ? avgPickRate : (yKey === '승률' ? weightedWin : weightedRP)
+                            }
                         ]
-                    }
-                },
+                    },
                 scales: {
                     x: {
                         title: { display: true, text: xKey },
