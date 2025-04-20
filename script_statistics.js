@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let ascending = true;
 
     // ✅ 공통 모듈의 initializeDropdowns 사용
-    initializeDropdowns(versionSelect, tierSelect, periodSelect, () => triggerLoad(tierConfig));
+    initializeDropdowns(versionSelect, tierSelect, periodSelect, () => triggerLoad());
 
     // ✅ 점수 계산 함수는 공통 모듈에서 가져옴
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function triggerLoad(tierConfig) {
+    function triggerLoad() {
         const version = versionSelect.value;
         const tier = tierSelect.value;
         const period = periodSelect.value;
