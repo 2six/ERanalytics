@@ -24,17 +24,14 @@
             max-height: 900px;
             max-width: 100%;
         }
-        .dropdown-container {
+        /* 드롭다운 정렬 */
+        .filters {
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
-        select {
-            padding: 5px 10px;
-            font-size: 14px;
-        }
-        /* 팝업 스타일 */
+        /* 팝업 스타일 tier_table 방식 */
         .image-popup {
             display: none;
             position: fixed;
@@ -81,8 +78,8 @@
     </header>
 
     <main>
-        <!-- 드롭다운 -->
-        <div class="dropdown-container">
+        <!-- ✅ 드롭다운 3종 -->
+        <div class="filters">
             <select id="version-select"></select>
             <select id="tier-select"></select>
             <select id="period-select"></select>
@@ -95,7 +92,7 @@
             <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
         </div>
 
-        <!-- 그래프 영역 -->
+        <!-- ✅ canvas ID 변경됨 -->
         <canvas id="graph-canvas" width="1000" height="800"></canvas>
 
         <!-- 이미지 팝업 -->
