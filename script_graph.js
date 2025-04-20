@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         max: xMax,
                         ticks: {
                             callback: v => isXPercent ? (v * 100).toFixed(1) + '%' : v,
-                            stepSize: isXPercent ? 0.01 : 1
+                            stepSize: xKey === "픽률" ? 0.002 : (xKey === "승률" ? 0.01 : 1) // ✅ stepSize 수정
                         }
                     },
                     y: {
@@ -241,10 +241,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         max: yMax,
                         ticks: {
                             callback: v => isYPercent ? (v * 100).toFixed(1) + '%' : v,
-                            stepSize: isYPercent ? 0.01 : 1
+                            stepSize: yKey === "픽률" ? 0.002 : (yKey === "승률" ? 0.01 : 1) // ✅ stepSize 수정
                         }
                     }
-                }
+                }                
             }
         });
 
