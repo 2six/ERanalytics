@@ -23,8 +23,18 @@
             height: auto;
             max-height: 900px;
             max-width: 100%;
-        }        
-        /* 팝업 스타일 tier_table 방식 */
+        }
+        .dropdown-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        /* 팝업 스타일 */
         .image-popup {
             display: none;
             position: fixed;
@@ -71,26 +81,32 @@
     </header>
 
     <main>
+        <!-- 드롭다운 -->
+        <div class="dropdown-container">
+            <select id="version-select"></select>
+            <select id="tier-select"></select>
+            <select id="period-select"></select>
+        </div>
+
         <!-- 그래프 전환 탭 -->
         <div style="margin-bottom: 10px;">
             <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
             <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
             <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
         </div>
-    
+
         <!-- 그래프 영역 -->
-        <canvas id="pickRateRPChart" width="1000" height="800"></canvas>
-    
+        <canvas id="graph-canvas" width="1000" height="800"></canvas>
+
         <!-- 이미지 팝업 -->
         <div id="image-popup" class="image-popup">
             <span class="image-popup-close">&times;</span>
             <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
         </div>
-    
+
         <!-- 팝업 버튼 -->
         <button id="popup-graph-button">그래프 이미지 팝업</button>
     </main>
-    
 
     <footer>
         <p>© 2025 나만의 실험체 통계</p>
