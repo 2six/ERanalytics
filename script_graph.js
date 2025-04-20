@@ -130,31 +130,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function createGraph({ xKey, yKey, radiusKey, title }) {
         if (myChart) myChart.destroy();
-
+    
         const ctx = canvas.getContext('2d');
         const labels = filteredData.map(d => d["실험체"]);
-        const 전체표본수 = filteredData.reduce((sum, d) => sum + d["표본수"], 0);
-
-        const getValue = (key, d) => key === "픽률" ? d["표본수"] / 전체표본수 : d[key];
-
-        const xValues = filteredData.map(d => getValue(xKey, d));
-        const yValues = filteredData.map(d => getValue(yKey, d));
-        const radiusValues = filteredData.map(d => getValue(radiusKey, d));
-
-        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / chartData.reduce((s, d) => s + d["표본수"], 0)), 0) / chartData.length;
-        const 가중평균RP = chartData.reduce((acc, d) => acc + d["RP 획득"] * (d["표본수"] / 전체표본수), 0);
-        const 가중평균승률 = chartData.reduce((acc, d) => acc + d["승률"] * (d["표본수"] / 전체표본수), 0);
-
+        const 표시용표본수 = filteredData.reduce((sum, d) => sum + d["표본수"], 0); // ✅ 시각화용 표본수
+        const 평균계산용표본수 = chartData.reduce((sum, d) => sum + d["표본수"], 0); // ✅ 평균 계산용 표본수
+    
+        const getValue = (key, d, total) => key === "픽률" ? d["표본수"] / total : d[key];
+    
+        const xValues = filteredData.map(d => getValue(xKey, d, 표시용표본수));
+        const yValues = filteredData.map(d => getValue(yKey, d, 표시용표본수));
+        const radiusValues = filteredData.map(d => getValue(radiusKey, d, 표시용표본수));
+    
+        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / 평균계산용표본수), 0) / chartData.length; // ✅ chartData 기준
+        const 가중평균RP = chartData.reduce((acc, d) => acc + d["RP 획득"] * (d["표본수"] / 평균계산용표본수), 0);     // ✅ chartData 기준
+        const 가중평균승률 = chartData.reduce((acc, d) => acc + d["승률"] * (d["표본수"] / 평균계산용표본수), 0);     // ✅ chartData 기준
+    
         const isXPercent = xKey === "픽률" || xKey === "승률";
         const isYPercent = yKey === "픽률" || yKey === "승률";
-
+    
         const xMin = xKey === "픽률" ? 0 : isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100 : Math.floor(Math.min(...xValues));
         const xMax = xKey === "픽률" ? Math.ceil(Math.max(...xValues) * 500) / 500 : isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100 : Math.ceil(Math.max(...xValues));
         const yMin = yKey === "픽률" ? 0 : isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100 : Math.floor(Math.min(...yValues));
         const yMax = yKey === "픽률" ? Math.ceil(Math.max(...yValues) * 500) / 500 : isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100 : Math.ceil(Math.max(...yValues));
-
+    
         Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
-
+    
         myChart = new Chart(ctx, {
             type: 'scatter',
             data: {
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const d = filteredData[index];
                                 return [
                                     `${d["실험체"]}`,
-                                    `픽률: ${(d["표본수"] / 전체표본수 * 100).toFixed(2)}%`,
+                                    `픽률: ${(d["표본수"] / 표시용표본수 * 100).toFixed(2)}%`,
                                     `RP 획득: ${d["RP 획득"]}`,
                                     `승률: ${(d["승률"] * 100).toFixed(2)}%`
                                 ];
@@ -232,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         max: xMax,
                         ticks: {
                             callback: v => isXPercent ? (v * 100).toFixed(1) + '%' : v,
-                            stepSize: xKey === "픽률" ? 0.002 : (xKey === "승률" ? 0.01 : 1) // ✅ stepSize 수정
+                            stepSize: xKey === "픽률" ? 0.002 : (xKey === "승률" ? 0.01 : 1) // ✅ stepSize 기준 유지
                         }
                     },
                     y: {
@@ -241,18 +242,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         max: yMax,
                         ticks: {
                             callback: v => isYPercent ? (v * 100).toFixed(1) + '%' : v,
-                            stepSize: yKey === "픽률" ? 0.002 : (yKey === "승률" ? 0.01 : 1) // ✅ stepSize 수정
+                            stepSize: yKey === "픽률" ? 0.002 : (yKey === "승률" ? 0.01 : 1) // ✅ stepSize 기준 유지
                         }
                     }
-                }                
+                }
             }
         });
-
+    
         myChart.config._제목 = title;
         myChart.config._평균픽률 = 평균픽률;
         myChart.config._가중평균RP = 가중평균RP;
         myChart.config._가중평균승률 = 가중평균승률;
     }
+    
 
     function loadData() {
         const version = versionSelect.value;
