@@ -127,7 +127,53 @@ document.addEventListener('DOMContentLoaded', function () {
         if (myChart) myChart.destroy();
         const ctx = canvas.getContext('2d');
 
-        Chart.register(window['labelPlugin'], window['cornerTextPlugin'], window['chartjs-plugin-annotation']);
+        // 등록할 플러그인 정의
+const labelPlugin = {
+    id: 'labelPlugin',
+    afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        const dataPoints = meta.data;
+        const labels = chart.data.labels;
+        ctx.save();
+        dataPoints.forEach((point, index) => {
+            const x = point.x;
+            const y = point.y;
+            const label = labels[index];
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'white';
+            ctx.strokeText(label, x, y);
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, x, y);
+        });
+        ctx.restore();
+    }
+};
+
+const cornerTextPlugin = {
+    id: 'cornerTextPlugin',
+    afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        const left = chartArea.left;
+        const right = chartArea.right;
+        const top = chartArea.top;
+        ctx.save();
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        ctx.fillText(chart.config._제목 || '', left + 10, top + 20);
+        ctx.textAlign = 'right';
+        ctx.fillText(`평균 픽률: ${(chart.config._평균픽률*100).toFixed(2)}%`, right - 10, top + 20);
+        ctx.fillText(`평균 RP: ${chart.config._가중평균RP.toFixed(1)}`, right - 10, top + 40);
+        ctx.fillText(`평균 승률: ${(chart.config._가중평균승률*100).toFixed(2)}%`, right - 10, top + 60);
+        ctx.restore();
+    }
+};
+
+Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
         myChart = new Chart(ctx, {
             type: 'scatter',
             data: {
