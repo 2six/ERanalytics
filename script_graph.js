@@ -2,10 +2,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let myChart;
     let chartData = [];
 
+    const canvas = document.getElementById('pickRateRPChart');
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
     const periodSelect = document.getElementById('period-select');
-    const canvas = document.getElementById('graph-canvas');
 
     const labelPlugin = {
         id: 'labelPlugin',
@@ -112,10 +112,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const isXPercent = xKey === "픽률" || xKey === "승률";
         const isYPercent = yKey === "픽률" || yKey === "승률";
 
-        const xMin = xKey === "픽률" ? 0 : isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100 : Math.floor(Math.min(...xValues));
-        const xMax = xKey === "픽률" ? Math.ceil(Math.max(...xValues) * 500) / 500 : isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100 : Math.ceil(Math.max(...xValues));
-        const yMin = yKey === "픽률" ? 0 : isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100 : Math.floor(Math.min(...yValues));
-        const yMax = yKey === "픽률" ? Math.ceil(Math.max(...yValues) * 500) / 500 : isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100 : Math.ceil(Math.max(...yValues));
+        const xMin = xKey === "픽률" ? 0
+            : isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100
+            : Math.floor(Math.min(...xValues));
+        const xMax = xKey === "픽률"
+            ? Math.ceil(Math.max(...xValues) * 500) / 500
+            : isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100
+            : Math.ceil(Math.max(...xValues));
+
+        const yMin = yKey === "픽률" ? 0
+            : isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100
+            : Math.floor(Math.min(...yValues));
+        const yMax = yKey === "픽률"
+            ? Math.ceil(Math.max(...yValues) * 500) / 500
+            : isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100
+            : Math.ceil(Math.max(...yValues));
 
         Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
 
@@ -130,29 +141,27 @@ document.addEventListener('DOMContentLoaded', function () {
                         label: item["실험체"],
                         승률: item["승률"]
                     })),
-                    backgroundColor: function (context) {
+                    backgroundColor: (context) => {
                         const index = context.dataIndex;
                         const hue = (index * 360 / chartData.length) % 360;
                         return `hsl(${hue}, 60%, 70%, 0.8)`;
                     },
-                    pointRadius: function (context) {
+                    pointRadius: (context) => {
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
                         const 기준크기 = 30;
                         const 최소크기 = 6;
-
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
                     },
-                    pointHoverRadius: function(context) {
+                    pointHoverRadius: (context) => {
                         const val = radiusValues[context.dataIndex];
                         const min = Math.min(...radiusValues);
                         const max = Math.max(...radiusValues);
                         const 기준크기 = 30;
                         const 최소크기 = 6;
-
                         if (max === min) return 기준크기;
                         const 비율 = (val - min) / (max - min);
                         return 최소크기 + 비율 * (기준크기 - 최소크기);
@@ -167,13 +176,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     tooltip: {
                         callbacks: {
                             title: () => '',
-                            label: function (context) {
+                            label: (context) => {
                                 const index = context.dataIndex;
                                 const label = chartData[index]["실험체"];
                                 const 픽률 = ((chartData[index]["표본수"] / 전체표본수) * 100).toFixed(2);
                                 const RP획득 = chartData[index]["RP 획득"];
                                 const 승률 = (chartData[index]["승률"] * 100).toFixed(2);
-
                                 return [
                                     `${label}`,
                                     `픽률: ${픽률}%`,
@@ -254,73 +262,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    Promise.all([
-        fetch('versions.json').then(res => res.json()),
-        fetch('data/latest/in1000.json').then(res => res.json()) // 기본값
-    ]).then(([versions, defaultJson]) => {
-        const versionDropdown = document.getElementById('version-select');
-        versions.sort().reverse().forEach(v => {
-            versionDropdown.innerHTML += `<option value="${v}">${v}</option>`;
-        });
-
-        versionDropdown.addEventListener('change', loadData);
-        tierSelect.addEventListener('change', loadData);
-        periodSelect.addEventListener('change', loadData);
-
-        window.dataset = defaultJson;
-        loadData();
-    });
-
     function loadData() {
         const version = versionSelect.value;
         const tier = tierSelect.value;
-        const period = periodSelect.value;
-
         fetch(`data/${version}/${tier}.json`)
             .then(res => res.json())
             .then(json => {
-                const history = json["통계"];
-                const timestamps = Object.keys(history).sort();
-                const latest = history[timestamps[timestamps.length - 1]];
-                if (period === 'latest') {
-                    chartData = latest;
-                } else {
-                    const days = period === '3day' ? 3 : 7;
-                    const 기준일 = new Date(timestamps[timestamps.length - 1]);
-                    기준일.setDate(기준일.getDate() - days);
-                    const 과거키 = timestamps.reverse().find(ts => new Date(ts) <= 기준일);
-
-                    if (과거키) {
-                        const 이전 = history[과거키];
-                        const latestMap = Object.fromEntries(latest.map(d => [d.실험체, d]));
-                        const prevMap = Object.fromEntries(이전.map(d => [d.실험체, d]));
-
-                        const delta = [];
-                        for (const name in latestMap) {
-                            const curr = latestMap[name];
-                            const prev = prevMap[name];
-                            if (!prev) continue;
-                            const diff = curr["표본수"] - prev["표본수"];
-                            if (diff <= 0) continue;
-                            delta.push({
-                                "실험체": name,
-                                "표본수": diff,
-                                "RP 획득": (curr["RP 획득"] * curr["표본수"] - prev["RP 획득"] * prev["표본수"]) / diff,
-                                "승률": (curr["승률"] * curr["표본수"] - prev["승률"] * prev["표본수"]) / diff,
-                                "TOP 3": (curr["TOP 3"] * curr["표본수"] - prev["TOP 3"] * prev["표본수"]) / diff,
-                                "평균 순위": (curr["평균 순위"] * curr["표본수"] - prev["평균 순위"] * prev["표본수"]) / diff
-                            });
-                        }
-
-                        chartData = delta;
-                    } else {
-                        chartData = latest;
-                    }
-                }
-
+                const latestKey = Object.keys(json["통계"]).sort().pop();
+                chartData = json["통계"][latestKey];
                 setupGraphPopup();
                 setupGraphTabs();
                 document.querySelector('[data-type="pick-rp"]').click();
             });
     }
+
+    fetch('versions.json')
+        .then(res => res.json())
+        .then(versionList => {
+            versionList.sort().reverse();
+            versionSelect.innerHTML = versionList.map(v => `<option value="${v}">${v}</option>`).join('');
+            versionSelect.value = versionList[0];
+            tierSelect.value = "in1000";
+            loadData();
+        });
+
+    versionSelect.addEventListener('change', loadData);
+    tierSelect.addEventListener('change', loadData);
+    periodSelect.addEventListener('change', loadData);
 });
