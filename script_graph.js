@@ -1,34 +1,14 @@
-// ✅ script_graph.js 전체 코드
 document.addEventListener('DOMContentLoaded', function () {
     let myChart;
-    let fullData = []; // 원본 데이터
-    let chartData = []; // 필터링 후 표시할 데이터
+    let chartData = [];
+    let filteredData = [];
 
     const canvas = document.getElementById('graph-canvas');
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
     const periodSelect = document.getElementById('period-select');
-    const filterLowCheckbox = document.getElementById('filter-low-pickrate');
-    const filterHighCheckbox = document.getElementById('filter-high-pickrate');
-
-    function applyFilters() {
-        const 전체표본수 = fullData.reduce((sum, d) => sum + d["표본수"], 0);
-        const 평균픽률 = fullData.reduce((sum, d) => sum + (d["표본수"] / 전체표본수), 0) / fullData.length;
-
-        chartData = fullData.filter(d => {
-            const 픽률 = d["표본수"] / 전체표본수;
-            if (filterLowCheckbox.checked && 픽률 < 평균픽률 / 4) return false;
-            if (filterHighCheckbox.checked && 픽률 > 평균픽률 * 5) return false;
-            return true;
-        });
-    }
-
-    [filterLowCheckbox, filterHighCheckbox].forEach(box => {
-        box.addEventListener('change', () => {
-            applyFilters();
-            document.querySelector('[data-type="pick-rp"]').click(); // 기본 그래프 다시 그림
-        });
-    });
+    const lowPickrateCheckbox = document.getElementById('filter-low-pickrate');
+    const highPickrateCheckbox = document.getElementById('filter-high-pickrate');
 
     const labelPlugin = {
         id: 'labelPlugin',
@@ -83,9 +63,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    function applyFilters() {
+        const 전체표본수 = chartData.reduce((sum, d) => sum + d["표본수"], 0);
+        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / 전체표본수), 0) / chartData.length;
+
+        filteredData = chartData.filter(d => {
+            const 픽률 = d["표본수"] / 전체표본수;
+            if (lowPickrateCheckbox.checked && 픽률 < 평균픽률 / 4) return false;
+            if (highPickrateCheckbox.checked && 픽률 > 평균픽률 * 5) return false;
+            return true;
+        });
+    }
+
     function setupGraphTabs() {
         document.querySelectorAll('.graph-tab').forEach(button => {
             button.addEventListener('click', () => {
+                applyFilters();
                 const type = button.dataset.type;
                 if (type === 'pick-rp') {
                     createGraph({ xKey: "픽률", yKey: "RP 획득", radiusKey: "승률", title: "픽률 / RP 획득" });
@@ -96,48 +89,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         });
-    }
 
-    function setupGraphPopup() {
-        const popup = document.getElementById('image-popup');
-        const popupImage = document.getElementById('popup-image');
-        const closeButton = document.querySelector('.image-popup-close');
-        const popupGraphButton = document.getElementById('popup-graph-button');
+        lowPickrateCheckbox.addEventListener('change', () => {
+            document.querySelector('.graph-tab.active')?.click();
+        });
 
-        if (popupGraphButton && popup && popupImage && closeButton) {
-            popupGraphButton.addEventListener('click', () => {
-                html2canvas(canvas).then(canvas => {
-                    popup.style.display = 'block';
-                    popupImage.src = canvas.toDataURL();
-                });
-            });
-
-            closeButton.addEventListener('click', () => {
-                popup.style.display = 'none';
-            });
-
-            window.addEventListener('click', (event) => {
-                if (event.target === popup) {
-                    popup.style.display = 'none';
-                }
-            });
-        }
+        highPickrateCheckbox.addEventListener('change', () => {
+            document.querySelector('.graph-tab.active')?.click();
+        });
     }
 
     function createGraph({ xKey, yKey, radiusKey, title }) {
         if (myChart) myChart.destroy();
 
         const ctx = canvas.getContext('2d');
-        const labels = chartData.map(d => d["실험체"]);
-        const 전체표본수 = chartData.reduce((sum, d) => sum + d["표본수"], 0);
+        const labels = filteredData.map(d => d["실험체"]);
+        const 전체표본수 = filteredData.reduce((sum, d) => sum + d["표본수"], 0);
 
         const getValue = (key, d) => key === "픽률" ? d["표본수"] / 전체표본수 : d[key];
 
-        const xValues = chartData.map(d => getValue(xKey, d));
-        const yValues = chartData.map(d => getValue(yKey, d));
-        const radiusValues = chartData.map(d => getValue(radiusKey, d));
+        const xValues = filteredData.map(d => getValue(xKey, d));
+        const yValues = filteredData.map(d => getValue(yKey, d));
+        const radiusValues = filteredData.map(d => getValue(radiusKey, d));
 
-        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / 전체표본수), 0) / chartData.length;
+        const 평균픽률 = chartData.reduce((acc, d) => acc + (d["표본수"] / chartData.reduce((s, d) => s + d["표본수"], 0)), 0) / chartData.length;
         const 가중평균RP = chartData.reduce((acc, d) => acc + d["RP 획득"] * (d["표본수"] / 전체표본수), 0);
         const 가중평균승률 = chartData.reduce((acc, d) => acc + d["승률"] * (d["표본수"] / 전체표본수), 0);
 
@@ -146,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const xMin = xKey === "픽률" ? 0 : isXPercent ? Math.floor(Math.min(...xValues) * 100) / 100 : Math.floor(Math.min(...xValues));
         const xMax = xKey === "픽률" ? Math.ceil(Math.max(...xValues) * 500) / 500 : isXPercent ? Math.ceil(Math.max(...xValues) * 100) / 100 : Math.ceil(Math.max(...xValues));
-
         const yMin = yKey === "픽률" ? 0 : isYPercent ? Math.floor(Math.min(...yValues) * 100) / 100 : Math.floor(Math.min(...yValues));
         const yMax = yKey === "픽률" ? Math.ceil(Math.max(...yValues) * 500) / 500 : isYPercent ? Math.ceil(Math.max(...yValues) * 100) / 100 : Math.ceil(Math.max(...yValues));
 
@@ -157,14 +131,14 @@ document.addEventListener('DOMContentLoaded', function () {
             data: {
                 labels: labels,
                 datasets: [{
-                    data: chartData.map((d, i) => ({
+                    data: filteredData.map((d, i) => ({
                         x: xValues[i],
                         y: yValues[i],
                         label: d["실험체"]
                     })),
                     backgroundColor: (ctx) => {
                         const index = ctx.dataIndex;
-                        const hue = (index * 360 / chartData.length) % 360;
+                        const hue = (index * 360 / filteredData.length) % 360;
                         return `hsl(${hue}, 60%, 70%, 0.8)`;
                     },
                     pointRadius: (ctx) => {
@@ -191,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             title: () => '',
                             label: (context) => {
                                 const index = context.dataIndex;
-                                const d = chartData[index];
+                                const d = filteredData[index];
                                 return [
                                     `${d["실험체"]}`,
                                     `픽률: ${(d["표본수"] / 전체표본수 * 100).toFixed(2)}%`,
