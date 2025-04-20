@@ -199,10 +199,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                 return [
                                     `${d["실험체"]}`,
                                     `픽률: ${(d["표본수"] / 표시용표본수 * 100).toFixed(2)}%`,
-                                    `RP 획득: ${d["RP 획득"]}`,
+                                    `RP 획득: ${d["RP 획득"].toFixed(2)}`, // ✅ 소숫점 둘째 자리까지 표시
                                     `승률: ${(d["승률"] * 100).toFixed(2)}%`
                                 ];
-                            }
+                            }                            
                         }
                     },
                     annotation: {
