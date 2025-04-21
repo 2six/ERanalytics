@@ -131,44 +131,6 @@ layout: none
             visibility: visible;
             opacity: 1;
         }
-        /* 통계 페이지 테이블 압축 & 반응형 컬럼 숨김 */
-        #data-container {
-          max-width: 90vw;       /* 화면 너비의 90% 만큼만 차지 */
-          margin: 0 auto;        /* 가운데 정렬 */
-          overflow-x: hidden;    /* 더 이상 가로 스크롤 안 나오도록 */
-        }
-
-        #data-container table {
-          table-layout: fixed;   /* 칼럼 너비 고정 분배 */
-          width: 100%;           /* 컨테이너에 딱 맞춤 */
-          font-size: 0.85rem;    /* 글자 크기 약간 축소 */
-        }
-
-        #data-container th,
-        #data-container td {
-          padding: 4px 6px;      /* 패딩 축소 */
-          white-space: nowrap;   /* 한 줄로 유지 */
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        /* 화면이 1200px 이하일 때 TOP 3(7번째), 평균 순위(8번째) 숨김 */
-        @media (max-width: 1200px) {
-          #data-container th:nth-child(7),
-          #data-container td:nth-child(7),
-          #data-container th:nth-child(8),
-          #data-container td:nth-child(8) {
-            display: none;
-          }
-        }
-
-        /* 화면이 1000px 이하일 때 RP 획득(5번째)도 숨김 */
-        @media (max-width: 1000px) {
-          #data-container th:nth-child(5),
-          #data-container td:nth-child(5) {
-            display: none;
-          }
-        }
   </style>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 </head>
