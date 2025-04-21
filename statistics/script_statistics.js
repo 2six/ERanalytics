@@ -96,36 +96,87 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 4) 테이블 렌더링
     function renderTable(data) {
-        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        const cols   = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        // px 기준 너비 합 = 180+60+50+70+70+60+60+70 = 620
+        // 각 열 너비를 퍼센트로 환산 (px/620*100)
+        const widths = [
+          '29.03%',  // 180/620
+          '9.68%',   // 60/620
+          '8.06%',   // 50/620
+          '11.29%',  // 70/620
+          '11.29%',  // 70/620
+          '9.68%',   // 60/620
+          '9.68%',   // 60/620
+          '11.29%'   // 70/620
+        ];
+      
+        // 1) 테이블 HTML 생성
         let html = '<table><thead><tr>';
-        cols.forEach(col => html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`);
+        cols.forEach(c => {
+          html += `<th data-col="${c}">${c}</th>`;
+        });
         html += '</tr></thead><tbody>';
-
+      
         data.forEach(row => {
-            html += '<tr>';
-            cols.forEach(col => {
-                let val = row[col];
-                if (col === '픽률' || col === '승률' || col === 'TOP 3') val = val.toFixed(2) + '%';
-                html += `<td>${val}</td>`;
-            });
-            html += '</tr>';
+          html += '<tr>';
+          cols.forEach(c => {
+            let v = row[c];
+            if (c === '픽률' || c === '승률' || c === 'TOP 3') {
+              v = v.toFixed(2) + '%';
+            }
+            html += `<td>${v}</td>`;
+          });
+          html += '</tr>';
         });
-
+      
         html += '</tbody></table>';
-        document.getElementById('data-container').innerHTML = html;
-
-        document.querySelectorAll('#data-container th').forEach(th => {
-            th.addEventListener('click', () => {
-                const col = th.dataset.col;
-                if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
-                else { currentSortColumn = col; currentSortAsc = false; }
-                const sorted = sortData(lastData, currentSortColumn, currentSortAsc);
-                lastData = sorted;
-                renderTable(sorted);
-            });
+      
+        // 2) container에 삽입
+        const container = document.getElementById('data-container');
+        container.innerHTML = html;
+      
+        // 3) 고정 폭 & 반응형 layout 설정
+        const table = container.querySelector('table');
+        table.style.cssText = 'width:100%; table-layout:fixed; margin:0 auto;';
+      
+        // 4) 헤더 <th> 에 퍼센트 폭, 스타일 적용 & 정렬 이벤트 바인딩
+        table.querySelectorAll('th').forEach((th, i) => {
+          th.style.cssText = `
+            width:${widths[i]};
+            overflow:hidden;
+            white-space:nowrap;
+            text-overflow:ellipsis;
+            cursor:pointer;
+          `;
+          th.addEventListener('click', () => {
+            const col = th.dataset.col;
+            if (currentSortColumn === col) {
+              currentSortAsc = !currentSortAsc;
+            } else {
+              currentSortColumn = col;
+              currentSortAsc = false;
+            }
+            const sorted = sortData(lastData, currentSortColumn, currentSortAsc);
+            lastData = sorted;
+            renderTable(sorted);
+          });
         });
-
-        if (gradientCheckbox.checked) applyGradientColors();
+      
+        // 5) 본문 <td> 에도 동일한 폭 & 스타일 적용
+        table.querySelectorAll('td').forEach((td, idx) => {
+          const colIndex = idx % cols.length;
+          td.style.cssText = `
+            width:${widths[colIndex]};
+            overflow:hidden;
+            white-space:nowrap;
+            text-overflow:ellipsis;
+          `;
+        });
+      
+        // 6) 그라디언트 컬러 옵션이 체크되어 있으면 적용
+        if (gradientCheckbox.checked) {
+          applyGradientColors();
+        }
     }
 
     // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
