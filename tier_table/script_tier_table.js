@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const entries = groups[tier].sort((a,b)=>b.점수 - a.점수);
             if (entries.length===0) {
                 html += `<span class="tooltip-container">
-                           <img src="image/placeholder.png" alt="빈 슬롯" style="opacity:0">
+                           <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
                          </span>`;
             } else {
                 entries.forEach((e,i) => {
