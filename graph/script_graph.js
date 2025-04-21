@@ -289,27 +289,58 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // 코너 텍스트 플러그인
+    // 티어 코드 → 한글 레이블 맵
+    const tierLabels = {
+        platinum_plus: "플래티넘+",
+        diamond_plus:  "다이아몬드+",
+        meteorite_plus:"메테오라이트+",
+        mithril_plus:  "미스릴+",
+        in1000:        "in1000"
+    };
+    
     const cornerTextPlugin = {
         id: 'cornerTextPlugin',
         afterDraw(chart) {
-          const { ctx, chartArea } = chart;
-          const centerX = (chartArea.left + chartArea.right) / 2;
-      
-          ctx.save();
-          ctx.font = 'bold 16px sans-serif';
-          ctx.fillStyle = 'black';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-      
-          // 첫 줄: 그래프 종류 (_제목)
-          ctx.fillText(chart.config._제목 || '', centerX, chartArea.top + 8);
-      
-          // 둘째 줄: 버전 / 티어
-          ctx.font = '14px sans-serif';
-          const versionTier = `버전: ${chart.config._version} | 티어: ${chart.config._tier}`;
-          ctx.fillText(versionTier, centerX, chartArea.top + 28);
-      
-          ctx.restore();
+        const { ctx, chartArea } = chart;
+        const centerX = (chartArea.left + chartArea.right) / 2;
+    
+        ctx.save();
+    
+        // 중앙 상단 2줄
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+    
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillStyle = 'black';
+        ctx.fillText(chart.config._제목 || '', centerX, chartArea.top + 8);
+    
+        ctx.font = '14px sans-serif';
+        // 티어값을 한글로 치환
+        const humanTier = tierLabels[chart.config._tier] || chart.config._tier;
+        const versionTier = `버전: ${chart.config._version} | 티어: ${humanTier}`;
+        ctx.fillText(versionTier, centerX, chartArea.top + 28);
+    
+        // 우측 상단 평균데이터 3줄
+        ctx.textAlign = 'right';
+        ctx.font = '14px sans-serif';
+    
+        ctx.fillText(
+            `평균 픽률: ${(chart.config._평균픽률 * 100).toFixed(2)}%`,
+            chartArea.right - 10,
+            chartArea.top + 8
+        );
+        ctx.fillText(
+            `평균 RP: ${chart.config._가중평균RP.toFixed(1)}`,
+            chartArea.right - 10,
+            chartArea.top + 28
+        );
+        ctx.fillText(
+            `평균 승률: ${(chart.config._가중평균승률 * 100).toFixed(2)}%`,
+            chartArea.right - 10,
+            chartArea.top + 48
+        );
+    
+        ctx.restore();
         }
-    };
+    };    
 });
