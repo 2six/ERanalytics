@@ -1,4 +1,4 @@
-// script_statistics.js
+// script_statistics.js (공통 모듈 사용 + applyGradientColors 정의 포함)
 document.addEventListener('DOMContentLoaded', function() {
     const versionSelect = document.getElementById('version-select');
     const tierSelect = document.getElementById('tier-select');
@@ -94,48 +94,26 @@ document.addEventListener('DOMContentLoaded', function() {
         return delta;
     }
 
-    // 4) 테이블 렌더링 (colgroup 포함)
+    // 4) 테이블 렌더링
     function renderTable(data) {
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        let html = '<table><thead><tr>';
+        cols.forEach(col => html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`);
+        html += '</tr></thead><tbody>';
 
-        // colgroup 정의: 1~8번째 칼럼의 고정 너비(px)
-        const colgroup = `
-            <colgroup>
-                <col style="width:180px">
-                <col style="width:60px">
-                <col style="width:50px">
-                <col style="width:70px">
-                <col style="width:70px">
-                <col style="width:60px">
-                <col style="width:60px">
-                <col style="width:70px">
-            </colgroup>
-        `;
-
-        // 테이블 시작 (colgroup 삽입)
-        let html = `<table>${colgroup}<thead><tr>`;
-        cols.forEach(col => {
-            html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`;
-        });
-        html += `</tr></thead><tbody>`;
-
-        // 바디 채우기
         data.forEach(row => {
             html += '<tr>';
             cols.forEach(col => {
                 let val = row[col];
-                if (col === '픽률' || col === '승률' || col === 'TOP 3') {
-                    val = val.toFixed(2) + '%';
-                }
+                if (col === '픽률' || col === '승률' || col === 'TOP 3') val = val.toFixed(2) + '%';
                 html += `<td>${val}</td>`;
             });
             html += '</tr>';
         });
 
-        html += `</tbody></table>`;
+        html += '</tbody></table>';
         document.getElementById('data-container').innerHTML = html;
 
-        // 정렬 핸들러
         document.querySelectorAll('#data-container th').forEach(th => {
             th.addEventListener('click', () => {
                 const col = th.dataset.col;
@@ -147,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // 그라디언트 컬러
         if (gradientCheckbox.checked) applyGradientColors();
     }
 
@@ -174,18 +151,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const isBad = badCols.includes(col);
                 if (!isBad) {
                     if (v >= avg) {
-                        ratio = max===avg ? 0 : (v-avg)/(max-avg);
+                        ratio = max===avg?0:(v-avg)/(max-avg);
                         color = interpolateColor([255,255,255],[230,124,115],ratio);
                     } else {
-                        ratio = avg===min ? 0 : (avg-v)/(avg-min);
+                        ratio = avg===min?0:(avg-v)/(avg-min);
                         color = interpolateColor([255,255,255],[164,194,244],ratio);
                     }
                 } else {
                     if (v <= avg) {
-                        ratio = avg===min ? 0 : (avg-v)/(avg-min);
+                        ratio = avg===min?0:(avg-v)/(avg-min);
                         color = interpolateColor([255,255,255],[230,124,115],ratio);
                     } else {
-                        ratio = max===avg ? 0 : (v-avg)/(max-avg);
+                        ratio = max===avg?0:(v-avg)/(max-avg);
                         color = interpolateColor([255,255,255],[164,194,244],ratio);
                     }
                 }
