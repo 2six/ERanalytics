@@ -1,49 +1,54 @@
 // script_tier_table.js (공통 모듈 사용 + 페이지 특화 헬퍼 포함)
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect    = document.getElementById('tier-select');
     const periodSelect  = document.getElementById('period-select');
-  
-    // 1) URL‑param 읽어서 초기값 세팅
-    const params = new URLSearchParams(window.location.search);
-    function applyParams() {
-      if (params.get('version')) versionSelect.value = params.get('version');
-      if (params.get('tier'))    tierSelect.value    = params.get('tier');
-      if (params.get('period'))  periodSelect.value  = params.get('period');
-    }
-  
-    // 2) URL 갱신
-    function updateURL() {
-      const p = new URLSearchParams();
-      p.set('version', versionSelect.value);
-      p.set('tier',    tierSelect.value);
-      p.set('period',  periodSelect.value);
-      history.replaceState(null, '', `${location.pathname}?${p}`);
-    }
-  
-    // 3) init: config 읽고 드롭다운 채우고, 파라미터 반영 → URL 갱신 → 로드
+
+    // 전역으로 보관
+    let tierConfigGlobal = null;
+
+    // 1) 설정 로드 & 드롭다운 초기화
     Promise.all([
-      fetch('/config.ini').then(r => r.text()),
-      fetch('/versions.json').then(r => r.json())
-    ]).then(([iniText, versionList]) => {
-      const tierConfig = parseINI(iniText).tiers;
-      populateVersionDropdown(versionSelect, versionList);
-      populateTierDropdown(tierSelect);
-      populatePeriodDropdown(periodSelect);
-  
-      applyParams();
-      updateURL();
-      loadAndRender();
-  
-      [versionSelect, tierSelect, periodSelect].forEach(el =>
-        el.addEventListener('change', () => {
-          updateURL();
-          loadAndRender();
-        })
-      );
+        fetch('/config.ini').then(r => r.text()),
+        fetch('/versions.json').then(r => r.json())
+    ]).then(([iniString, versionList]) => {
+        const config = parseINI(iniString);
+        tierConfigGlobal = config.tiers;
+
+        initDropdowns(versionList);
+        // 최초 렌더
+        loadAndRender();
     });
 
-    // 데이터 로드 및 렌더링
+    // 2) init dropdowns
+    function initDropdowns(versionList) {
+        versionList.sort().reverse().forEach(v => {
+            versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
+        });
+
+        const tierMap = {
+            platinum_plus: "플래티넘+",
+            diamond_plus:  "다이아몬드+",
+            meteorite_plus:"메테오라이트+",
+            mithril_plus:  "미스릴+",
+            in1000:        "in1000"
+        };
+        Object.entries(tierMap).forEach(([key, name]) => {
+            tierSelect.innerHTML += `<option value="${key}">${name}</option>`;
+        });
+
+        periodSelect.innerHTML = `
+            <option value="latest">전체</option>
+            <option value="3day">최근 3일</option>
+            <option value="7day">최근 7일</option>
+        `;
+
+        versionSelect.addEventListener('change', loadAndRender);
+        tierSelect.addEventListener('change',    loadAndRender);
+        periodSelect.addEventListener('change',  loadAndRender);
+    }
+
+    // 3) 데이터 로드 & 렌더
     function loadAndRender() {
         const version = versionSelect.value;
         const tier    = tierSelect.value;
@@ -52,16 +57,19 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/data/${version}/${tier}.json`)
             .then(res => res.json())
             .then(json => {
-                const history = json['통계'];
-                const entries = extractPeriodEntries(history, period);
-
-                const avgScore = calculateAverageScore(entries);
-                const stddev = calculateStandardDeviation(entries, avgScore);
-                const scored = calculateTiers(entries, avgScore, stddev, tierConfig);
-
-                renderTierTable(scored);
+                const history   = json["통계"];
+                const entries   = extractPeriodEntries(history, period);
+                const avgScore  = calculateAverageScore(entries);
+                const stddev    = calculateStandardDeviation(entries, avgScore);
+                // 전역 tierConfigGlobal 사용
+                const scored    = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                displayTierTable(scored);
+                setupTablePopup();
             })
-            .catch(err => console.error('데이터 로드 실패:', err));
+            .catch(err => {
+                console.error('데이터 로드 실패:', err);
+                document.getElementById('tier-table').innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>';
+            });
     }
 
     // 기간별 데이터 추출
