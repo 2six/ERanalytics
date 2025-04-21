@@ -201,12 +201,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 {
                   type:'line', scaleID:'x',
                   value: xKey==='픽률'?avgPickRate:(xKey==='승률'?wWin:wRP),
-                  borderColor:'#FFEB3B', borderWidth:2, borderDash:[5,5]
+                  borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 },
                 {
                   type:'line', scaleID:'y',
                   value: yKey==='픽률'?avgPickRate:(yKey==='승률'?wWin:wRP),
-                  borderColor:'#FFEB3B', borderWidth:2, borderDash:[5,5]
+                  borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 }
               ]
             }

@@ -150,65 +150,67 @@ document.addEventListener('DOMContentLoaded', function () {
     function displayTierTable(data) {
         // 1) 티어 한글 매핑
         const tierLabels = {
-            platinum_plus:  "플래티넘+",
-            diamond_plus:   "다이아몬드+",
-            meteorite_plus: "메테오라이트+",
-            mithril_plus:   "미스릴+",
-            in1000:         "in1000"
+          platinum_plus:  "플래티넘+",
+          diamond_plus:   "다이아몬드+",
+          meteorite_plus: "메테오라이트+",
+          mithril_plus:   "미스릴+",
+          in1000:         "in1000"
         };
-    
-        // 2) <caption> 으로 우상단 정보 삽입
-        const captionHTML = `
-          <caption style="
-            caption-side: top;
-            text-align: right;
-            padding: 4px 8px;
-            font-size: 0.9em;
-            font-weight: bold;
-          ">
-            버전: ${versionSelect.value} |
-            티어: ${tierLabels[tierSelect.value]}
-          </caption>
+      
+        // 2) 테이블 내부 최상단에 정보 행 추가
+        const infoText = `버전: ${versionSelect.value} | 티어: ${tierLabels[tierSelect.value]}`;
+        let html = `
+          <tr class="info-row">
+            <th></th>
+            <td style="
+              text-align: right;
+              padding: 4px 8px;
+              font-size: 0.9em;
+              font-weight: bold;
+            ">
+              ${infoText}
+            </td>
+          </tr>
         `;
-    
+      
         // 3) 기존 티어별 행 생성
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
         const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
         data.forEach(item => groups[item.티어].push(item));
-    
+      
         const totalSample = data.reduce((sum, i) => sum + i['표본수'], 0);
         const perRow = 15;
-        let html = '';
-    
+      
         tiers.forEach(tier => {
-            html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
-            const entries = groups[tier].sort((a,b) => b.점수 - a.점수);
-            if (entries.length === 0) {
-                html += `<span class="tooltip-container">
-                           <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
-                         </span>`;
-            } else {
-                entries.forEach((e, i) => {
-                    const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
-                    const tooltip = `<div class="tooltip-box">
-                                       ${e.실험체}<br>
-                                       픽률: ${(e['표본수']/totalSample*100).toFixed(2)}%<br>
-                                       RP: ${e['RP 획득'].toFixed(1)}<br>
-                                       승률: ${(e['승률']*100).toFixed(1)}%
-                                     </div>`;
-                    html += `<span class="tooltip-container">
-                               <img src="/image/${imgName}.png" alt="${e.실험체}">
-                               ${tooltip}
-                             </span>`;
-                    if ((i+1)%perRow===0 && i!==entries.length-1) html += '</div><div>';
-                });
-            }
-            html += '</div></td></tr>';
+          html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
+          const entries = groups[tier].sort((a, b) => b.점수 - a.점수);
+      
+          if (entries.length === 0) {
+            html += `<span class="tooltip-container">
+                       <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
+                     </span>`;
+          } else {
+            entries.forEach((e, i) => {
+              const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
+              const tooltip = `<div class="tooltip-box">
+                                 ${e.실험체}<br>
+                                 픽률: ${(e['표본수']/totalSample*100).toFixed(2)}%<br>
+                                 RP: ${e['RP 획득'].toFixed(1)}<br>
+                                 승률: ${(e['승률']*100).toFixed(1)}%
+                               </div>`;
+              html += `<span class="tooltip-container">
+                         <img src="/image/${imgName}.png" alt="${e.실험체}">
+                         ${tooltip}
+                       </span>`;
+              if ((i+1)%perRow===0 && i!==entries.length-1) html += '</div><div>';
+            });
+          }
+          html += `</div></td></tr>`;
         });
-    
-        // 4) caption + rows를 table에 반영
-        table.innerHTML = captionHTML + html;
-    }
+      
+        // 4) 테이블에 반영
+        table.innerHTML = html;
+      }      
 
     // 6) 팝업 초기화
     function setupTablePopup() {
