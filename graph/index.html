@@ -13,6 +13,15 @@ layout: none
   <link rel="shortcut icon" href="/favicon/favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
   <link rel="manifest" href="/favicon/site.webmanifest" />
+  <style>
+    #graph-wrapper {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    #graph-wrapper canvas {
+      min-width: 1000px;
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -38,7 +47,9 @@ layout: none
       <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
     </div>
 
+    <div id="graph-wrapper">
     <canvas id="graph-canvas" width="1000" height="800"></canvas>
+    </div>
 
     <div id="image-popup" class="image-popup">
       <span class="image-popup-close">&times;</span>
