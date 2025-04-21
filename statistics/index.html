@@ -18,6 +18,17 @@ layout: none
     #data-container {
       max-width: 95vw;       /* 화면 너비의 90% 만큼만 차지 */
       margin: 0 auto;        /* 가운데 정렬 */
+    }    
+    #data-container table {
+      table-layout: fixed;
+    }
+    /* 공통: 텍스트 넘칠 때 줄임표 */
+    #data-container th,
+    #data-container td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 4px 6px;
     }
   </style>
 </head>
