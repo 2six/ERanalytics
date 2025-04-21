@@ -298,41 +298,57 @@ document.addEventListener('DOMContentLoaded', function () {
         in1000:        "in1000"
     };
     
-    // 기존 cornerTextPlugin 정의를 이걸로 대체
-const cornerTextPlugin = {
-    id: 'cornerTextPlugin',
-    afterDraw(chart) {
-      const { ctx, chartArea } = chart;
-      const title = chart.config._제목;
-      const avgPick = chart.config._평균픽률;
-      const wRP     = chart.config._가중평균RP;
-      const wWin    = chart.config._가중평균승률;
-  
-      ctx.save();
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillStyle = 'black';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-  
-      // 1) 항상 그릴 그래프 제목
-      ctx.fillText(title || '', (chartArea.left + chartArea.right) / 2, chartArea.top + 8);
-  
-      // 2) 메타데이터가 모두 존재할 때만 둘째 줄을 그린다
-      if (
-        typeof avgPick === 'number' &&
-        typeof wRP     === 'number' &&
-        typeof wWin    === 'number'
-      ) {
-        ctx.font = '14px sans-serif';
-        const info = 
-          `평균 픽률: ${(avgPick * 100).toFixed(2)}%   ` +
-          `평균 RP: ${wRP.toFixed(2)}   ` +
-          `평균 승률: ${(wWin * 100).toFixed(2)}%`;
-        ctx.fillText(info, (chartArea.left + chartArea.right) / 2, chartArea.top + 28);
-      }
-  
-      ctx.restore();
-    }
-  };
-  
+    const cornerTextPlugin = {
+        id: 'cornerTextPlugin',
+        afterDraw(chart) {
+          const { ctx, chartArea } = chart;
+          const centerX = (chartArea.left + chartArea.right) / 2;
+      
+          // 중앙 상단 2줄
+          ctx.save();
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle    = 'black';
+      
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillText(chart.config._제목 || '', centerX, chartArea.top + 8);
+      
+          ctx.font = '14px sans-serif';
+          const humanTier    = tierLabels[chart.config._tier] || chart.config._tier;
+          const versionTier  = `버전: ${chart.config._version} | 티어: ${humanTier}`;
+          ctx.fillText(versionTier, centerX, chartArea.top + 28);
+      
+          // 우측 상단 평균데이터 (값이 있을 때만)
+          const avgPick = chart.config._평균픽률;
+          const avgRP   = chart.config._가중평균RP;
+          const avgWin  = chart.config._가중평균승률;
+      
+          ctx.textAlign = 'right';
+          ctx.font      = '14px sans-serif';
+      
+          if (typeof avgPick === 'number') {
+            ctx.fillText(
+              `평균 픽률: ${(avgPick * 100).toFixed(2)}%`,
+              chartArea.right - 10,
+              chartArea.top + 8
+            );
+          }
+          if (typeof avgRP === 'number') {
+            ctx.fillText(
+              `평균 RP: ${avgRP.toFixed(1)}`,
+              chartArea.right - 10,
+              chartArea.top + 28
+            );
+          }
+          if (typeof avgWin === 'number') {
+            ctx.fillText(
+              `평균 승률: ${(avgWin * 100).toFixed(2)}%`,
+              chartArea.right - 10,
+              chartArea.top + 48
+            );
+          }
+      
+          ctx.restore();
+        }
+    };
 });
