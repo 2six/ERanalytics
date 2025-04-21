@@ -5,61 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>그래프</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        nav ul {
-            list-style: none;
-            padding: 0;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        nav li {
-            display: inline;
-            margin: 0 10px;
-        }
-        canvas {
-            display: block;
-            margin-top: 10px;
-            width: 100%;
-            height: auto;
-            max-height: 900px;
-            max-width: 100%;
-        }
-        /* 드롭다운 정렬 */
-        .filters {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        /* 팝업 스타일 tier_table 방식 */
-        .image-popup {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-        .image-popup-content {
-            display: block;
-            margin: 5% auto;
-            max-width: 90%;
-            max-height: 80%;
-            border: 4px solid white;
-        }
-        .image-popup-close {
-            position: absolute;
-            top: 20px;
-            right: 35px;
-            color: white;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -78,7 +23,6 @@
     </header>
 
     <main>
-        <!-- ✅ 드롭다운 3종 -->
         <div class="filters">
             <select id="version-select"></select>
             <select id="tier-select"></select>
@@ -87,23 +31,19 @@
             <label><input type="checkbox" id="filter-high-pickrate"> 높은 픽률 제외</label>
         </div>
 
-        <!-- 그래프 전환 탭 -->
         <div style="margin-bottom: 10px;">
             <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
             <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
             <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
         </div>
 
-        <!-- ✅ canvas ID 변경됨 -->
         <canvas id="graph-canvas" width="1000" height="800"></canvas>
 
-        <!-- 이미지 팝업 -->
         <div id="image-popup" class="image-popup">
             <span class="image-popup-close">&times;</span>
             <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
         </div>
 
-        <!-- 팝업 버튼 -->
         <button id="popup-graph-button">그래프 이미지 팝업</button>
     </main>
 

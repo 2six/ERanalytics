@@ -1,181 +1,173 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>티어별 실험체</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* ✅ 기존 tier 스타일 유지 */
-    .tier-table {
-        width: 1425px;
-        border-collapse: collapse;
-        margin-bottom: 0px;
-        border: 1px solid white;
-    }
-    .tier-row th {
-        padding: 10px;
-        text-align: center;
-        font-size: 1.2em;
-        color: #fff;
-        border: 1px solid white;
-        width: 50px;
-        white-space: nowrap;
-        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000,
-                     -1px 1px 0 #000, 1px 1px 0 #000;
-    }
-    .tier-row th:first-child { background-color: rgb(255, 127, 127); }
-    .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); }
-    .tier-row:nth-child(3) th:first-child { background-color: rgb(255, 223, 127); }
-    .tier-row:nth-child(4) th:first-child { background-color: rgb(255, 255, 127); }
-    .tier-row:nth-child(5) th:first-child { background-color: rgb(191, 255, 127); }
-    .tier-row:nth-child(6) th:first-child { background-color: rgb(127, 255, 127); }
-    .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); }
-    .tier-row td {
-        padding: 0px;
-        border: 1px solid white;
-        display: block;
-        background-color: #1a1a17;
-    }
-    .no-data {
-        display: inline-block;
-        padding: 6px;
-        color: #888;
-        font-style: italic;
-    }    
-    .tier-row td > div {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0px;
-        padding: 0px;
-    }
-    .tier-row td img {
-        vertical-align: middle;
-        width: 90px;
-        height: auto;
-        cursor: pointer;
-    }
-    .image-popup {
-        display: none;
-        position: fixed;
-        z-index: 1;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.9);
-    }
-    .image-popup-content {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-    }
-    .image-popup-close {
-        position: absolute;
-        top: 15px;
-        right: 35px;
-        color: #f1f1f1;
-        font-size: 40px;
-        font-weight: bold;
-        transition: 0.3s;
-        cursor: pointer;
-    }
-    .image-popup-close:hover,
-    .image-popup-close:focus {
-        color: #bbb;
-        text-decoration: none;
-        cursor: pointer;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>티어별 실험체</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tier-table {
+            width: 1425px;
+            border-collapse: collapse;
+            margin-bottom: 0px;
+            border: 1px solid white;
+        }
+        .tier-row th {
+            padding: 10px;
+            text-align: center;
+            font-size: 1.2em;
+            color: #fff;
+            border: 1px solid white;
+            width: 50px;
+            white-space: nowrap;
+            text-shadow:
+                -1px -1px 0 #000, 1px -1px 0 #000,
+                -1px  1px 0 #000, 1px  1px 0 #000;
+        }
+        .tier-row th:first-child { background-color: rgb(255, 127, 127); }
+        .tier-row:nth-child(2) th:first-child { background-color: rgb(255, 191, 127); }
+        .tier-row:nth-child(3) th:first-child { background-color: rgb(255, 223, 127); }
+        .tier-row:nth-child(4) th:first-child { background-color: rgb(255, 255, 127); }
+        .tier-row:nth-child(5) th:first-child { background-color: rgb(191, 255, 127); }
+        .tier-row:nth-child(6) th:first-child { background-color: rgb(127, 255, 127); }
+        .tier-row:nth-child(7) th:first-child { background-color: rgb(127, 255, 255); }
 
-    /* ✅ 드롭다운 정렬용 */
-    .dropdowns {
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    .dropdowns select {
-        margin: 0 10px;
-        padding: 4px;
-    }
+        .tier-row td {
+            padding: 0px;
+            border: 1px solid white;
+            display: block;
+            background-color: #1a1a17;
+        }
+        .no-data {
+            display: inline-block;
+            padding: 6px;
+            color: #888;
+            font-style: italic;
+        }
+        .tier-row td > div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0px;
+            padding: 0px;
+        }
+        .tier-row td img {
+            vertical-align: middle;
+            width: 90px;
+            height: auto;
+            cursor: pointer;
+        }
 
-    .tooltip-container {
-        position: relative;
-        display: inline-block;
-    }
-    .tooltip-box {
-        visibility: hidden;
-        background-color: #333;
-        color: #fff;
-        text-align: left;
-        border-radius: 6px;
-        padding: 6px 10px;
-        position: absolute;
-        z-index: 100;
-        bottom: 110%;
-        left: 50%;
-        transform: translateX(-50%);
-        white-space: nowrap;
-        font-size: 12px;
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-    .tooltip-container:hover .tooltip-box {
-        visibility: visible;
-        opacity: 1;
-    }    
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        .image-popup {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .image-popup-content {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%; max-height: 90%;
+            object-fit: contain;
+        }
+        .image-popup-close {
+            position: absolute;
+            top: 15px; right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .image-popup-close:hover,
+        .image-popup-close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .dropdowns {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .dropdowns select {
+            margin: 0 10px;
+            padding: 4px;
+        }
+
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip-box {
+            visibility: hidden;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 6px 10px;
+            position: absolute;
+            z-index: 100;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip-container:hover .tooltip-box {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-  <header>
-    <nav>
-      <ul style="list-style: none; padding: 0; text-align: center; margin-bottom: 20px;">
-        <li style="display: inline; margin: 0 10px;"><a href="index.html">홈</a></li>
-        <li style="display: inline; margin: 0 10px;"><a href="statistics.html">실험체 통계</a></li>
-        <li style="display: inline; margin: 0 10px;"><a href="tier_table.html">티어표</a></li>
-        <li style="display: inline; margin: 0 10px;"><a href="graph.html">그래프</a></li>
-      </ul>
-    </nav>
-    <h1>티어별 실험체</h1>
-  </header>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">홈</a></li>
+                <li><a href="statistics.html">실험체 통계</a></li>
+                <li><a href="tier_table.html">티어표</a></li>
+                <li><a href="graph.html">그래프</a></li>
+            </ul>
+        </nav>
+        <h1>티어별 실험체</h1>
+    </header>
 
-  <main>
-    <!-- ✅ 드롭다운 삽입 -->
-    <div class="dropdowns">
-      <label for="version-select">버전:</label>
-      <select id="version-select"></select>
+    <main>
+        <div class="dropdowns">
+            <label for="version-select">버전:</label>
+            <select id="version-select"></select>
 
-      <label for="tier-select">티어:</label>
-      <select id="tier-select"></select>
+            <label for="tier-select">티어:</label>
+            <select id="tier-select"></select>
 
-      <label for="period-select">구간:</label>
-      <select id="period-select"></select>
-    </div>
+            <label for="period-select">구간:</label>
+            <select id="period-select"></select>
+        </div>
 
-    <!-- ✅ 표 영역 -->
-    <section id="tier-table-container">
-      <table class="tier-table" id="tier-table"></table>
-    </section>
+        <section id="tier-table-container">
+            <table class="tier-table" id="tier-table"></table>
+        </section>
 
-    <!-- ✅ 팝업 -->
-    <div id="image-popup" class="image-popup">
-      <span class="image-popup-close">&times;</span>
-      <img class="image-popup-content" id="popup-image">
-    </div>
+        <div id="image-popup" class="image-popup">
+            <span class="image-popup-close">&times;</span>
+            <img class="image-popup-content" id="popup-image">
+        </div>
 
-    <br><button id="popup-table-button">표 이미지 팝업</button>
-  </main>
+        <button id="popup-table-button">표 이미지 팝업</button>
+    </main>
 
-  <footer>
-    <p>© 2025 나만의 실험체 통계</p>
-  </footer>
+    <footer>
+        <p>© 2025 나만의 실험체 통계</p>
+    </footer>
 
-  <!-- ✅ 스크립트 -->
-  <script src="script_common.js"></script>
-  <script src="script_tier_table.js"></script>
+    <script src="script_common.js"></script>
+    <script src="script_tier_table.js"></script>
 </body>
 </html>

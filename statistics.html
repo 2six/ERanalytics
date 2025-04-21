@@ -9,18 +9,18 @@
 <body>
     <header>
         <nav>
-            <ul style="list-style: none; padding: 0; text-align: center; margin-bottom: 20px;">
-                <li style="display: inline; margin: 0 10px;"><a href="index.html">홈</a></li>
-                <li style="display: inline; margin: 0 10px;"><a href="statistics.html">실험체 통계</a></li>
-                <li style="display: inline; margin: 0 10px;"><a href="tier_table.html">티어표</a></li>
-                <li style="display: inline; margin: 0 10px;"><a href="graph.html">그래프</a></li>
+            <ul>
+                <li><a href="index.html">홈</a></li>
+                <li><a href="statistics.html">실험체 통계</a></li>
+                <li><a href="tier_table.html">티어표</a></li>
+                <li><a href="graph.html">그래프</a></li>
             </ul>
         </nav>
         <h1>실험체 통계</h1>
     </header>
 
     <main>
-        <div id="controls" style="margin: 20px 0; text-align: center;">
+        <div id="controls">
             <select id="version-select"></select>
             <select id="period-select">
                 <option value="latest">버전 전체</option>
@@ -34,7 +34,7 @@
                 <option value="mithril_plus">미스릴+</option>
                 <option value="in1000">in1000</option>
             </select>
-            <label style="margin-left: 10px;">
+            <label>
                 <input type="checkbox" id="gradient-checkbox"> 색상 강조
             </label>
         </div>

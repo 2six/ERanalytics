@@ -1,34 +1,135 @@
-/* style.css */
-body {
+/* common style.css */
+
+/* ——— 기본 레이아웃 & 타이포그래피 ——— */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
     font-family: sans-serif;
     margin: 20px;
     background-color: #f4f4f4;
     color: #333;
-}
-
-h1, h2 {
+  }
+  h1, h2 {
     color: #333;
-}
-
-table {
+  }
+  
+  /* ——— 내비게이션 ——— */
+  nav ul {
+    list-style: none;
+    padding: 0;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  nav li {
+    display: inline;
+    margin: 0 10px;
+  }
+  nav a {
+    color: inherit;
+    text-decoration: none;
+  }
+  
+  /* ——— 표 기본 스타일 ——— */
+  table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     background-color: white;
-}
-
-th, td {
+  }
+  th, td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
-}
-
-th {
+  }
+  th {
     background-color: #f0f0f0;
     font-weight: bold;
-}
-
-tbody tr:nth-child(even) {
+  }
+  tbody tr:nth-child(even) {
     background-color: #f9f9f9;
-}
+  }
+  
+  /* ——— 드롭다운 & 버튼 그룹 ——— */
+  #controls,
+  .dropdowns,
+  .filters {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  select,
+  button {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #333;
+    border-radius: 4px;
+  }
+  
+  /* ——— 그래프용 캔버스 ——— */
+  canvas {
+    display: block;
+    margin-top: 10px;
+    width: 100%;
+    height: auto;
+    max-height: 900px;
+    max-width: 100%;
+  }
+  
+  /* ——— 팝업 공통 스타일 ——— */
+  .image-popup {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    overflow: auto;
+  }
+  .image-popup-content {
+    display: block;
+    margin: 5% auto;
+    max-width: 90%;
+    max-height: 80%;
+    border: 4px solid white;
+  }
+  .image-popup-close {
+    position: absolute;
+    top: 20px; right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  /* ——— 툴팁 공통 스타일 ——— */
+  .tooltip-container {
+    position: relative;
+    display: inline-block;
+  }
+  .tooltip-box {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 6px 10px;
+    position: absolute;
+    z-index: 100;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .tooltip-container:hover .tooltip-box {
+    visibility: visible;
+    opacity: 1;
+  }
