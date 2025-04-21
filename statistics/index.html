@@ -35,6 +35,21 @@ layout: none
       min-width: 120px;
       max-width: 120px;
     }
+    /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
+    #data-container th {
+      position: relative;
+    }
+
+    /* data-arrow 속성에 담긴 문자를, 우측에 겹치도록 표시 */
+    #data-container th::after {
+      content: attr(data-arrow);
+      position: absolute;
+      right: 6px;      /* 필요에 따라 조정 */
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8em; /* 화살표 크기 */
+      pointer-events: none; /* 클릭 영역 방해하지 않게 */
+    }
   </style>
 </head>
 <body>

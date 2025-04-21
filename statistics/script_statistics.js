@@ -97,11 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4) 테이블 렌더링
     function renderTable(data) {
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
-        // 1) 테이블 HTML 생성 (화살표는 여기서 넣지 않고, 아래에서 처리)
+        // 1) 테이블 HTML 생성
         let html = '<table><thead><tr>';
-        cols.forEach(c => {
-          html += `<th data-col="${c}">${c}</th>`;
-        });
+        cols.forEach(c => html += `<th data-col="${c}">${c}</th>`);
         html += '</tr></thead><tbody>';
         data.forEach(row => {
           html += '<tr>';
@@ -117,41 +115,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('data-container');
         container.innerHTML = html;
       
-        // 2) 헤더들에 화살표 표시 & 클릭 이벤트 바인딩
-        const table = container.querySelector('table');
-        const ths = table.querySelectorAll('th');
+        // 2) 헤더에 클릭 이벤트 및 data-arrow 적용
+        const ths = container.querySelectorAll('th');
         ths.forEach(th => {
           const col = th.dataset.col;
-          // 2-1) 화살표 표시
-          th.textContent = col
-            + (col === currentSortColumn
-               ? (currentSortAsc ? ' ▲' : ' ▼')
-               : '');
       
-          // 2-2) '티어' 컬럼은 정렬 제외
+          // ▶ data-arrow 리셋
+          th.setAttribute('data-arrow', '');
+      
+          if (col === currentSortColumn) {
+            // 오름차순 ▲, 내림차순 ▼
+            th.setAttribute('data-arrow', currentSortAsc ? '▲' : '▼');
+          }
+      
+          // 티어 컬럼은 정렬 대상에서 제외
           if (col === '티어') {
             th.style.cursor = 'default';
             return;
           }
       
-          // 2-3) 나머지 컬럼은 클릭 시 정렬
           th.style.cursor = 'pointer';
-          th.addEventListener('click', () => {
+          th.onclick = () => {
             if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
             else {
               currentSortColumn = col;
               currentSortAsc = false;
             }
-            const sorted = sortData(lastData, currentSortColumn, currentSortAsc);
-            lastData = sorted;
-            renderTable(sorted);
-          });
+            lastData = sortData(lastData, currentSortColumn, currentSortAsc);
+            renderTable(lastData);
+          };
         });
       
-        // 3) 그라디언트 강조가 켜져 있으면…
+        // 3) 색상 강조
         if (gradientCheckbox.checked) applyGradientColors();
     }
-      
 
     // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
     const TIER_COLORS = {
