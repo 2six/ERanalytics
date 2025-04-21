@@ -138,7 +138,8 @@ document.addEventListener('DOMContentLoaded', function() {
       
         // 그라디언트 컬러
         if (gradientCheckbox.checked) applyGradientColors();
-      }      
+      }
+      
 
     // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
     function applyGradientColors() {
