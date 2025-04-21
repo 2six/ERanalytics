@@ -148,37 +148,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
     function displayTierTable(data) {
-        // —————— 우측 상단 정보 표시 ——————
-        // 컨테이너를 상대위치로
-        container.style.position = 'relative';
-        let info = document.getElementById('tier-info');
-        if (!info) {
-            info = document.createElement('div');
-            info.id = 'tier-info';
-            // 스타일: 우측 상단 고정
-            Object.assign(info.style, {
-                position: 'absolute',
-                top: '8px',
-                right: '8px',
-                padding: '4px 8px',
-                background: 'rgba(255,255,255,0.8)',
-                borderRadius: '4px',
-                fontSize: '0.9em',
-                fontWeight: 'bold'
-            });
-            container.appendChild(info);
-        }
-        info.textContent = `버전: ${versionSelect.value} | 티어: ${tierSelect.value}`;
-        // ——————————————————————————————
-
+        // 1) 티어 한글 매핑
+        const tierLabels = {
+            platinum_plus:  "플래티넘+",
+            diamond_plus:   "다이아몬드+",
+            meteorite_plus: "메테오라이트+",
+            mithril_plus:   "미스릴+",
+            in1000:         "in1000"
+        };
+    
+        // 2) <caption> 으로 우상단 정보 삽입
+        const captionHTML = `
+          <caption style="
+            caption-side: top;
+            text-align: right;
+            padding: 4px 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+          ">
+            버전: ${versionSelect.value} |
+            티어: ${tierLabels[tierSelect.value]}
+          </caption>
+        `;
+    
+        // 3) 기존 티어별 행 생성
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
         const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
         data.forEach(item => groups[item.티어].push(item));
-
+    
         const totalSample = data.reduce((sum, i) => sum + i['표본수'], 0);
         const perRow = 15;
         let html = '';
-
+    
         tiers.forEach(tier => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
             const entries = groups[tier].sort((a,b) => b.점수 - a.점수);
@@ -204,8 +205,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             html += '</div></td></tr>';
         });
-
-        table.innerHTML = html;
+    
+        // 4) caption + rows를 table에 반영
+        table.innerHTML = captionHTML + html;
     }
 
     // 6) 팝업 초기화
