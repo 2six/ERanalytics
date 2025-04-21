@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let chartData    = [];
     let filteredData = [];
     let myChart      = null;
-    let currentTab   = 'pick-rp';
+    // 탭 파라미터로 초기화
+    let currentTab   = getParam('tab', 'pick-rp');
 
     // 초기화
     fetch('/versions.json')
@@ -87,11 +88,12 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .catch(err => console.error('초기화 실패:', err));
 
-    // 탭 클릭
+    // 탭 클릭 처리 & URL 반영
     function setupGraphTabs() {
       document.querySelectorAll('.graph-tab').forEach(btn => {
         btn.addEventListener('click', () => {
           currentTab = btn.dataset.type;
+          setParam('tab', currentTab);
           applyFilters();
           createGraph(currentTab);
         });
@@ -109,7 +111,14 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(json => {
           chartData = extractPeriodEntries(json['통계'], period);
           applyFilters();
-          createGraph(currentTab);
+          // URL 파라미터에 있는 탭 클릭
+          const initialBtn = document.querySelector(`.graph-tab[data-type="${currentTab}"]`);
+          if (initialBtn) {
+            initialBtn.click();
+          } else {
+            // 기본 탭
+            document.querySelector('.graph-tab[data-type="pick-rp"]').click();
+          }
         })
         .catch(err => console.error('데이터 로드 실패:', err));
     }
@@ -219,6 +228,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
 
+      // 메타데이터
       myChart.config._제목        = title;
       myChart.config._평균픽률    = avgPickRate;
       myChart.config._가중평균RP  = wRP;
