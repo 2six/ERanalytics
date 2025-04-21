@@ -1,39 +1,70 @@
 // script_statistics.js (공통 모듈 사용 + applyGradientColors 정의 포함)
 document.addEventListener('DOMContentLoaded', function() {
-    const versionSelect = document.getElementById('version-select');
-    const tierSelect = document.getElementById('tier-select');
-    const periodSelect = document.getElementById('period-select');
+    const versionSelect    = document.getElementById('version-select');
+    const tierSelect       = document.getElementById('tier-select');
+    const periodSelect     = document.getElementById('period-select');
     const gradientCheckbox = document.getElementById('gradient-checkbox');
 
     let currentSortColumn = '점수';
-    let currentSortAsc = false;
-    let lastData = [];
+    let currentSortAsc    = false;
+    let lastData          = [];
 
-    // 1) 공통 모듈 초기화
+    // URLSearchParams 인스턴스 생성
+    const params = new URLSearchParams(location.search);
+
+    // 1) URL 파라미터 → 컨트롤에 반영
+    function applyParamsToControls() {
+        if (params.has('version'))  versionSelect.value    = params.get('version');
+        if (params.has('tier'))     tierSelect.value       = params.get('tier');
+        if (params.has('period'))   periodSelect.value     = params.get('period');
+        if (params.has('gradient')) gradientCheckbox.checked = params.get('gradient') === '1';
+    }
+
+    // 2) 컨트롤 상태 → URL에 반영
+    function updateURL() {
+        params.set('version', versionSelect.value);
+        params.set('tier',    tierSelect.value);
+        params.set('period',  periodSelect.value);
+        params.set('gradient', gradientCheckbox.checked ? '1' : '0');
+        const newUrl = `${location.pathname}?${params.toString()}`;
+        history.replaceState(null, '', newUrl);
+    }
+
+    // 3) 공통 모듈 초기화 + 상태 복원
     Promise.all([
         fetch('/config.ini').then(r => r.text()),
         fetch('/versions.json').then(r => r.json())
     ]).then(([iniText, versionList]) => {
-        const config = parseINI(iniText);
+        const config     = parseINI(iniText);
         const tierConfig = config.tiers;
 
+        // common.js 에 정의된 함수들
         populateVersionDropdown(versionSelect, versionList);
         populateTierDropdown(tierSelect);
         populatePeriodDropdown(periodSelect);
 
-        versionSelect.addEventListener('change', () => loadAndDisplay(tierConfig));
-        tierSelect.addEventListener('change', () => loadAndDisplay(tierConfig));
-        periodSelect.addEventListener('change', () => loadAndDisplay(tierConfig));
-        gradientCheckbox.addEventListener('change', () => renderTable(lastData));
+        // URL 파라미터로부터 복원
+        applyParamsToControls();
 
+        // 변경 시 URL 갱신 + 데이터 갱신
+        versionSelect.addEventListener('change', () => { updateURL(); loadAndDisplay(tierConfig); });
+        tierSelect.addEventListener('change',    () => { updateURL(); loadAndDisplay(tierConfig); });
+        periodSelect.addEventListener('change',  () => { updateURL(); loadAndDisplay(tierConfig); });
+        gradientCheckbox.addEventListener('change', () => {
+            updateURL();
+            renderTable(lastData);
+        });
+
+        // 첫 로드
         loadAndDisplay(tierConfig);
-    });
+    }).catch(err => console.error('초기화 실패:', err));
 
-    // 2) 데이터 로드 및 처리
+
+    // 4) 데이터 로드 ∙ 가공 ∙ 렌더
     function loadAndDisplay(tierConfig) {
         const version = versionSelect.value;
-        const tier = tierSelect.value;
-        const period = periodSelect.value;
+        const tier    = tierSelect.value;
+        const period  = periodSelect.value;
 
         fetch(`/data/${version}/${tier}.json`)
             .then(res => res.json())
@@ -42,17 +73,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const entries = extractPeriodEntries(history, period);
 
                 const avgScore = calculateAverageScore(entries);
-                const stddev = calculateStandardDeviation(entries, avgScore);
+                const stddev   = calculateStandardDeviation(entries, avgScore);
 
                 let scored = calculateTiers(entries, avgScore, stddev, tierConfig);
-                scored = sortData(scored, currentSortColumn, currentSortAsc);
+                    scored = sortData(scored, currentSortColumn, currentSortAsc);
 
                 lastData = scored;
                 renderTable(scored);
             })
             .catch(err => {
                 console.error('데이터 로드 실패:', err);
-                document.getElementById('data-container').innerText = '데이터를 불러오는데 실패했습니다.';
+                document.getElementById('data-container')
+                        .innerText = '데이터를 불러오는 데 실패했습니다.';
             });
     }
 
