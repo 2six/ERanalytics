@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     `픽률: ${(e['표본수'] / totalSample * 100).toFixed(2)}%<br>` +
                                     `RP: ${e['RP 획득'].toFixed(1)}<br>` +
                                     `승률: ${(e['승률'] * 100).toFixed(1)}%</div>`;
-                    html += `<span class="tooltip-container"><img src="image/${imgName}.png" alt="${e.실험체}">${tooltip}</span>`;
+                    html += `<span class="tooltip-container"><img src="/image/${imgName}.png" alt="${e.실험체}">${tooltip}</span>`;
                     if ((i + 1) % perRow === 0 && i !== entries.length - 1) html += '</div><div>';
                 });
             }
