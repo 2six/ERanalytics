@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 1) 공통 모듈 초기화
     Promise.all([
-        fetch('config.ini').then(r => r.text()),
-        fetch('versions.json').then(r => r.json())
+        fetch('/config.ini').then(r => r.text()),
+        fetch('/versions.json').then(r => r.json())
     ]).then(([iniText, versionList]) => {
         const config = parseINI(iniText);
         const tierConfig = config.tiers;

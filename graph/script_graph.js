@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentTab = 'pick-rp';
 
     // 1) 드롭다운 초기화
-    fetch('versions.json').then(res => res.json()).then(versions => {
+    fetch('/versions.json').then(res => res.json()).then(versions => {
         populateVersionDropdown(versionSelect, versions);
         populateTierDropdown(tierSelect);
         populatePeriodDropdown(periodSelect);
