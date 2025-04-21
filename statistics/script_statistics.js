@@ -96,50 +96,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 4) 테이블 렌더링
     function renderTable(data) {
-        const cols   = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
-        // px 기준 합 = 620 → 퍼센트로 환산
-        const widths = ['29.03%','9.68%','8.06%','11.29%','11.29%','9.68%','9.68%','11.29%'];
-      
-        // 1) colgroup 생성
-        const colgroup = widths.map(w => `<col style="width:${w}">`).join('');
-      
-        // 2) 테이블 HTML 생성
-        let html = `<table style="width:100%;table-layout:fixed;margin:0 auto">
-                      <colgroup>${colgroup}</colgroup>
-                      <thead><tr>`;
-        cols.forEach(c => html += `<th data-col="${c}" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer">${c}</th>`);
-        html += `</tr></thead><tbody>`;
+        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        let html = '<table><thead><tr>';
+        cols.forEach(col => html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`);
+        html += '</tr></thead><tbody>';
+
         data.forEach(row => {
-          html += '<tr>';
-          cols.forEach(c => {
-            let v = row[c];
-            if (['픽률','승률','TOP 3'].includes(c)) v = v.toFixed(2)+'%';
-            html += `<td style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${v}</td>`;
-          });
-          html += '</tr>';
+            html += '<tr>';
+            cols.forEach(col => {
+                let val = row[col];
+                if (col === '픽률' || col === '승률' || col === 'TOP 3') val = val.toFixed(2) + '%';
+                html += `<td>${val}</td>`;
+            });
+            html += '</tr>';
         });
+
         html += '</tbody></table>';
-      
-        // 3) 삽입 & 바인딩
-        const container = document.getElementById('data-container');
-        container.innerHTML = html;
-        const table = container.querySelector('table');
-      
-        // 정렬 이벤트
-        table.querySelectorAll('th').forEach(th => {
-          th.addEventListener('click', () => {
-            const col = th.dataset.col;
-            if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
-            else { currentSortColumn = col; currentSortAsc = false; }
-            lastData = sortData(lastData, currentSortColumn, currentSortAsc);
-            renderTable(lastData);
-          });
+        document.getElementById('data-container').innerHTML = html;
+
+        document.querySelectorAll('#data-container th').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
+                else { currentSortColumn = col; currentSortAsc = false; }
+                const sorted = sortData(lastData, currentSortColumn, currentSortAsc);
+                lastData = sorted;
+                renderTable(sorted);
+            });
         });
-      
-        // 그라디언트 컬러
+
         if (gradientCheckbox.checked) applyGradientColors();
-      }
-      
+    }
 
     // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
     function applyGradientColors() {
