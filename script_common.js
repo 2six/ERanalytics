@@ -50,6 +50,7 @@ function populateTierDropdown(selectElem) {
         opt.textContent = label;
         selectElem.appendChild(opt);
     });
+    selectElem.value = 'diamond_plus';
 }
 
 const periodOptions = [
