@@ -146,19 +146,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderTable(sorted);
             });
         });
-        const tbl = document.querySelector('#data-container table');
-        if (tbl) {
-        // !important 로 강제 적용
-        tbl.style.setProperty('width', '620px', 'important');
-        tbl.style.setProperty('table-layout', 'fixed', 'important');
-
-        // colgroup 역시 강제 적용
-        const cols = tbl.querySelectorAll('colgroup col');
-        const widths = ['180px','60px','50px','70px','70px','60px','60px','70px'];
-        cols.forEach((col, i) => {
-            col.style.setProperty('width', widths[i], 'important');
-        });
-        }
 
         // 그라디언트 컬러
         if (gradientCheckbox.checked) applyGradientColors();
