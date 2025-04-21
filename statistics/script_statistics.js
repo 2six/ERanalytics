@@ -22,12 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 2) 컨트롤 상태 → URL에 반영
     function updateURL() {
-        console.log('updateURL!', {
-          version: versionSelect.value,
-          tier:    tierSelect.value,
-          period:  periodSelect.value,
-          grad:    gradientCheckbox.checked
-        });
         params.set('version', versionSelect.value);
         params.set('tier',    tierSelect.value);
         params.set('period',  periodSelect.value);
