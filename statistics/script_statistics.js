@@ -129,6 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
+    const TIER_COLORS = {
+        'S+': 'rgb(255,127,127)',
+        'S':  'rgb(255,191,127)',
+        'A':  'rgb(255,223,127)',
+        'B':  'rgb(255,255,127)',
+        'C':  'rgb(191,255,127)',
+        'D':  'rgb(127,255,127)',
+        'F':  'rgb(127,255,255)',
+      };
+
     function applyGradientColors() {
         const table = document.querySelector('#data-container table');
         if (!table) return;
@@ -169,6 +179,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 r.children[i].style.backgroundColor = color;
             });
         });
+        const tierColIndex = headers.findIndex(th => th.dataset.col === '티어');
+        if (tierColIndex >= 0) {
+            rows.forEach(tr => {
+            const tierValue = tr.children[tierColIndex].textContent.trim();
+            const color = TIER_COLORS[tierValue];
+            if (color) {
+                tr.children[tierColIndex].style.backgroundColor = color;
+            }
+            });
+        }
     }
 
     // 6) 색상 보간 헬퍼
