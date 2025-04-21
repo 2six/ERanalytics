@@ -97,36 +97,61 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4) 테이블 렌더링
     function renderTable(data) {
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        // 1) 테이블 HTML 생성 (화살표는 여기서 넣지 않고, 아래에서 처리)
         let html = '<table><thead><tr>';
-        cols.forEach(col => html += `<th data-col="${col}" style="cursor:pointer">${col}</th>`);
+        cols.forEach(c => {
+          html += `<th data-col="${c}">${c}</th>`;
+        });
         html += '</tr></thead><tbody>';
-
         data.forEach(row => {
-            html += '<tr>';
-            cols.forEach(col => {
-                let val = row[col];
-                if (col === '픽률' || col === '승률' || col === 'TOP 3') val = val.toFixed(2) + '%';
-                html += `<td>${val}</td>`;
-            });
-            html += '</tr>';
+          html += '<tr>';
+          cols.forEach(c => {
+            let v = row[c];
+            if (['픽률','승률','TOP 3'].includes(c)) v = v.toFixed(2) + '%';
+            html += `<td>${v}</td>`;
+          });
+          html += '</tr>';
         });
-
         html += '</tbody></table>';
-        document.getElementById('data-container').innerHTML = html;
-
-        document.querySelectorAll('#data-container th').forEach(th => {
-            th.addEventListener('click', () => {
-                const col = th.dataset.col;
-                if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
-                else { currentSortColumn = col; currentSortAsc = false; }
-                const sorted = sortData(lastData, currentSortColumn, currentSortAsc);
-                lastData = sorted;
-                renderTable(sorted);
-            });
+      
+        const container = document.getElementById('data-container');
+        container.innerHTML = html;
+      
+        // 2) 헤더들에 화살표 표시 & 클릭 이벤트 바인딩
+        const table = container.querySelector('table');
+        const ths = table.querySelectorAll('th');
+        ths.forEach(th => {
+          const col = th.dataset.col;
+          // 2-1) 화살표 표시
+          th.textContent = col
+            + (col === currentSortColumn
+               ? (currentSortAsc ? ' ▲' : ' ▼')
+               : '');
+      
+          // 2-2) '티어' 컬럼은 정렬 제외
+          if (col === '티어') {
+            th.style.cursor = 'default';
+            return;
+          }
+      
+          // 2-3) 나머지 컬럼은 클릭 시 정렬
+          th.style.cursor = 'pointer';
+          th.addEventListener('click', () => {
+            if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
+            else {
+              currentSortColumn = col;
+              currentSortAsc = false;
+            }
+            const sorted = sortData(lastData, currentSortColumn, currentSortAsc);
+            lastData = sorted;
+            renderTable(sorted);
+          });
         });
-
+      
+        // 3) 그라디언트 강조가 켜져 있으면…
         if (gradientCheckbox.checked) applyGradientColors();
     }
+      
 
     // 5) 그라디언트 컬러 적용 (파랑-하양-빨강)
     const TIER_COLORS = {
