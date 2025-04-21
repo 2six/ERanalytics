@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cols.forEach(col => {
               let val = row[col];
               if (['픽률','승률','TOP 3'].includes(c)) {
-                v = v.toFixed(2) + '%';
+                val = val.toFixed(2) + '%';
               } else if (col === 'RP 획득' || col === '평균 순위') {
                 // RP획득과 평균순위는 소숫점 둘째 자리
                 val = val.toFixed(2);
