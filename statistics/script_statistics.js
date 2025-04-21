@@ -140,15 +140,20 @@ document.addEventListener('DOMContentLoaded', function() {
         cols.forEach(c => html += `<th data-col="${c}">${c}</th>`);
         html += '</tr></thead><tbody>';
         data.forEach(row => {
-          html += '<tr>';
-          cols.forEach(c => {
-            let v = row[c];
-            if (['픽률','승률','TOP 3'].includes(c)) v = v.toFixed(2) + '%';
-            html += `<td>${v}</td>`;
+            html += '<tr>';
+            cols.forEach(col => {
+              let val = row[col];
+              if (col === '픽률' || col === '승률' || col === 'TOP 3') {
+                // %, 소숫점 둘째 자리
+                val = (val * 100).toFixed(2) + '%';
+              } else if (col === 'RP 획득' || col === '평균 순위') {
+                // RP획득과 평균순위는 소숫점 둘째 자리
+                val = val.toFixed(2);
+              }
+              html += `<td>${val}</td>`;
+            });
+            html += '</tr>';
           });
-          html += '</tr>';
-        });
-        html += '</tbody></table>';
       
         const container = document.getElementById('data-container');
         container.innerHTML = html;
