@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tierSelect    = document.getElementById('tier-select');
     const periodSelect  = document.getElementById('period-select');
     const table         = document.getElementById('tier-table');
+    const container     = document.getElementById('tier-table-container');
 
     // URL 파라미터 헬퍼
     const params = new URLSearchParams(window.location.search);
@@ -61,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <option value="7day">최근 7일</option>
         `;
 
-        // URL → 드롭다운 값
+        // URL → 드롭다운 값 복원
         versionSelect.value = getParam('version', versionList[0]);
         tierSelect.value    = getParam('tier',    'diamond_plus');
         periodSelect.value  = getParam('period',  'latest');
@@ -111,8 +112,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (period === 'latest') return latestData;
 
         const days = period === '3day' ? 3 : 7;
-        const latestDate = new Date(keys[keys.length - 1]
-          .replace(/_/g, ':').replace(/-/g, '/'));
+        const latestDate = new Date(
+          keys[keys.length - 1].replace(/_/g, ':').replace(/-/g, '/')
+        );
         const cutoff = new Date(latestDate);
         cutoff.setDate(cutoff.getDate() - days);
 
@@ -136,33 +138,56 @@ document.addEventListener('DOMContentLoaded', function () {
                 '실험체': name,
                 '표본수': diff,
                 'RP 획득': (c['RP 획득']*c['표본수'] - p['RP 획득']*p['표본수']) / diff,
-                '승률':    (c['승률']*c['표본수'] - p['승률']*p['표본수']) / diff,
-                'TOP 3':   (c['TOP 3']*c['표본수'] - p['TOP 3']*p['표본수']) / diff,
+                '승률':    (c['승률']   *c['표본수'] - p['승률']   *p['표본수']) / diff,
+                'TOP 3':   (c['TOP 3']  *c['표본수'] - p['TOP 3']  *p['표본수']) / diff,
                 '평균 순위': (c['평균 순위']*c['표본수'] - p['평균 순위']*p['표본수']) / diff
             });
         }
         return delta;
     }
 
-    // 5) 티어별 테이블 렌더링
+    // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
     function displayTierTable(data) {
-        const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-        const groups = tiers.reduce((o,t)=>(o[t]=[],o), {});
-        data.forEach(item=> groups[item.티어].push(item));
+        // —————— 우측 상단 정보 표시 ——————
+        // 컨테이너를 상대위치로
+        container.style.position = 'relative';
+        let info = document.getElementById('tier-info');
+        if (!info) {
+            info = document.createElement('div');
+            info.id = 'tier-info';
+            // 스타일: 우측 상단 고정
+            Object.assign(info.style, {
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                padding: '4px 8px',
+                background: 'rgba(255,255,255,0.8)',
+                borderRadius: '4px',
+                fontSize: '0.9em',
+                fontWeight: 'bold'
+            });
+            container.appendChild(info);
+        }
+        info.textContent = `버전: ${versionSelect.value} | 티어: ${tierSelect.value}`;
+        // ——————————————————————————————
 
-        const totalSample = data.reduce((sum,i)=>sum+i['표본수'],0);
+        const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
+        const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
+        data.forEach(item => groups[item.티어].push(item));
+
+        const totalSample = data.reduce((sum, i) => sum + i['표본수'], 0);
         const perRow = 15;
         let html = '';
 
         tiers.forEach(tier => {
             html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
-            const entries = groups[tier].sort((a,b)=>b.점수 - a.점수);
-            if (entries.length===0) {
+            const entries = groups[tier].sort((a,b) => b.점수 - a.점수);
+            if (entries.length === 0) {
                 html += `<span class="tooltip-container">
                            <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
                          </span>`;
             } else {
-                entries.forEach((e,i) => {
+                entries.forEach((e, i) => {
                     const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
                     const tooltip = `<div class="tooltip-box">
                                        ${e.실험체}<br>
@@ -199,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
           .onclick = () => { popup.style.display = 'none'; };
     }
 
-    // 7) 이름→이미지 변환 헬퍼
+    // 7) 페이지 특화 헬퍼: 이름→이미지 변환
     function convertExperimentNameToImageName(name) {
         if (name==="글러브 리 다이린") return "리다이린-글러브";
         if (name==="쌍절곤 리 다이린") return "리다이린-쌍절곤";
