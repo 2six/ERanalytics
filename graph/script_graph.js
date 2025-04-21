@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //
     // 초기화
     //
-    fetch('versions.json')
+    fetch('/versions.json')
       .then(r => r.json())
       .then(versions => {
         // 드롭다운 채우기
