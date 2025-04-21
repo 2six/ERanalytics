@@ -148,7 +148,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
     function displayTierTable(data) {
-        // 1) 티어 한글 매핑
         const tierLabels = {
           platinum_plus:  "플래티넘+",
           diamond_plus:   "다이아몬드+",
@@ -157,34 +156,39 @@ document.addEventListener('DOMContentLoaded', function () {
           in1000:         "in1000"
         };
       
-        // 2) 테이블 내부 최상단에 정보 행 추가
-        const infoText = `버전: ${versionSelect.value} | 티어: ${tierLabels[tierSelect.value]}`;
-        let html = `
-          <tr class="info-row">
-            <th></th>
-            <td style="
-              text-align: right;
-              padding: 4px 8px;
-              font-size: 0.9em;
-              font-weight: bold;
-            ">
-              ${infoText}
-            </td>
-          </tr>
-        `;
+        const versionLabel = versionSelect.value;
+        const tierLabel    = tierLabels[tierSelect.value];
       
-        // 3) 기존 티어별 행 생성
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
         const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
         data.forEach(item => groups[item.티어].push(item));
       
         const totalSample = data.reduce((sum, i) => sum + i['표본수'], 0);
-        const perRow = 15;
+        const perRow      = 15;
+        let html = '';
       
         tiers.forEach(tier => {
-          html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
-          const entries = groups[tier].sort((a, b) => b.점수 - a.점수);
+          // 시작 태그: <tr><th>...
+          html += `<tr class="tier-row tier-${tier}"><th>${tier}</th>`;
       
+          // <td> 시작(첫 행이면 position:relative)
+          if (tier === 'S+') {
+            html += `<td style="position: relative;"><div class="tier-info" style="
+                         position: absolute;
+                         top: 4px;
+                         right: 4px;
+                         padding: 2px 6px;
+                         background: rgba(255,255,255,0.8);
+                         border-radius: 4px;
+                         font-size: 0.85em;
+                         font-weight: bold;
+                      ">버전: ${versionLabel} | 티어: ${tierLabel}</div><div>`;
+          } else {
+            html += `<td><div>`;
+          }
+      
+          // 슬롯들 렌더링
+          const entries = groups[tier].sort((a, b) => b.점수 - a.점수);
           if (entries.length === 0) {
             html += `<span class="tooltip-container">
                        <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
@@ -205,12 +209,13 @@ document.addEventListener('DOMContentLoaded', function () {
               if ((i+1)%perRow===0 && i!==entries.length-1) html += '</div><div>';
             });
           }
+      
+          // 닫기 태그
           html += `</div></td></tr>`;
         });
       
-        // 4) 테이블에 반영
         table.innerHTML = html;
-      }      
+    }      
 
     // 6) 팝업 초기화
     function setupTablePopup() {
