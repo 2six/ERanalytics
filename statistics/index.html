@@ -20,58 +20,6 @@ layout: none
       margin: 0 auto;        /* 가운데 정렬 */
       overflow-x: hidden;    /* 더 이상 가로 스크롤 안 나오도록 */
     }
-    
-    #data-container table {
-      table-layout: fixed;
-    }
-
-    /* 1번째(실험체) 칼럼 고정 */
-    #data-container th:nth-child(1),
-    #data-container td:nth-child(1) {
-      width: 180px;
-    }
-
-    /* 2번째(점수) 칼럼 */
-    #data-container th:nth-child(2),
-    #data-container td:nth-child(2) {
-      width: 60px;
-    }
-
-    /* 3번째(티어) */
-    #data-container th:nth-child(3),
-    #data-container td:nth-child(3) {
-      width: 50px;
-    }
-
-    /* 4번째(픽률) */
-    #data-container th:nth-child(4),
-    #data-container td:nth-child(4) {
-      width: 60px;
-    }
-
-    /* 5번째(RP 획득) */
-    #data-container th:nth-child(5),
-    #data-container td:nth-child(5) {
-      width: 70px;
-    }
-
-    /* 6번째(승률) */
-    #data-container th:nth-child(6),
-    #data-container td:nth-child(6) {
-      width: 60px;
-    }
-
-    /* 7번째(TOP 3) */
-    #data-container th:nth-child(7),
-    #data-container td:nth-child(7) {
-      width: 60px;
-    }
-
-    /* 8번째(평균 순위) */
-    #data-container th:nth-child(8),
-    #data-container td:nth-child(8) {
-      width: 70px;
-    }
 
     /* 공통: 텍스트 넘칠 때 줄임표 */
     #data-container th,
@@ -80,7 +28,6 @@ layout: none
       text-overflow: ellipsis;
       white-space: nowrap;
       padding: 4px 6px;
-      font-size: 0.9rem;
     }
 
     /* 화면이 1200px 이하일 때 TOP 3(7번째), 평균 순위(8번째) 숨김 */
