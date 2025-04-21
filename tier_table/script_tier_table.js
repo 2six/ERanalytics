@@ -1,37 +1,53 @@
 // script_tier_table.js (공통 모듈 사용 + 페이지 특화 헬퍼 포함)
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     const versionSelect = document.getElementById('version-select');
-    const tierSelect = document.getElementById('tier-select');
-    const periodSelect = document.getElementById('period-select');
-    const popupButton = document.getElementById('popup-table-button');
-    let tierConfig = null;
-
-    // 공통 모듈 초기화
+    const tierSelect    = document.getElementById('tier-select');
+    const periodSelect  = document.getElementById('period-select');
+  
+    // 1) URL‑param 읽어서 초기값 세팅
+    const params = new URLSearchParams(window.location.search);
+    function applyParams() {
+      if (params.get('version')) versionSelect.value = params.get('version');
+      if (params.get('tier'))    tierSelect.value    = params.get('tier');
+      if (params.get('period'))  periodSelect.value  = params.get('period');
+    }
+  
+    // 2) URL 갱신
+    function updateURL() {
+      const p = new URLSearchParams();
+      p.set('version', versionSelect.value);
+      p.set('tier',    tierSelect.value);
+      p.set('period',  periodSelect.value);
+      history.replaceState(null, '', `${location.pathname}?${p}`);
+    }
+  
+    // 3) init: config 읽고 드롭다운 채우고, 파라미터 반영 → URL 갱신 → 로드
     Promise.all([
-        fetch('/config.ini').then(r => r.text()),
-        fetch('/versions.json').then(r => r.json())
+      fetch('/config.ini').then(r => r.text()),
+      fetch('/versions.json').then(r => r.json())
     ]).then(([iniText, versionList]) => {
-        const config = parseINI(iniText);
-        tierConfig = config.tiers;
-
-        populateVersionDropdown(versionSelect, versionList);
-        populateTierDropdown(tierSelect);
-        populatePeriodDropdown(periodSelect);
-        periodSelect.options[0].text = '전체';
-
-        versionSelect.addEventListener('change', loadAndRender);
-        tierSelect.addEventListener('change', loadAndRender);
-        periodSelect.addEventListener('change', loadAndRender);
-        popupButton.addEventListener('click', showPopup);
-
-        loadAndRender();
+      const tierConfig = parseINI(iniText).tiers;
+      populateVersionDropdown(versionSelect, versionList);
+      populateTierDropdown(tierSelect);
+      populatePeriodDropdown(periodSelect);
+  
+      applyParams();
+      updateURL();
+      loadAndRender();
+  
+      [versionSelect, tierSelect, periodSelect].forEach(el =>
+        el.addEventListener('change', () => {
+          updateURL();
+          loadAndRender();
+        })
+      );
     });
 
     // 데이터 로드 및 렌더링
     function loadAndRender() {
         const version = versionSelect.value;
-        const tier = tierSelect.value;
-        const period = periodSelect.value;
+        const tier    = tierSelect.value;
+        const period  = periodSelect.value;
 
         fetch(`/data/${version}/${tier}.json`)
             .then(res => res.json())
