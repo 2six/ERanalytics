@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
       
           ctx.font = '14px sans-serif';
           const humanTier    = tierLabels[chart.config._tier] || chart.config._tier;
-          const versionTier  = `버전: ${chart.config._version} | 티어: ${humanTier}`;
+          const versionTier  = `${chart.config._version} | ${humanTier}`;
           ctx.fillText(versionTier, centerX, chartArea.top + 28);
       
           // 우측 상단 평균데이터 (값이 있을 때만)

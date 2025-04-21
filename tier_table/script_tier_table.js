@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
                          border-radius: 4px;
                          font-size: 0.85em;
                          font-weight: bold;
-                      ">버전: ${versionLabel} | 티어: ${tierLabel}</div><div>`;
+                      ">${versionLabel} | ${tierLabel}</div><div>`;
           } else {
             html += `<td><div>`;
           }
