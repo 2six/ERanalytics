@@ -206,44 +206,37 @@ Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation'
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            // 툴팁 콜백
+                            title: () => '',
+                            label: context => {
+                                const d = filteredData[context.dataIndex];
+                                return [
+                                    `${d['실험체']}`,
+                                    `픽률: ${(d['표본수'] / totalSample * 100).toFixed(2)}%`,
+                                    `RP 획득: ${d['RP 획득'].toFixed(2)}`,
+                                    `승률: ${(d['승률'] * 100).toFixed(2)}%`
+                                ];
+                            }
                         }
                     },
                     annotation: {
                         annotations: [
-                            {
-                                type: 'line',
-                                scaleID: 'x',
-                                borderColor: '#ffac2b',    // 노란 점선
-                                borderDash: [5, 5],
-                                value: xKey === "픽률" ? 평균픽률
-                                      : xKey === "승률" ? 가중평균승률
-                                      : 가중평균RP
-                            },
-                            {
-                                type: 'line',
-                                scaleID: 'y',
-                                borderColor: '#ffac2b',
-                                borderDash: [5, 5],
-                                value: yKey === "픽률" ? 평균픽률
-                                      : yKey === "승률" ? 가중평균승률
-                                      : 가중평균RP
-                            }
+                            { type: 'line', scaleID: 'x', value: xKey === '픽률' ? avgPickRate : (xKey === '승률' ? weightedWin : weightedRP) },
+                            { type: 'line', scaleID: 'y', value: yKey === '픽률' ? avgPickRate : (yKey === '승률' ? weightedWin : weightedRP) }
                         ]
                     }
-                },    // 여기까지 plugins
+                },
                 scales: {
                     x: {
                         title: { display: true, text: xKey },
-                        min: xMin,
-                        max: xMax,
-                        ticks: { /* … */ }
+                        min: xKey === '픽률' ? 0 : undefined,
+                        max: xKey === '픽률' ? Math.ceil(Math.max(...xValues) * 500) / 500 : undefined,
+                        ticks: { callback: v => xKey === '픽률' ? (v * 100).toFixed(1) + '%' : v, stepSize: xKey === '픽률' ? 0.002 : undefined }
                     },
                     y: {
                         title: { display: true, text: yKey },
-                        min: yMin,
-                        max: yMax,
-                        ticks: { /* … */ }
+                        min: yKey === '픽률' ? 0 : undefined,
+                        max: yKey === '픽률' ? Math.ceil(Math.max(...yValues) * 500) / 500 : undefined,
+                        ticks: { callback: v => yKey === '픽률' ? (v * 100).toFixed(1) + '%' : v, stepSize: yKey === '픽률' ? 0.002 : undefined }
                     }
                 }
             }
