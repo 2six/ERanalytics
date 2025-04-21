@@ -18,9 +18,11 @@ layout: none
     #data-container {
       max-width: 95vw;       /* 화면 너비의 90% 만큼만 차지 */
       margin: 0 auto;        /* 가운데 정렬 */
+      overflow-x: auto;
     }    
     #data-container table {
       table-layout: fixed;
+      min-width: 600px; /* 테이블이 충분히 넓어야 스크롤이 생김 */
     }
     /* 공통: 텍스트 넘칠 때 줄임표 */
     #data-container th,
