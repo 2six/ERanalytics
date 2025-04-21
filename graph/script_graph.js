@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tier = tierSelect.value;
         const period = periodSelect.value;
 
-        fetch(`data/${version}/${tier}.json`)
+        fetch(`/data/${version}/${tier}.json`)
             .then(res => res.json())
             .then(json => {
                 const history = json['통계'];
