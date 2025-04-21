@@ -1,57 +1,49 @@
+<!-- graph.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>그래프</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>그래프</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="index.html">홈</a></li>
-                <li><a href="statistics.html">실험체 통계</a></li>
-                <li><a href="tier_table.html">티어표</a></li>
-                <li><a href="graph.html">그래프</a></li>
-            </ul>
-        </nav>
-        <h1>그래프</h1>
-    </header>
+  <header>
+    {% include nav.html %}
+    <h1>그래프</h1>
+  </header>
 
-    <main>
-        <div class="filters">
-            <select id="version-select"></select>
-            <select id="tier-select"></select>
-            <select id="period-select"></select>
-            <label><input type="checkbox" id="filter-low-pickrate"> 낮은 픽률 제외</label>
-            <label><input type="checkbox" id="filter-high-pickrate"> 높은 픽률 제외</label>
-        </div>
+  <main>
+    <div class="dropdowns">
+      <select id="version-select"></select>
+      <select id="tier-select"></select>
+      <select id="period-select"></select>
+      <label><input type="checkbox" id="filter-low-pickrate"> 낮은 픽률 제외</label>
+      <label><input type="checkbox" id="filter-high-pickrate"> 높은 픽률 제외</label>
+    </div>
 
-        <div style="margin-bottom: 10px;">
-            <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
-            <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
-            <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
-        </div>
+    <div style="margin-bottom: 10px;">
+      <button class="graph-tab" data-type="pick-rp">픽률 / RP 획득</button>
+      <button class="graph-tab" data-type="pick-win">픽률 / 승률</button>
+      <button class="graph-tab" data-type="rp-win">RP 획득 / 승률</button>
+    </div>
 
-        <canvas id="graph-canvas" width="1000" height="800"></canvas>
+    <canvas id="graph-canvas" width="1000" height="800"></canvas>
 
-        <div id="image-popup" class="image-popup">
-            <span class="image-popup-close">&times;</span>
-            <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
-        </div>
+    <div id="image-popup" class="image-popup">
+      <span class="image-popup-close">&times;</span>
+      <img class="image-popup-content" id="popup-image" alt="그래프 이미지">
+    </div>
 
-        <button id="popup-graph-button">그래프 이미지 팝업</button>
-    </main>
+    <button id="popup-graph-button">그래프 이미지 팝업</button>
+  </main>
 
-    <footer>
-        <p>© 2025 나만의 실험체 통계</p>
-    </footer>
+  {% include footer.html %}
 
-    <script src="script_common.js"></script>
-    <script src="script_graph.js"></script>
+  <script src="script_common.js"></script>
+  <script src="script_graph.js"></script>
 </body>
 </html>

@@ -1,10 +1,10 @@
-/* common style.css */
+/* style.css */
 
-/* ——— 기본 레이아웃 & 타이포그래피 ——— */
+/* 1. 기본 리셋 및 타이포그래피 */
 * {
-    box-sizing: border-box;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
   }
   body {
     font-family: sans-serif;
@@ -16,7 +16,7 @@
     color: #333;
   }
   
-  /* ——— 내비게이션 ——— */
+  /* 2. 내비게이션 */
   nav ul {
     list-style: none;
     padding: 0;
@@ -32,13 +32,13 @@
     text-decoration: none;
   }
   
-  /* ——— 표 기본 스타일 ——— */
+  /* 3. 표 공통 스타일 */
   table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    background-color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
   }
   th, td {
     border: 1px solid #ddd;
@@ -53,25 +53,19 @@
     background-color: #f9f9f9;
   }
   
-  /* ——— 드롭다운 & 버튼 그룹 ——— */
-  #controls,
-  .dropdowns,
-  .filters {
+  /* 4. 드롭다운 그룹 */
+  .dropdowns {
     display: flex;
     justify-content: center;
     gap: 10px;
     margin-bottom: 10px;
   }
-  select,
-  button {
+  .dropdowns select,
+  .dropdowns label {
     padding: 4px 8px;
-    border: 1px solid #ccc;
-    background-color: #fff;
-    color: #333;
-    border-radius: 4px;
   }
   
-  /* ——— 그래프용 캔버스 ——— */
+  /* 5. 그래프 캔버스 */
   canvas {
     display: block;
     margin-top: 10px;
@@ -81,14 +75,16 @@
     max-width: 100%;
   }
   
-  /* ——— 팝업 공통 스타일 ——— */
+  /* 6. 팝업 공통 스타일 */
   .image-popup {
     display: none;
     position: fixed;
     z-index: 1000;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.8);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
     overflow: auto;
   }
   .image-popup-content {
@@ -96,18 +92,19 @@
     margin: 5% auto;
     max-width: 90%;
     max-height: 80%;
-    border: 4px solid white;
+    border: 4px solid #fff;
   }
   .image-popup-close {
     position: absolute;
-    top: 20px; right: 35px;
-    color: white;
+    top: 20px;
+    right: 35px;
+    color: #fff;
     font-size: 40px;
     font-weight: bold;
     cursor: pointer;
   }
   
-  /* ——— 툴팁 공통 스타일 ——— */
+  /* 7. 툴팁 공통 스타일 */
   .tooltip-container {
     position: relative;
     display: inline-block;
@@ -133,3 +130,14 @@
     visibility: visible;
     opacity: 1;
   }
+  
+  /* 8. 버튼 공통 스타일 */
+  button {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #333;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
