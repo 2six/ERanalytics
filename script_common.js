@@ -4,7 +4,166 @@
  * 공통 기능 모듈
  */
 
-// ... (parseINI 함수부터 calculateTiers 함수까지의 코드는 이전과 동일) ...
+// 필요한 함수들을 전역 스코프에 둡니다.
+
+function parseINI(iniString) {
+    const config = {};
+    let currentSection = null;
+    iniString.split('\n').forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith(';') || trimmed.startsWith('#')) return;
+        const sectionMatch = trimmed.match(/^\[(.*)\]$/);
+        if (sectionMatch) {
+            currentSection = sectionMatch[1];
+            config[currentSection] = {};
+            return;
+        }
+        const kv = trimmed.match(/^([^=]+)=(.*)$/);
+        if (kv && currentSection) {
+            config[currentSection][kv[1].trim()] = kv[2].trim();
+        }
+    });
+    return config;
+}
+
+function populateVersionDropdown(selectElem, versionList) {
+    selectElem.innerHTML = '';
+    versionList.sort().reverse().forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        selectElem.appendChild(opt);
+    });
+}
+
+const tierMap = {
+    "platinum_plus": "플래티넘+",
+    "diamond_plus": "다이아몬드+",
+    "meteorite_plus": "메테오라이트+",
+    "mithril_plus": "미스릴+",
+    "in1000": "in1000"
+};
+function populateTierDropdown(selectElem) {
+    selectElem.innerHTML = '';
+    Object.entries(tierMap).forEach(([val, label]) => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = label;
+        selectElem.appendChild(opt);
+    });
+    selectElem.value = 'diamond_plus';
+}
+
+const periodOptions = [
+    { value: 'latest', label: '버전 전체' },
+    { value: '3day', label: '최근 3일' },
+    { value: '7day', label: '최근 7일' }
+];
+function populatePeriodDropdown(selectElem) {
+    selectElem.innerHTML = '';
+    periodOptions.forEach(optDef => {
+        const opt = document.createElement('option');
+        opt.value = optDef.value;
+        opt.textContent = optDef.label;
+        selectElem.appendChild(opt);
+    });
+}
+
+function getRPScore(rp) {
+    return rp >= 0
+        ? Math.log(rp + 1) * 3
+        : -Math.log(-rp + 1) * 2;
+}
+
+function calculateTier(score, avgScore, stddev, config) {
+    const diff = score - avgScore;
+    if (diff > stddev * parseFloat(config['S+'])) return 'S+';
+    if (diff > stddev * parseFloat(config['S'])) return 'S';
+    if (diff > stddev * parseFloat(config['A'])) return 'A';
+    if (diff > stddev * parseFloat(config['B'])) return 'B';
+    if (diff > stddev * parseFloat(config['C'])) return 'C';
+    if (diff > stddev * parseFloat(config['D'])) return 'D';
+    return 'F';
+}
+
+function calculateAverageScore(data) {
+    const validData = data.filter(item => (item['표본수'] || 0) > 0);
+    const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
+
+    if (total === 0) return 0;
+
+    let sumRP = 0, sumWin = 0, sumTop3 = 0;
+    validData.forEach(i => {
+        const w = i['표본수'] / total;
+        sumRP += (i['RP 획득'] || 0) * w;
+        sumWin += (i['승률'] || 0) * w;
+        sumTop3 += (i['TOP 3'] || 0) * w;
+    });
+    return getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
+}
+
+function calculateStandardDeviation(data, avgScore) {
+    const validData = data.filter(item => (item['표본수'] || 0) > 0);
+    const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
+
+    if (total === 0) return 0;
+
+    const variance = validData.reduce((sum, item) => {
+        const s = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3;
+        return sum + Math.pow(s - avgScore, 2) * (item['표본수'] / total);
+    }, 0);
+    return Math.sqrt(variance);
+}
+
+function calculateTiers(data, avgScore, stddev, config) {
+    const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0);
+    const avgPickRate = total === 0 ? 0 : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0) / total / (data.length || 1);
+
+    const k = 1.5;
+
+    return data.map(item => {
+        if ((item['표본수'] || 0) === 0) { // null/undefined 대비
+             return {
+                 ...item,
+                 '점수': 0.00,
+                 '티어': 'F',
+                 '픽률': 0.00
+             };
+        }
+
+        const pickRate = total === 0 ? 0 : (item['표본수'] || 0) / total; // null/undefined 대비
+        const r = avgPickRate ? pickRate / avgPickRate : 1;
+        const originWeight =
+            r <= 1/3
+                ? 0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))
+                : 0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k));
+        const meanWeight = 1 - originWeight;
+        let factor = avgPickRate === 0 ? 1 : (0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k)));
+        if (r > 5) {
+            factor += 0.05 * (1 - Math.min((r - 5) / 5, 1));
+        }
+        const baseScore = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3;
+        let score;
+
+        if (avgPickRate !== 0 && (item['표본수'] || 0) < total * avgPickRate) {
+            score =
+                baseScore * (originWeight + meanWeight * Math.min(1, pickRate / avgPickRate)) +
+                avgScore * meanWeight * (1 - Math.min(1, pickRate / avgPickRate));
+            score *= factor;
+        } else {
+            score = baseScore * factor;
+        }
+
+        const tierLabel = calculateTier(score, avgScore, stddev, config);
+
+        return {
+            ...item,
+            '점수': parseFloat(score.toFixed(2)),
+            '티어': tierLabel,
+            '픽률': parseFloat((pickRate * 100).toFixed(2))
+        };
+    });
+}
 
 // 8. 데이터 정렬 (mode 인자 추가 및 로직 수정)
 // mode: 'value' (단일), 'value1' (비교 Ver1), 'value2' (비교 Ver2), 'delta' (비교 변화량)
