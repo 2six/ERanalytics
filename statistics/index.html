@@ -47,29 +47,24 @@ layout: none
     /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
     #data-container th {
       position: relative;
-      padding-right: 30px; /* 화살표 공간 확보 */
+      padding-left: 30px; /* 기호 공간 확보 */
+      /* padding-right: 30px; *//* 화살표 공간 확보 - data-arrow에 기호 포함시키면서 필요 없을 수도 있음 */
     }
-     /* 델타 기호 공간 확보 (화살표 + 숫자/기호 공간) */
-     #data-container th.delta-sort-indicator {
-         padding-right: 40px;
-     }
 
 
-    /* data-arrow 속성에 담긴 문자를, 우측에 겹치도록 표시 */
-    #data-container th::after {
+    /* data-arrow 속성에 담긴 문자를, 좌측에 겹치도록 표시 */
+    #data-container th::before { /* ::after 대신 ::before 사용 */
       content: attr(data-arrow);
       position: absolute;
-      /* right: 6px; */ /* JS에서 data-arrow 값에 기호 포함시키므로 right 위치 조정 */
-      right: 0; /* 오른쪽 정렬 기준점 */
+      left: 6px;      /* 필요에 따라 조정 */
       top: 50%;
       transform: translateY(-50%);
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
       min-width: 30px; /* 화살표 + 숫자/기호 공간 확보 */
-      text-align: right; /* 화살표 및 기호를 우측 정렬 */
+      text-align: left; /* 화살표 및 기호를 좌측 정렬 */
      /* background-color: yellow; *//* 디버그용 */
     }
-
     /* 비교 모드 컨트롤 그룹 */
     #comparison-controls {
         display: none; /* 기본적으로 숨김 */
