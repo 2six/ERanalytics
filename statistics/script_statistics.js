@@ -354,7 +354,8 @@ document.addEventListener('DOMContentLoaded', function() {
          if (!isCompareMode) return;
 
         // 기존 테이블 컬럼 목록 + 표본수 포함
-        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위','표본수'];
+        // 요구사항 반영: '표본수' 열 제거
+        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위']; // 표본수 제거
 
         let comparisonTableHtml = '<table><thead><tr>';
         cols.forEach(c => {
@@ -448,9 +449,11 @@ document.addEventListener('DOMContentLoaded', function() {
                        }
 
                  } else if (col === '표본수') {
+                      // 요구사항 반영: 표본수 열 제거 -> 이 else if 블록은 실행되지 않음.
+                      // 다만 데이터 구조에는 '표본수 (Ver1)', '표본수 (Ver2)', '표본수 변화량' 키가 존재할 수 있음.
                       const val1 = row['표본수 (Ver1)'] !== null && row['표본수 (Ver1)'] !== undefined ? row['표본수 (Ver1)'] : '-';
                       const val2 = row['표본수 (Ver2)'] !== null && row['표본수 (Ver2)'] !== undefined ? row['표본수 (Ver2)'] : '-';
-                      displayVal = `${val1} / ${val2}`;
+                      displayVal = `${val1} / ${val2}`; // 이 내용은 표본수 열이 없을 때 표시되지 않음
 
                        const delta = row['표본수 변화량'];
                        if (typeof delta === 'number') {
@@ -526,6 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
          if (isCompareMode) return;
 
         // 기존 테이블 컬럼 목록
+        // 요구사항 반영: '표본수' 컬럼 제거
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
         let html = '<table><thead><tr>';
@@ -631,10 +635,11 @@ document.addEventListener('DOMContentLoaded', function() {
                  } else if (currentSortMode === 'value2') {
                      arrow = currentSortAsc ? '▲2' : '▼2';
                  } else if (currentSortMode === 'delta') {
-                       arrow = currentSortAsc ? '▲' : '▼'; // 일반적인 오름/내림차 기호
-                       th.classList.add('delta-sort-indicator'); // Δ 표시
+                       arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 기호를 화살표 오른쪽에 붙여 표시
                  }
                  th.setAttribute('data-arrow', arrow);
+                 // delta-sort-indicator 클래스는 더 이상 필요 없음 (표시를 data-arrow에 통합했으므로)
+                 // th.classList.add('delta-sort-indicator'); // 삭제
              }
 
              // 클릭 이벤트 리스너 추가
@@ -659,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      } else if (currentSortMode === 'value2' && currentSortAsc) { // Value2 ▲ -> Delta ▼
                           nextMode = 'delta';
                           // common.js의 sortData 로직에 맞는 초기 방향 설정
-                          // 순위 관련 (평균 순위, 실험체)는 asc=true가 좋아지는 순 (숫자 감소)
+                          // 순위 관련 (평균 순위)는 asc=true가 좋아지는 순 (숫자 감소)
                           // 그 외 변화량은 asc=true가 나쁜 변화 순 (숫자 감소)
                           // 티어 변화는 asc=true가 나쁜 변화 순 (문자열 오름차순)
                           // 여기서는 클릭된 컬럼에 따라 초기 방향 설정
