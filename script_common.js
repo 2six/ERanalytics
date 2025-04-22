@@ -507,7 +507,7 @@ function applyGradientColorsSingle(table) {
 }
 
 // 12. 그라디언트 컬러 적용 (비교 데이터용 - 변화량에 적용)
-function applyGradientColorsComparison(table) { // mode, sortedCol 인자 제거 (색상 기준이 정렬 기준과 무관하게 변화량/값 자체 기준이므로)
+function applyGradientColorsComparison(table) { // mode, sortedCol 인자 사용 여부는 기존 로직에 따름
     if (!table) return;
     const rows = [...table.querySelectorAll('tbody tr')];
     const headers = [...table.querySelectorAll('thead th')];
@@ -515,135 +515,79 @@ function applyGradientColorsComparison(table) { // mode, sortedCol 인자 제거
     headers.forEach((th, i) => {
         const col = th.dataset.col;
 
-        // 사용자 요구사항 반영: 실험체 열은 배경색 적용 안 함
-        if (col === '실험체') {
-             rows.forEach(tr => {
-                  const cell = tr.children[i];
-                  cell.style.backgroundColor = ''; // 실험체 열의 모든 셀 배경색 초기화
-             });
-             // 실험체 열 (순위 변화) 색칠은 이 루프 내부에서 data-rankdelta 기준으로 처리
-            rows.forEach(tr => {
-                const cell = tr.children[i];
-                const rankDeltaStatus = cell.dataset.rankdelta; // 순위 변화 값 (-10, +5 등) 또는 new/removed/none
+        // 그 외 숫자 스탯 컬럼 (점수, 픽률 등, 표본수)에 대한 색상 강조 (변화량 기준)
+        const isNumericStatColumn = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
+        if (isNumericStatColumn) {
 
-                if (rankDeltaStatus === 'new') {
-                     cell.style.backgroundColor = 'rgba(127, 255, 255, 0.3)'; // 하늘색 (신규)
-                } else if (rankDeltaStatus === 'removed') {
-                    cell.style.backgroundColor = 'rgba(200, 200, 200, 0.3)'; // 회색 (삭제)
-                } else { // 숫자 순위 변화
-                   const v = parseFloat(rankDeltaStatus);
-                   if (!isNaN(v) && v !== 0) {
-                        if (v < 0) { // 순위 숫자 감소 (개선)
-                            cell.style.backgroundColor = 'rgba(127, 255, 127, 0.3)'; // 연두색 (좋아짐)
-                        } else { // 순위 숫자 증가 (악화)
-                            cell.style.backgroundColor = 'rgba(255, 127, 127, 0.3)'; // 빨간색 (나빠짐)
-                        }
-                   } else { // 0 또는 none
-                        cell.style.backgroundColor = ''; // 변화 없음 또는 정보 없음
-                   }
-                }
-            });
-
-            return; // 실험체 열 처리는 여기서 끝
-       }
-
-       // 티어 변화 색칠 (티어 컬럼)
-       if (col === '티어') {
-            rows.forEach(tr => {
-                 const cell = tr.children[i];
-                 const tierChangeStatus = cell.dataset.tierchange;
-
-                 cell.style.backgroundColor = '';
-
-                 if (tierChangeStatus === 'new') {
-                     cell.style.backgroundColor = 'rgba(127, 255, 255, 0.3)';
-                 } else if (tierChangeStatus === 'removed') {
-                     cell.style.backgroundColor = 'rgba(200, 200, 200, 0.3)';
-                 } else if (tierChangeStatus === 'up') {
-                     cell.style.backgroundColor = 'rgba(127, 255, 127, 0.3)';
-                 } else if (tierChangeStatus === 'down') {
-                     cell.style.backgroundColor = 'rgba(255, 127, 127, 0.3)';
-                 } else if (cell.dataset.tier) { // 변화 없지만 단일 모드 티어 색상 사용
-                       const tierValue = cell.dataset.tier;
-                       const color = TIER_COLORS_SINGLE[tierValue];
-                       if (color) cell.style.backgroundColor = color;
-                 }
-            });
-            return; // 티어 컬럼은 여기서 색칠 완료
-       }
+            // 해당 컬럼의 모든 셀에서 숫자 변화량 값을 모읍니다.
+            const values = rows.map(r => {
+                 const cell = r.children[i];
+                 const deltaText = cell.dataset.delta; // data-delta 속성 값
+                 const val = parseFloat(deltaText); // 숫자로 파싱
+                 return isNaN(val) ? null : val;
+            }).filter(v => v !== null); // 유효한 숫자 변화량만 필터링
 
 
-       // 그 외 숫자 스탯 컬럼 (점수, 픽률 등, 표본수)에 대한 색상 강조 (변화량 기준)
-       const isNumericStatColumn = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
-       if (isNumericStatColumn) {
+            if (values.length === 0) {
+                 rows.forEach(tr => tr.children[i].style.backgroundColor = '');
+                 return; // 다음 컬럼으로 이동
+            }
 
-           // 해당 컬럼의 모든 셀에서 숫자 변화량 값을 모읍니다.
-           const values = rows.map(r => {
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+
+
+            const isGoodStat = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3'].includes(col);
+            const isBadStat = ['평균 순위'].includes(col);
+
+
+            rows.forEach((r) => {
                 const cell = r.children[i];
-                const deltaText = cell.dataset.delta; // data-delta 속성 값
-                const val = parseFloat(deltaText); // 숫자로 파싱
-                return isNaN(val) ? null : val;
-           }).filter(v => v !== null); // 유효한 숫자 변화량만 필터링
+                const deltaText = cell.dataset.delta;
+                const v = parseFloat(deltaText); // 변화량 값 (숫자)
 
+                // 숫자 변화량에 대한 색칠
+                if (!isNaN(v) && deltaText !== 'none') {
+                     let ratio; // 0 (변화 없음) ~ 1 (최대 변화)
+                     let color;
 
-           if (values.length === 0) {
-                rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-                return; // 다음 컬럼으로 이동
-           }
-
-           const min = Math.min(...values);
-           const max = Math.max(...values);
-
-
-           const isGoodStat = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3'].includes(col);
-           const isBadStat = ['평균 순위'].includes(col);
-
-
-           rows.forEach((r) => {
-               const cell = r.children[i];
-               const deltaText = cell.dataset.delta;
-               const v = parseFloat(deltaText); // 변화량 값 (숫자)
-
-               // 숫자 변화량에 대한 색칠
-               if (!isNaN(v) && deltaText !== 'none') {
-                    let ratio; // 0 (변화 없음) ~ 1 (최대 변화)
-                    let color;
-
-                   if (v === 0) {
-                        color = 'rgba(240, 240, 240, 0.3)'; // 변화가 0인 경우 연한 회색
-                   } else if (isGoodStat || col === '표본수') { // 클수록 좋은 변화 (점수, 픽률 등) 또는 표본수 증가 -> 하양(0) ~ 빨강(1) 또는 회색
-                        // 양수 변화 (좋아짐) -> 0~max 범위를 0~1로
-                        // 음수 변화 (나빠짐) -> min~0 범위를 0~1로
-                        if (v > 0) { // 양수 변화
-                             ratio = max === 0 ? 0 : v / max; // 0 ~ max 를 0 ~ 1 로
-                             ratio = Math.max(0, Math.min(1, ratio)); // 비율 제한
-                             // 표본수는 회색, 그 외는 빨강
-                             color = col === '표본수' ? interpolateColor([255,255,255], [180,180,180], ratio) : interpolateColor([255,255,255], [230,124,115], ratio);
-                        } else { // 음수 변화
-                             ratio = min === 0 ? 0 : v / min; // min ~ 0 을 0 ~ 1 로 (음수 / 음수 = 양수)
+                    if (v === 0) {
+                         color = 'rgba(240, 240, 240, 0.3)'; // 변화가 0인 경우 연한 회색
+                    } else if (isGoodStat || col === '표본수') { // 클수록 좋은 변화 (점수, 픽률 등) 또는 표본수 증가 -> 하양(0) ~ 빨강(1) 또는 회색
+                         // 양수 변화 (좋아짐) -> 0~max 범위를 0~1로
+                         // 음수 변화 (나빠짐) -> min~0 범위를 0~1로
+                         if (v > 0) { // 양수 변화
+                              ratio = max === 0 ? 0 : v / max; // 0 ~ max 를 0 ~ 1 로
+                              ratio = Math.max(0, Math.min(1, ratio)); // 비율 제한
+                              // 표본수는 회색, 그 외는 빨강
+                              color = col === '표본수' ? interpolateColor([255,255,255], [180,180,180], ratio) : interpolateColor([255,255,255], [230,124,115], ratio);
+                         } else { // 음수 변화
+                              ratio = min === 0 ? 0 : v / min; // min ~ 0 을 0 ~ 1 로 (음수 / 음수 = 양수)
+                              ratio = Math.max(0, Math.min(1, ratio));
+                              color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑
+                         }
+                     } else if (isBadStat) { // 작을수록 좋은 변화 (평균 순위 값 자체의 변화량) -> 하양(0) ~ 빨강(1)
+                        // 음수 변화가 좋아짐, 양수 변화가 나빠짐.
+                        if (v < 0) {
+                             ratio = min === 0 ? 0 : v / min; // min~0 을 0~1 로
                              ratio = Math.max(0, Math.min(1, ratio));
-                             color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑
+                             color = interpolateColor([255,255,255], [230,124,115], ratio);
+                        } else {
+                             ratio = max === 0 ? 0 : v / max; // 0~max 를 0~1 로
+                             ratio = Math.max(0, Math.min(1, ratio));
+                             color = interpolateColor([255,255,255], [164,194,244], ratio);
                         }
-                    } else if (isBadStat) { // 작을수록 좋은 변화 (평균 순위 값 자체의 변화량) -> 하양(0) ~ 빨강(1)
-                       // 음수 변화가 좋아짐, 양수 변화가 나빠짐.
-                       if (v < 0) {
-                            ratio = min === 0 ? 0 : v / min; // min~0 을 0~1 로
-                            ratio = Math.max(0, Math.min(1, ratio));
-                            color = interpolateColor([255,255,255], [230,124,115], ratio);
-                       } else {
-                            ratio = max === 0 ? 0 : v / max; // 0~max 를 0~1 로
-                            ratio = Math.max(0, Math.min(1, ratio));
-                            color = interpolateColor([255,255,255], [164,194,244], ratio);
-                       }
-                    }
+                     }
 
                     cell.style.backgroundColor = color;
 
                } else { // data-delta가 숫자가 아닌 경우 (new, removed, none)
-                    // 배경색 제거 (이미 위에 실험체 열과 티어 열은 처리됨)
+                    // 배경색 제거 (이미 위에 실험체 열은 처리됨, 티어 열은 이제 여기서 처리 안 함)
                    if (col !== '실험체' && col !== '티어') cell.style.backgroundColor = '';
                }
            });
        }
-   });
+    });
+    // 실험체 열 (순위 변화) 색칠 로직은 이 함수에서 제거되었습니다.
+    // 티어 열 색칠 로직도 이 함수에서 제거되었습니다.
 }

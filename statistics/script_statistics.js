@@ -628,11 +628,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentSortColumn === col) {
                 let arrow = '';
                 if (currentSortMode === 'value1') {
-                    arrow = currentSortAsc ? '▲1' : '▼1';
+                    arrow = currentSortAsc ? '1▲' : '1▼';
                 } else if (currentSortMode === 'value2') {
-                    arrow = currentSortAsc ? '▲2' : '▼2';
+                    arrow = currentSortAsc ? '2▲' : '2▼';
                 } else if (currentSortMode === 'delta') {
-                      arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 기호를 화살표 오른쪽에 붙여 표시
+                      arrow = currentSortAsc ? 'Δ▲' : 'Δ▼'; // 델타 기호를 화살표 오른쪽에 붙여 표시
                 }
                 th.setAttribute('data-arrow', arrow);
             }
