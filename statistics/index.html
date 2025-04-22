@@ -47,35 +47,27 @@ layout: none
     /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
     #data-container th {
       position: relative;
+      padding-right: 30px; /* 화살표 공간 확보 */
     }
+     /* 델타 기호 공간 확보 (화살표 + 숫자/기호 공간) */
+     #data-container th.delta-sort-indicator {
+         padding-right: 40px;
+     }
+
 
     /* data-arrow 속성에 담긴 문자를, 우측에 겹치도록 표시 */
     #data-container th::after {
       content: attr(data-arrow);
       position: absolute;
-      right: 6px;      /* 필요에 따라 조정 */
+      /* right: 6px; */ /* JS에서 data-arrow 값에 기호 포함시키므로 right 위치 조정 */
+      right: 0; /* 오른쪽 정렬 기준점 */
       top: 50%;
       transform: translateY(-50%);
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
-      width: 20px; /* 화살표 및 숫자/델타 기호가 들어갈 공간 확보 */
+      min-width: 30px; /* 화살표 + 숫자/기호 공간 확보 */
       text-align: right; /* 화살표 및 기호를 우측 정렬 */
      /* background-color: yellow; *//* 디버그용 */
-    }
-
-    /* 델타 정렬 시 헤더에 Δ 표시 추가 */
-    /* ::before 대신 ::after에 Δ를 포함시키도록 JS에서 data-arrow 값을 조합할 수 있습니다. */
-    /* JS에서 data-arrow="▲Δ" 또는 "▼Δ" 형태로 만들고, CSS는 그대로 둡니다. */
-    #data-container th.delta-sort-indicator::before {
-        content: "Δ"; /* 델타 기호 */
-        position: absolute;
-        right: 18px; /* 화살표보다 왼쪽에 위치 */
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 0.9em;
-        color: #ffac2b; /* 강조 색상 */
-        font-weight: bold;
-        pointer-events: none;
     }
 
     /* 비교 모드 컨트롤 그룹 */
@@ -93,6 +85,11 @@ layout: none
         /* 모바일에서 세로로 쌓이도록 조정 */
         flex-wrap: wrap;
     }
+
+    /* "데이터 1 :" 레이블 숨김 */
+     .dropdowns > div:first-child > span {
+         display: none;
+     }
 
     /* 비교 모드 테이블의 셀 스타일 */
      #data-container td {
@@ -125,6 +122,7 @@ layout: none
     <div class="dropdowns">
       <!-- 데이터 1 선택 -->
       <div>
+          <span>데이터 1:</span> {# 이 레이블은 CSS로 숨겨짐 #}
           <select id="version-select"></select>
           <select id="tier-select"></select>
           <select id="period-select"></select>
@@ -135,6 +133,7 @@ layout: none
 
       <!-- 비교 모드 데이터 2 선택 (기본 숨김) -->
       <div id="comparison-controls">
+          <span>데이터 2 (비교):</span>
           <select id="version-select-compare"></select>
           <select id="tier-select-compare"></select>
           <select id="period-select-compare"></select>

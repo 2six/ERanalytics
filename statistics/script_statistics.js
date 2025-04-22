@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderComparisonTable(data) {
          if (!isCompareMode) return;
 
-        // 기존 테이블 컬럼 목록 + 표본수 포함
+        // 기존 테이블 컬럼 목록
         // 요구사항 반영: '표본수' 열 제거
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위']; // 표본수 제거
 
@@ -528,8 +528,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderTable(data) {
          if (isCompareMode) return;
 
-        // 기존 테이블 컬럼 목록
-        // 요구사항 반영: '표본수' 컬럼 제거
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
         let html = '<table><thead><tr>';

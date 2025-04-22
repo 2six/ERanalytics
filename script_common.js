@@ -87,7 +87,7 @@ function calculateTier(score, avgScore, stddev, config) {
 }
 
 function calculateAverageScore(data) {
-    const validData = data.filter(item => (item['표본수'] || 0) > 0); // null/undefined 대비
+    const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
 
     if (total === 0) return 0;
@@ -103,7 +103,7 @@ function calculateAverageScore(data) {
 }
 
 function calculateStandardDeviation(data, avgScore) {
-    const validData = data.filter(item => (item['표본수'] || 0) > 0); // null/undefined 대비
+    const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
 
     if (total === 0) return 0;
@@ -171,7 +171,7 @@ function sortData(data, column, asc, mode = 'value') {
      if (!data || data.length === 0) return [];
 
     let sortKey;
-    // 정렬 기준 키를 결정합니다.
+    // 비교 모드에서 사용할 정렬 기준 키를 결정합니다.
     // column: 헤더의 data-col 값 ('점수', '티어' 등)
     // mode: 'value' (단일), 'value1', 'value2', 'delta'
     if (mode === 'value') { // 단일 모드
@@ -443,11 +443,12 @@ function applyGradientColorsSingle(table) {
          }).filter(v => v !== null);
 
 
-         if (values.length === 0) {
+         if (values.length === 0) { // 오류 수정: values가 비어있을 때 계산 건너뛰기
               rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-              return;
+              return; // 이 컬럼에 대한 색상 적용 중단
          }
 
+         // 오류 수정: avg, min, max를 여기서 다시 계산하도록 scope 수정
          const avg = values.reduce((a,b)=>a+b,0)/values.length;
          const min = Math.min(...values);
          const max = Math.max(...values);
@@ -505,9 +506,9 @@ function applyGradientColorsSingle(table) {
 }
 
 // 12. 그라디언트 컬러 적용 (비교 데이터용 - 변화량에 적용)
-// mode: 현재 정렬 모드 ('value1', 'value2', 'delta') - 색상 기준에는 이 인자를 사용하지 않고 data 속성 값 자체를 사용
-// sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어' 등) - 색상 기준에는 이 인자를 사용하지 않고 data 속성 값 자체를 사용
-function applyGradientColorsComparison(table) {
+// mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
+// sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어' 등)
+function applyGradientColorsComparison(table, mode, sortedCol) {
      if (!table) return;
      const rows = [...table.querySelectorAll('tbody tr')];
      const headers = [...table.querySelectorAll('thead th')];
@@ -543,7 +544,8 @@ function applyGradientColorsComparison(table) {
                          if (color) cell.style.backgroundColor = color;
                    }
               });
-              return; // 티어 컬럼은 여기서 색칠 완료
+              // 티어 컬럼은 변화량 색칠 대상이 아니므로 여기서 종료
+              return;
          }
 
 
