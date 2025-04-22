@@ -591,14 +591,15 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         // 1) 픽률 열은 무조건 단순 평균
         let avg;
         if (col === '픽률') {
-            const key = mode === 'value2' ? '픽률 (Ver2)'
-                      : mode === 'value1' ? '픽률 (Ver1)'
-                      : '픽률';
-            const vals = data.map(d =>
-                parseFloat(String(d[key] || '').replace(/[^0-9.\-]/g, '')) || 0
-            );
-            avg = vals.reduce((s, v) => s + v, 0) / vals.length;
-        }
+            // 단순 평균
+            const vals = rows.map(r => {
+                const txt = r.children[i].textContent.trim();
+                if (mode === 'value1')  return parsePickRate(txt, 'ver1');
+                if (mode === 'value2')  return parsePickRate(txt, 'ver2');
+                return parsePickRate(txt, 'delta');
+            });
+            avg = vals.reduce((s,v)=>s+v,0) / vals.length;
+        } 
         // 2) 델타 모드는 변화량 단순 평균
         else if (mode === 'delta') {
             const key = col === '평균 순위'
