@@ -604,7 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 10) 비교 모드용 정렬 이벤트 리스너 부착
+    // 10) 비교 모드 테이블 헤더에 정렬 이벤트 리스너 부착
     function attachComparisonSortEventListeners(ths, renderFunc) {
         ths.forEach(th => {
             const col = th.dataset.col;
@@ -614,68 +614,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 th.style.cursor = 'default';
                 th.setAttribute('data-arrow', '');
                 th.classList.remove('delta-sort-indicator');
-                th.setAttribute('data-nosort', 'true');
+                th.setAttribute('data-nosort', 'true'); // 정렬 불가 명시
                 return;
             }
                 th.style.cursor = 'pointer';
 
 
-            th.setAttribute('data-arrow', '');
-            th.classList.remove('delta-sort-indicator');
+            th.setAttribute('data-arrow', ''); // 이전 화살표 기호 리셋
+            th.classList.remove('delta-sort-indicator'); // 델타 정렬 표시자 클래스 리셋
 
 
-            // 현재 정렬 기준과 일치하면 화살표 표시 및 델타 표시자 추가
+            // 현재 정렬 기준과 일치하면 화살표 및 기호 표시
             if (currentSortColumn === col) {
                 let arrow = '';
                 if (currentSortMode === 'value1') {
-                    arrow = currentSortAsc ? '▲1' : '▼1';
+                    arrow = currentSortAsc ? '▲1' : '▼1'; // Ver1 기준 오름/내림차순 기호
                 } else if (currentSortMode === 'value2') {
-                    arrow = currentSortAsc ? '▲2' : '▼2';
+                    arrow = currentSortAsc ? '▲2' : '▼2'; // Ver2 기준 오름/내림차순 기호
                 } else if (currentSortMode === 'delta') {
-                        arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 기호를 화살표 오른쪽에 붙여 표시
+                        arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 오름/내림차순 기호 + 델타 표시자 (▲/▼는 common.js 정렬 로직에 따름)
+                        // 델타 정렬일 경우 헤더에 델타 표시 클래스 추가
+                        th.classList.add('delta-sort-indicator');
                 }
-                th.setAttribute('data-arrow', arrow);
+                th.setAttribute('data-arrow', arrow); // 헤더의 data-arrow 속성에 설정
             }
 
             // 클릭 이벤트 리스너 추가
             th.onclick = () => {
                 // 정렬 순환: Value1 ▼ -> Value1 ▲ -> Value2 ▼ -> Value2 ▲ -> Delta ▼ -> Delta ▲ -> Value1 ▼ ...
-                const modes = ['value1', 'value1', 'value2', 'value2', 'delta', 'delta']; // 6단계 순환
-                const directions = [false, true, false, true, false, true]; // 각 단계의 오름차순 여부
+                const modes = ['value1', 'value1', 'value2', 'value2', 'delta', 'delta']; // 6단계 순환 모드
+                const directions = [false, true, false, true, false, true]; // 각 단계의 오름차순 여부 (false: 내림차순, true: 오름차순)
 
                 let currentCycleIndex = -1;
                 // 현재 상태에 해당하는 순환 단계 찾기
                 for(let i = 0; i < modes.length; i++) {
-                    if(currentSortMode === modes[i] && currentSortAsc === directions[i]) {
+                    if(currentSortColumn === col && currentSortMode === modes[i] && currentSortAsc === directions[i]) {
                         currentCycleIndex = i;
                         break;
                     }
                 }
 
-                let nextCycleIndex = (currentCycleIndex + 1) % modes.length;
-                let nextMode = modes[nextCycleIndex];
-                let nextAsc = directions[nextCycleIndex];
+                let nextMode, nextAsc;
 
+                if (currentCycleIndex !== -1) {
+                    // 같은 컬럼을 다시 클릭한 경우, 순환의 다음 단계로 이동
+                    let nextCycleIndex = (currentCycleIndex + 1) % modes.length;
+                    nextMode = modes[nextCycleIndex];
+                    nextAsc = directions[nextCycleIndex];
 
-                if (currentSortColumn !== col) {
-                    // 다른 컬럼 클릭 시, 해당 컬럼의 Value1 내림차순으로 시작
-                    nextMode = 'value1';
-                    nextAsc = false;
+                } else {
+                    // 다른 컬럼을 처음 클릭한 경우, 해당 컬럼의 Value1 내림차순 정렬로 시작
+                    currentSortColumn = col; // 정렬 기준 컬럼을 클릭된 컬럼으로 변경
+                    nextMode = 'value1'; // 다음 모드는 Value1
+                    nextAsc = false; // 다음 방향은 내림차순
 
                     // 예외 처리: 평균 순위는 Value1 오름차순이 좋아지는 순서
                     if (col === '평균 순위') nextAsc = true;
                         // 예외 처리: 티어는 Value1 오름차순이 나쁜 순서
-                        if (col === '티어') nextAsc = true;
-
+                        // 요구사항 반영: 티어 Value1 오름차순은 F 위로 (나쁨), 내림차순은 S+ 위로 (좋음)
+                        if (col === '티어') nextAsc = true; // 티어 Value1 오름차순 시작 (F 위로)
                 }
 
-                currentSortColumn = col; // 컬럼 변경
-                currentSortMode = nextMode;
-                currentSortAsc = nextAsc;
+                currentSortMode = nextMode; // 현재 정렬 모드 업데이트
+                currentSortAsc = nextAsc; // 현재 정렬 방향 업데이트
 
                 //console.log(`Compare Sort: column=${currentSortColumn}, asc=${currentSortAsc}, mode=${currentSortMode}`); // 디버그
-                const sortedData = sortData(lastData, currentSortColumn, currentSortAsc, currentSortMode);
-                renderFunc(sortedData);
+
+                // 업데이트된 정렬 상태를 바탕으로 데이터 정렬 및 테이블 다시 렌더링
+                const sortedData = sortData(lastData, currentSortColumn, currentSortAsc, currentSortMode); // common.js의 sortData 함수 호출
+                renderFunc(sortedData); // 테이블 렌더링 함수 호출 (renderComparisonTable)
+
+                // 화살표 및 델타 표시자는 다음 renderFunc 호출 시 applyGradientColorsComparison 함수에 의해 업데이트됨
             };
         });
     }
