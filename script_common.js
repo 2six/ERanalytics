@@ -515,176 +515,171 @@ function applyGradientColorsSingle(table) {
      }
 }
 
-// 12. 그라디언트 컬러 적용 (비교 데이터용)
+// 12. 비교 데이터용 그라디언트 색상 적용
+// data: 정렬된 비교 데이터 배열 (행 객체들의 배열)
 // mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
-// sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어' 등)
-function applyGradientColorsComparison(table, mode, sortedCol) {
-    if (!table) return;
+// sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
+function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, mode, sortedCol 인자 사용
+    if (!table || !data || data.length === 0) return;
     const rows = [...table.querySelectorAll('tbody tr')];
     const headers = [...table.querySelectorAll('thead th')];
 
     headers.forEach((th, i) => {
         const col = th.dataset.col;
 
-        // 사용자 요구사항 반영: 실험체 열은 배경색 적용 안 함 (이전 수정에서 이미 제거됨)
+        // 사용자 요구사항 반영: 실험체 열은 배경색 적용 안 함
         if (col === '실험체') {
              rows.forEach(tr => {
                   const cell = tr.children[i];
                   cell.style.backgroundColor = ''; // 실험체 열의 모든 셀 배경색 초기화
              });
-            // 실험체 열 (순위 변화) 색칠은 이 함수 밖으로 이동하거나, 이곳에서 배경색이 아닌 다른 스타일로 처리해야 합니다.
-            // 현재는 배경색 제거만 유지
-             return; // 실험체 열 처리는 여기서 끝
-        }
+             // 실험체 열 (순위 변화) 색칠은 이 함수에서 배경색이 아닌 다른 방식으로 처리할 수 있습니다.
+             // 현재는 배경색 적용 로직 자체가 제거되었습니다.
+              return; // 실험체 열 처리는 여기서 끝
+         }
 
-        // 티어 변화 색칠 (티어 컬럼)
+        // 티어 컬럼 색칠
+        // 사용자 요구사항 반영: Ver1/Ver2 정렬 시 티어 문자열 단색, Delta 정렬 시 티어 변화 상태 색상
         if (col === '티어') {
              rows.forEach(tr => {
                   const cell = tr.children[i];
-                  const tierChangeStatus = cell.dataset.tierchange;
+                  const tierChangeStatus = cell.dataset.tierchange; // 티어 변화 상태 ('up', 'down', 'same', 'new', 'removed', 'none')
+                  const tierValue = cell.dataset.tier; // 변화 없는 경우의 원본 티어 문자열 ('S+', 'A', 등)
 
-                  cell.style.backgroundColor = '';
+                  cell.style.backgroundColor = ''; // 기본 배경색 초기화
 
-                  if (tierChangeStatus === 'new') {
-                      cell.style.backgroundColor = 'rgba(127, 255, 255, 0.3)';
-                  } else if (tierChangeStatus === 'removed') {
-                      cell.style.backgroundColor = 'rgba(200, 200, 200, 0.3)';
-                  } else if (tierChangeStatus === 'up') {
-                      cell.style.backgroundColor = 'rgba(127, 255, 127, 0.3)';
-                  } else if (tierChangeStatus === 'down') {
-                      cell.style.backgroundColor = 'rgba(255, 127, 127, 0.3)';
-                  } else if (cell.dataset.tier) { // 변화 없지만 단일 모드 티어 색상 사용
-                        const tierValue = cell.dataset.tier;
-                        const color = TIER_COLORS_SINGLE[tierValue];
-                        if (color) cell.style.backgroundColor = color;
+                  if (mode === 'delta') {
+                      // 델타 모드일 때는 티어 변화 상태에 따른 색상 적용
+                      if (tierChangeStatus === 'new') {
+                          cell.style.backgroundColor = 'rgba(127, 255, 255, 0.3)'; // 하늘색 (신규)
+                      } else if (tierChangeStatus === 'removed') {
+                          cell.style.backgroundColor = 'rgba(200, 200, 200, 0.3)'; // 회색 (삭제)
+                      } else if (tierChangeStatus === 'up') {
+                          cell.style.backgroundColor = 'rgba(127, 255, 127, 0.3)'; // 연두색 (개선)
+                      } else if (tierChangeStatus === 'down') {
+                          cell.style.backgroundColor = 'rgba(255, 127, 127, 0.3)'; // 빨간색 (악화)
+                      } else if (tierChangeStatus === 'same' && tierValue) {
+                           // 변화 없지만 티어 값이 있는 경우 (단일 모드 색상처럼)
+                           // 사용자 요구: 여기서는 변화 없음 = 회색 계열
+                           cell.style.backgroundColor = 'rgba(240, 240, 240, 0.3)'; // 연한 회색
+                      }
+                      // 'none' 또는 '-'인 경우 배경색 없음
+                  } else { // Value1 또는 Value2 모드일 때는 티어 문자열 단색 적용
+                       if (tierValue) { // data-tier 속성에 티어 문자열이 있는 경우
+                           const color = TIER_COLORS_SINGLE[tierValue]; // common.js에 정의된 단일 티어 색상 사용
+                           if (color) cell.style.backgroundColor = color;
+                       }
+                       // data-tier 속성이 없으면 배경색 초기화 상태 유지
                   }
              });
-            return; // 티어 컬럼은 여기서 색칠 완료
-       }
+             return; // 티어 컬럼 처리는 여기서 끝
+        }
 
 
-       // 그 외 숫자 스탯 컬럼 (점수, 픽률 등, 표본수)에 대한 색상 강조
-       const isNumericStatColumn = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
-       if (isNumericStatColumn) {
-            // 색상 적용 기준이 되는 값을 컬럼의 모든 셀에서 모읍니다.
-            let valuesToScale = [];
+        // 그 외 숫자 스탯 컬럼 (점수, 픽률 등, 평균 순위, 표본수)에 대한 색상 강조
+        const isNumericStatColumn = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
+        if (isNumericStatColumn) {
+             // 색상 적용 기준이 되는 값을 컬럼의 모든 셀에서 모읍니다.
+             let valuesToScale = [];
+             let valueKey; // 어떤 데이터 키를 사용할지
 
-            rows.forEach(r => {
+             if (mode === 'value1') {
+                  valueKey = col + ' (Ver1)';
+             } else if (mode === 'value2') {
+                  valueKey = col + ' (Ver2)';
+             } else if (mode === 'delta') {
+                  valueKey = col + ' 변화량'; // 평균 순위는 '순위 변화값'이 아니라 '평균 순위 변화량'이 됩니다.
+                  if (col === '평균 순위') valueKey = '평균 순위 변화량'; // 평균 순위 델타는 평균 순위 변화량 키 사용
+             } else { // 단일 모드 (이 함수는 비교 페이지에서만 호출되므로 이 경우는 발생하지 않아야 함)
+                  valueKey = col;
+             }
+
+             valuesToScale = data.map(d => {
+                 const val = d[valueKey];
+                 // 숫자 파싱 시 기호 (+%▲▼) 제거
+                 return typeof val === 'number' ? val : parseFloat(String(val || '').replace(/[+%▲▼]/g, ''));
+             }).filter(v => !isNaN(v) && v !== null); // 유효한 숫자만 필터링 (null 제외)
+
+
+             if (valuesToScale.length === 0) {
+                  rows.forEach(tr => tr.children[i].style.backgroundColor = '');
+                  return; // 이 컬럼 색칠 중단
+             }
+
+             const min = Math.min(...valuesToScale);
+             const max = Math.max(...valuesToScale);
+
+
+             // 값이 클수록 좋은지, 작을수록 좋은지 판단 (값 또는 변화량)
+             let isBetterWhenHigher;
+             let isBetterWhenLower;
+
+             if (mode === 'delta') {
+                  // 변화량 기준 (Delta)
+                  isBetterWhenHigher = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '표본수'].includes(col); // 증가가 좋음
+                  isBetterWhenLower = ['평균 순위'].includes(col); // 감소가 좋음
+             } else {
+                  // 값 기준 (Value1, Value2, 단일)
+                  isBetterWhenHigher = ['점수','픽률','RP 획득','승률','TOP 3', '표본수'].includes(col); // 값이 클수록 좋음
+                  isBetterWhenLower = ['평균 순위'].includes(col); // 값이 작을수록 좋음
+             }
+
+
+             rows.forEach((r, rowIndex) => {
                  const cell = r.children[i];
-                 let value;
-                  if (mode === 'value1') {
-                       // Ver1 값 기준
-                      value = parseFloat(String(cell.textContent.split('→')[0] || '').trim().replace('%',''));
-                  } else if (mode === 'value2') {
-                       // Ver2 값 기준
-                      value = parseFloat(String(cell.textContent.split('→')[1]?.split('▲')[0].split('▼')[0] || '').trim().replace('%',''));
-                  } else if (mode === 'delta') {
-                       // 변화량 기준 (data-delta 속성 사용)
-                      value = parseFloat(cell.dataset.delta);
-                  } else { // 단일 모드 (비교 페이지에서는 발생하지 않아야 함)
-                       value = parseFloat(String(cell.textContent || '').replace('%',''));
-                  }
-                 if (!isNaN(value) && value !== null) { // null 체크 추가
-                      valuesToScale.push(value);
-                  }
-            });
+                 const originalRow = data[rowIndex]; // 원본 데이터 행 가져오기
 
-            if (valuesToScale.length === 0) {
-                 rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-                 return; // 다음 컬럼으로 이동
-            }
+                 let v; // 색상 스케일 계산에 사용할 현재 셀의 값
+                 v = originalRow[valueKey]; // sortData에서 사용한 키와 동일
 
-            const min = Math.min(...valuesToScale);
-            const max = Math.max(...valuesToScale);
-
-
-            // 값이 클수록 좋은지, 작을수록 좋은지 판단 (값 또는 변화량)
-            let isBetterWhenHigher;
-            let isBetterWhenLower;
-
-            if (mode === 'delta') {
-                 // 변화량 기준 (Delta)
-                 isBetterWhenHigher = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '표본수'].includes(col); // 증가가 좋음
-                 isBetterWhenLower = ['평균 순위'].includes(col); // 감소가 좋음
-            } else {
-                 // 값 기준 (Value1, Value2, 단일)
-                 isBetterWhenHigher = ['점수','픽률','RP 획득','승률','TOP 3', '표본수'].includes(col); // 값이 클수록 좋음
-                 isBetterWhenLower = ['평균 순위'].includes(col); // 값이 작을수록 좋음
-            }
-
-
-            rows.forEach((r) => {
-                const cell = r.children[i];
-                let valueForScale; // 색상 스케일 계산에 사용할 현재 셀의 값
-
-                // 셀의 값 가져오기 (현재 정렬 모드에 따라)
-                 if (mode === 'value1') {
-                      valueForScale = parseFloat(String(cell.textContent.split('→')[0] || '').trim().replace('%',''));
-                 } else if (mode === 'value2') {
-                      valueForScale = parseFloat(String(cell.textContent.split('→')[1]?.split('▲')[0].split('▼')[0] || '').trim().replace('%',''));
-                 } else if (mode === 'delta') {
-                      valueForScale = parseFloat(cell.dataset.delta); // data-delta 속성 사용
-                 } else { // 단일 모드
-                      valueForScale = parseFloat(String(cell.textContent || '').replace('%',''));
+                 if (typeof v !== 'number' || v === null) { // 숫자가 아니거나 null인 경우
+                     // data-delta="new", "removed", "none" 등의 문자열 상태는 여기서 색칠 안 함
+                     // 해당 상태는 renderComparisonTable에서 data 속성으로 이미 표시됨
+                     cell.style.backgroundColor = '';
+                     return;
                  }
 
+                 let ratio; // 0 (min end) to 1 (max end)
+                 let color;
 
-                if (isNaN(valueForScale) || valueForScale === null) { // null 체크 추가
-                    cell.style.backgroundColor = '';
-                    return;
-                }
+                 // 값이 min/max와 같을 때 ratio 계산 오류 방지 및 스케일링
+                 if (max === min) {
+                     color = 'rgba(240, 240, 240, 0.3)'; // 모든 값이 같으면 변화 없음 색
+                 } else if (isBetterWhenHigher) { // 클수록 좋음 -> 파랑(min, 나쁨) ~ 하양(중간) ~ 빨강(max, 좋음)
+                     // Map value from [min, max] range to [0, 1] ratio
+                     ratio = (v - min) / (max - min);
+                     ratio = Math.max(0, Math.min(1, ratio)); // Clamp between 0 and 1
 
-                let ratio; // 0 (스케일 기준점) ~ 1 (스케일 끝점)
-                let color;
-
-                // 값이 min/max와 같을 때 ratio 계산 오류 방지 및 0 기준 스케일링
-                if (max === min) {
-                     ratio = 0; // 모든 값이 같으면 변화 없음 (중앙값)
-                } else if (isBetterWhenHigher) { // 클수록 좋음 -> 하양(0) ~ 빨강(1)
-                    // 0 또는 min/max 기준으로 스케일링
-                    if (valueForScale >= 0) { // 0 이상 (좋음 방향 또는 0)
-                         ratio = max === 0 ? 0 : valueForScale / max; // 0 ~ max 를 0 ~ 1 로
-                    } else { // valueForScale < 0 (나쁨 방향)
-                          ratio = min === 0 ? 0 : valueForScale / min; // min ~ 0 을 0 ~ 1 로 (음수 / 음수 = 양수)
-                    }
-                } else if (isBetterWhenLower) { // 작을수록 좋음 -> 하양(0) ~ 빨강(1) (평균 순위)
-                   // 0 또는 min/max 기준으로 스케일링
-                   if (valueForScale <= 0) { // 0 이하 (좋음 방향 또는 0)
-                         ratio = min === 0 ? 0 : valueForScale / min; // min ~ 0 을 0 ~ 1 로
-                   } else { // valueForScale > 0 (나쁨 방향)
-                         ratio = max === 0 ? 0 : valueForScale / max; // 0 ~ max 를 0 ~ 1 로
-                   }
-                } else { // 이 경우는 발생하지 않아야 하지만, 혹시 몰라 추가
-                     ratio = 0;
-                }
-
-                // 비율 범위를 0~1로 확실히 제한 (값의 절대적인 크기에 비례하도록)
-                ratio = Math.max(0, Math.min(1, Math.abs(ratio)));
-
-
-                // 색상 적용
-                if (valueForScale === 0) { // 0값은 변화 없음 색 (회색)
-                     color = 'rgba(240, 240, 240, 0.3)';
-                } else if (isBetterWhenHigher) { // 클수록 좋음 -> 빨강(좋음) / 파랑(나쁨)
-                     if (valueForScale > 0) { // 양수 (좋아짐)
-                         color = interpolateColor([255,255,255], [230,124,115], ratio); // 하양 -> 빨강
-                     } else { // 음수 (나빠짐)
-                         color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑
+                     // Interpolate from Blue (0 - Worst) to White (0.5 - Middle) to Red (1 - Best)
+                     if (ratio < 0.5) {
+                          // Interpolate from Blue to White
+                         color = interpolateColor([164,194,244], [255,255,255], ratio * 2);
+                     } else {
+                          // Interpolate from White to Red
+                         color = interpolateColor([255,255,255], [230,124,115], (ratio - 0.5) * 2);
                      }
-                } else if (isBetterWhenLower) { // 작을수록 좋음 -> 빨강(좋음) / 파랑(나쁨) (평균 순위)
-                     if (valueForScale < 0) { // 음수 (좋아짐)
-                          color = interpolateColor([255,255,255], [230,124,115], ratio); // 하양 -> 빨강
-                     } else { // 양수 (나빠짐)
-                          color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑
+
+                 } else if (isBetterWhenLower) { // 작을수록 좋음 -> 빨강(min, 좋음) ~ 하양(중간) ~ 파랑(max, 나쁨)
+                    // Map value from [min, max] range to [1, 0] ratio (inverted)
+                    ratio = 1 - (v - min) / (max - min);
+                    ratio = Math.max(0, Math.min(1, ratio)); // Clamp between 0 and 1 (higher ratio is better)
+
+                     // Interpolate from Blue (0 - Worst) to White (0.5 - Middle) to Red (1 - Best)
+                     // Since ratio is inverted, 0 corresponds to max (worst), 1 corresponds to min (best)
+                     if (ratio < 0.5) {
+                          // Interpolate from Blue to White
+                         color = interpolateColor([164,194,244], [255,255,255], ratio * 2); // Blue to White (Worst to Avg)
+                     } else {
+                          // Interpolate from White to Red
+                         color = interpolateColor([255,255,255], [230,124,115], (ratio - 0.5) * 2); // White to Red (Avg to Best)
                      }
-                } else { // 표본수 등 (isBetterWhenHigher/Lower에 포함 안된 경우 - 회색 계열)
-                    color = 'rgba(240, 240, 240, 0.3)'; // Default light gray
-                }
+                 } else { // Should not be reached for the specified columns
+                      color = 'rgba(240, 240, 240, 0.3)'; // Default light gray
+                 }
 
-
-                cell.style.backgroundColor = color;
-
-             });
-        }
+                 cell.style.backgroundColor = color;
+              });
+         }
+        // Tier column is handled above
     });
 }
