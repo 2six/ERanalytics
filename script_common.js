@@ -433,86 +433,128 @@ const TIER_COLORS_SINGLE = {
     'F':  'rgba(127,255,255, 0.3)',
 };
 
-// 11. 그라디언트 컬러 적용 (단일 데이터용)
+// 11. 단일 데이터용 그라디언트 색상 적용
 function applyGradientColorsSingle(table) {
-     if (!table) return;
-     const rows = [...table.querySelectorAll('tbody tr')];
-     const headers = [...table.querySelectorAll('thead th')];
-     const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
-     const badCols = ['평균 순위'];
+    if (!table) return;
+    const rows = [...table.querySelectorAll('tbody tr')];
+    const headers = [...table.querySelectorAll('thead th')];
+    const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
+    const badCols = ['평균 순위'];
 
-     headers.forEach((th, i) => {
-         const col = th.dataset.col;
-         if (![...goodCols, ...badCols].includes(col)) return;
+    // 표본수와 픽률 정보를 가져올 컬럼 인덱스를 찾습니다.
+    const sampleColIndex = headers.findIndex(th => th.dataset.col === '표본수'); // 단일 페이지에 표본수 컬럼이 있다면 사용
+    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률');
 
-         const values = rows.map(r => {
-              const cell = r.children[i];
-              const text = cell.textContent.replace('%','');
-              const val = parseFloat(text);
-              return isNaN(val) ? null : val;
-         }).filter(v => v !== null);
+    headers.forEach((th, i) => {
+        const col = th.dataset.col;
+        if (![...goodCols, ...badCols].includes(col)) return;
 
-
-         if (values.length === 0) { // 오류 수정: values가 비어있을 때 계산 건너뛰기
-              rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-              return; // 이 컬럼에 대한 색상 적용 중단
-         }
-
-         // 오류 수정: avg, min, max를 여기서 다시 계산하도록 scope 수정
-         const avg = values.reduce((a,b)=>a+b,0)/values.length;
-         const min = Math.min(...values);
-         const max = Math.max(...values);
-
-
-         rows.forEach((r) => {
+        // 색상 스케일링에 사용할 값들과 해당 값의 '픽률' 데이터를 모읍니다.
+        const valuesWithPickRate = rows.map(r => {
              const cell = r.children[i];
-             const cellText = cell.textContent.replace('%','');
-             const v = parseFloat(cellText);
+             const text = cell.textContent.replace('%','');
+             const val = parseFloat(text);
 
-             if (isNaN(v) || v === null) {
-                  cell.style.backgroundColor = '';
-                  return;
+             // 해당 행의 픽률 데이터를 가져옵니다. (픽률 컬럼이 있다고 가정)
+             let pickRate = 0;
+             if (pickRateColIndex !== -1) {
+                  const pickRateCell = r.children[pickRateColIndex];
+                  pickRate = parseFloat(pickRateCell.textContent.replace('%','')) / 100; // 0~1 사이 값으로 변환
              }
+             // 만약 표본수 컬럼이 있다면, 표본수를 사용하거나 다른 방식으로 픽률을 계산해야 할 수 있습니다.
+             // 여기서는 일단 픽률 컬럼이 있다고 가정합니다.
 
-             let ratio;
-             const isBad = badCols.includes(col);
+             return isNaN(val) ? null : { value: val, pickRate: pickRate };
+        }).filter(item => item !== null);
 
-             if (max === min) {
-                 ratio = 0.5;
-             } else if (!isBad) {
-                 ratio = (v >= avg) ? 0.5 + (v - avg) / (max - avg) * 0.5 : 0.5 - (avg - v) / (avg - min) * 0.5;
-             } else {
-                 ratio = (v <= avg) ? 0.5 + (avg - v) / (avg - min) * 0.5 : 0.5 - (v - avg) / (max - avg) * 0.5;
-             }
-             ratio = Math.max(0, Math.min(1, ratio));
 
-             let color;
-             if (!isBad) {
-                color = (ratio >= 0.5)
-                    ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2)
-                    : interpolateColor([164,194,244], [255,255,255], ratio*2);
-             } else {
-                 color = (ratio >= 0.5)
-                     ? interpolateColor([255,255,255], [164,194,244], (ratio-0.5)*2)
-                     : interpolateColor([230,124,115], [255,255,255], ratio*2);
-             }
-             cell.style.backgroundColor = color;
-         });
-     });
+        if (valuesWithPickRate.length === 0) { // 유효한 값이 없으면
+             rows.forEach(tr => tr.children[i].style.backgroundColor = '');
+             return; // 이 컬럼 색칠 중단
+        }
 
-     const tierColIndex = headers.findIndex(th => th.dataset.col === '티어');
-     if (tierColIndex >= 0) {
-         rows.forEach(tr => {
-             const cell = tr.children[tierColIndex];
-             const tierValue = cell.textContent.trim();
-             const color = TIER_COLORS_SINGLE[tierValue];
-             if (color) {
-                 cell.style.backgroundColor = color;
-             } else {
+        // 사용자 요구사항 반영: 픽률을 감안한 가중평균 계산
+        let totalPickRate = valuesWithPickRate.reduce((sum, item) => sum + item.pickRate, 0);
+        let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
+
+        // 픽률 합이 0이면 단순 평균 또는 0 처리 (나눗셈 오류 방지)
+        const avg = totalPickRate === 0 ? 0 : weightedSum / totalPickRate;
+
+        const valuesOnly = valuesWithPickRate.map(item => item.value);
+        const min = Math.min(...valuesOnly);
+        const max = Math.max(...valuesOnly);
+
+
+        rows.forEach((r) => {
+            const cell = r.children[i];
+            const cellText = cell.textContent.replace('%','');
+            const v = parseFloat(cellText);
+
+            if (isNaN(v) || v === null) {
                  cell.style.backgroundColor = '';
-             }
-         });
-     }
+                 return;
+            }
+
+            let ratio;
+            const isBad = badCols.includes(col);
+
+            // 가중평균(avg)을 기준으로 스케일링
+            if (max === min) {
+                ratio = 0.5; // 범위가 없으면 중간값
+            } else if (!isBad) { // 클수록 좋음 (점수, 픽률 등)
+                // Map value from [min, max] range to [0, 1] ratio, using avg as center (0.5)
+                if (v >= avg) {
+                     ratio = 0.5 + (v - avg) / (max - avg) * 0.5; // Map [avg, max] to [0.5, 1]
+                } else { // v < avg
+                     ratio = 0.5 - (avg - v) / (avg - min) * 0.5; // Map [min, avg] to [0, 0.5]
+                }
+            } else { // 작을수록 좋음 (평균 순위)
+                // Map value from [min, max] range to [1, 0] ratio (inverted), using avg as center (0.5)
+                if (v <= avg) {
+                     ratio = 0.5 + (avg - v) / (avg - min) * 0.5; // Map [min, avg] to [0.5, 1] (inverted)
+                } else { // v > avg
+                     ratio = 0.5 - (v - avg) / (max - avg) * 0.5; // Map [avg, max] to [0, 0.5] (inverted)
+                }
+            }
+            ratio = Math.max(0, Math.min(1, ratio)); // Clamp between 0 and 1
+
+            let color;
+            // Interpolate from Blue (0 - Worst) to White (0.5 - Avg) to Red (1 - Best)
+            // Based on isBad and ratio
+            if (!isBad) { // 클수록 좋음
+               color = (ratio >= 0.5)
+                   ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
+                   : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+            } else { // 작을수록 좋음 (평균 순위)
+                color = (ratio >= 0.5)
+                    ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best - because lower is better)
+                    : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg - because higher is worse)
+                 // Check if interpolation direction should be reversed for color mapping compared to ratio mapping
+                 // If isBad is true, ratio 1 is min (best), ratio 0 is max (worst).
+                 // We want ratio 1 to be Red (best), ratio 0 to be Blue (worst).
+                 // So, interpolate from Blue to White to Red based on the inverted ratio.
+                 const invertedRatio = 1 - ratio; // Ratio 1 becomes 0, ratio 0 becomes 1
+                  color = (invertedRatio >= 0.5)
+                      ? interpolateColor([255,255,255], [230,124,115], (invertedRatio-0.5)*2) // White -> Red (Avg to Best)
+                      : interpolateColor([164,194,244], [255,255,255], invertedRatio*2); // Blue -> White (Worst to Avg)
+            }
+            cell.style.backgroundColor = color;
+        });
+    });
+
+    const tierColIndex = headers.findIndex(th => th.dataset.col === '티어');
+    if (tierColIndex >= 0) {
+        rows.forEach(tr => {
+            const cell = tr.children[tierColIndex];
+            const tierValue = cell.textContent.trim();
+            const color = TIER_COLORS_SINGLE[tierValue];
+            if (color) {
+                cell.style.backgroundColor = color;
+            } else {
+                cell.style.backgroundColor = '';
+            }
+        });
+    }
 }
 
 // 12. 비교 데이터용 그라디언트 색상 적용
