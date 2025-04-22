@@ -29,7 +29,6 @@ layout: none
       overflow: hidden;
       white-space: nowrap;
       padding: 4px 6px;
-      /* 비교 모드에서 값과 변화량이 함께 표시될 때 텍스트 줄바꿈 방지 */
     }
     /* 실험체 이름 컬럼 너비 조정 */
     #data-container th:first-child,
@@ -52,6 +51,19 @@ layout: none
       transform: translateY(-50%);
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
+    }
+
+    /* 델타 정렬 시 헤더에 Δ 표시 추가 */
+    #data-container th.delta-sort-indicator::before {
+        content: "Δ"; /* 델타 기호 */
+        position: absolute;
+        right: 18px; /* 화살표보다 왼쪽에 위치 */
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9em;
+        color: #ffac2b; /* 강조 색상 */
+        font-weight: bold;
+        pointer-events: none;
     }
 
     /* 비교 모드 컨트롤 그룹 */
@@ -80,15 +92,15 @@ layout: none
      #data-container .rank-info {
           font-size: 0.9em; /* 변화량 텍스트 크기 */
           margin-left: 5px; /* 값과의 간격 */
-          /* 색상은 JS에서 배경색으로 적용 */
+          font-weight: bold; /* 변화량 강조 */
      }
      #data-container .rank-info {
           font-size: 0.8em; /* 순위 정보는 더 작게 */
-          font-weight: normal;
-          margin-left: 0;
+          font-weight: normal; /* 순위 정보는 굵게 하지 않음 */
+          margin-left: 0; /* 실험체 이름 바로 옆에 붙도록 */
      }
 
-    /* 셀 배경 색상은 applyGradientColorsComparison에서 data-* 속성 기준으로 적용 */
+     /* 셀 배경 색상은 JS에서 data-* 속성 기준으로 적용 */
 
   </style>
 </head>

@@ -173,14 +173,14 @@ function calculateTiers(data, avgScore, stddev, config) {
     });
 };
 
-// 8. 데이터 정렬
+// 8. 데이터 정렬 (mode 인자 추가 및 로직 수정)
 function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, 기본값 'value'
     if (!data || data.length === 0) return [];
 
    let sortKey;
    // 비교 모드에서 사용할 정렬 기준 키를 결정합니다.
    if (mode === 'value') {
-       // Value 모드 정렬 시, 해당 컬럼의 Ver1 값 기준 (비교 모드) 또는 단일 모드 값 기준
+       // Value 모드 정렬 시, 해당 컬럼의 Ver1 값 기준
         if (column === '실험체') sortKey = '실험체';
         else if (column === '티어') sortKey = '티어 (Ver1)'; // 티어 자체는 Ver1 기준
         else if (column === '표본수') sortKey = '표본수 (Ver1)'; // 표본수는 Ver1 기준
@@ -191,15 +191,16 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
 
    } else { // mode === 'delta'
        // Delta 모드 정렬 시, 변화량 기준입니다.
-        if (column === '실험체') sortKey = '순위 변화'; // 실험체 컬럼 delta 정렬 시 순위 변화 기준
+        if (column === '실험체') sortKey = '순위 변화값'; // 실험체 컬럼 delta 정렬 시 순위 변화값 기준
         else if (column === '티어') sortKey = '티어 변화'; // 티어 컬럼 delta 정렬 시 티어 변화 기준 (문자열)
-        else if (column === '평본수') sortKey = '표본수 변화량'; // 표본수 변화량 (있다면) - 현재는 없지만, 있다면
-        else if (column === '평균 순위') sortKey = '순위 변화'; // 평균 순위 컬럼 delta 정렬 시 순위 변화 기준
+        else if (column === '표본수') sortKey = '표본수 변화량'; // 표본수 변화량 (현재는 미표시/미계산)
+        else if (column === '평균 순위') sortKey = '순위 변화값'; // 평균 순위 컬럼 delta 정렬 시 순위 변화값 기준
         else { // 점수, 픽률, RP 획득, 승률, TOP 3
             sortKey = `${column} 변화량`; // 예: '점수 변화량'
         }
    }
 
+    // console.log(`sortData: column=${column}, asc=${asc}, mode=${mode}, sortKey=${sortKey}`); // 디버그
 
    return [...data].sort((a, b) => {
        const x = a[sortKey];
@@ -215,13 +216,23 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
        // --- 데이터 타입별 비교 로직 ---
 
        // 1. 숫자 비교 (value 또는 delta)
-       // 순위 관련 값 (평균 순위 값, 순위 변화)은 작을수록 좋음
+       // 순위 관련 값 (평균 순위 값, 순위 변화값)은 작을수록 좋음
        // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량)은 클수록 좋음
 
-       const isRankRelatedValue = (sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || sortKey === '순위 변화');
-       const isTierRelated = (sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)');
-       const isTierChange = (sortKey === '티어 변화');
-       const isNumericDelta = sortKey.endsWith(' 변화량') || sortKey === '순위 변화'; // 순위 변화도 숫자 변화량으로 간주
+       const isRankRelatedValue = (sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)'); // 순위 값 자체
+       const isRankDeltaValue = (sortKey === '순위 변화값'); // 순위 변화량 값
+       const isGoodStatValue = (sortKey === '점수 (Ver1)' || sortKey === '점수 (Ver2)' ||
+                                sortKey === '픽률 (Ver1)' || sortKey === '픽률 (Ver2)' ||
+                                sortKey === 'RP 획득 (Ver1)' || sortKey === 'RP 획득 (Ver2)' ||
+                                sortKey === '승률 (Ver1)' || sortKey === '승률 (Ver2)' ||
+                                sortKey === 'TOP 3 (Ver1)' || sortKey === 'TOP 3 (Ver2)');
+       const isBadStatValue = (sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)'); // 평균 순위 값은 작을수록 좋음 (isRankRelatedValue와 동일)
+
+
+       const isGoodDelta = (sortKey === '점수 변화량' || sortKey === '픽률 변화량' ||
+                            sortKey === 'RP 획득 변화량' || sortKey === '승률 변화량' ||
+                            sortKey === 'TOP 3 변화량'); // 클수록 좋은 변화량
+       const isBadDelta = (sortKey === '순위 변화값'); // 작을수록 좋은 변화량 (순위)
 
 
        const xNum = parseFloat(String(x).replace(/[+%▲▼]/g, ''));
@@ -231,15 +242,14 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
        if (!isNaN(xNum) && !isNaN(yNum)) {
             let comparison = xNum - yNum; // 기본 오름차순 비교 (x < y 이면 음수, x > y 이면 양수)
 
-            if (isRankRelatedValue) {
-                // 순위 관련 값은 작을수록 좋음. 오름차순 정렬 시 작은 값이 위로
-                // asc=true 이면 작은 값(좋은 순위)이 위로 -> 오름차순 그대로 (comparison)
-                // asc=false 이면 큰 값(나쁜 순위)이 위로 -> 내림차순 (비교 결과 뒤집기)
+            if (isRankRelatedValue || isBadDelta) { // 순위 관련 값 또는 작을수록 좋은 변화량
+                // 작을수록 좋음. asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로
+                // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (비교 결과 뒤집기)
                  return asc ? comparison : -comparison;
             }
-            // 그 외 숫자 값 (점수, 픽률 등 및 해당 변화량)은 클수록 좋음. 내림차순 정렬 시 큰 값이 위로
-            // asc=true 이면 작은 값(나쁜 점수)이 위로 -> 오름차순 (비교 결과 뒤집기)
-            // asc=false 이면 큰 값(좋은 점수)이 위로 -> 내림차순 그대로
+            // 그 외 숫자 값 (점수 등 및 해당 변화량)은 클수록 좋음
+            // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (비교 결과 뒤집기)
+            // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
              return asc ? -comparison : comparison;
        }
 
@@ -259,7 +269,7 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
             // 티어는 좋은 티어일수록 위로 (S+ -> F)
             // asc=true 이면 나쁜 티어(F)가 위로 -> 오름차순
             // asc=false 이면 좋은 티어(S+)가 위로 -> 내림차순
-             let comparison = indexX - indexY; // S+가 0, F가 6
+             let comparison = indexX - indexY;
              return asc ? comparison : -comparison;
         }
 
@@ -267,18 +277,17 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
        if (isTierChange) {
             // '신규 → S+', 'S → A', 'A', 'B → C', '→ 삭제', '-' 등 문자열 비교
             // 간단한 순서 적용: 신규 > 개선 > 변화 없음 > 악화 > 삭제 > '-' 순서
-            const changeStatusOrder = ['신규 →', '→', '', '삭제', '-']; // 접두사/상태 기준 순서
+            const changeStatusOrder = ['신규 →', '→', '', '삭제', '-'];
 
             const getChangeStatusIndex = (str) => {
                  if (str.includes('신규 →')) return 0;
-                 if (str === '-') return 4; // '-'는 마지막
-                 if (str.includes('→ 삭제')) return 3; // 삭제는 악화 다음
-                 if (str.includes('→')) { // 그 외 변화 (개선 또는 악화)
-                      // 티어 변화 방향으로 추가 정렬
+                 if (str === '-') return 4;
+                 if (str.includes('→ 삭제')) return 3;
+                 if (str.includes('→')) {
                       const tiers = str.split('→').map(t => t.trim());
                       const tier1 = tiers[0];
                       const tier2 = tiers[1];
-                      const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F']; // 좋은 티어부터 나쁜 티어
+                      const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
                       const index1 = tierOrder.indexOf(tier1);
                       const index2 = tierOrder.indexOf(tier2);
 
@@ -286,23 +295,22 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
                           if (index2 < index1) return 1; // 개선
                           if (index2 > index1) return 2; // 악화
                       }
-                      return 1.5; // 알 수 없는 변화는 개선/악화 중간
+                      return 1.5;
                  }
-                 return 2.5; // 변화 없음 (티어만 표시된 경우)
+                 return 2.5;
             };
 
             const statusX = getChangeStatusIndex(String(x));
             const statusY = getChangeStatusIndex(String(y));
 
             if (statusX !== statusY) {
-                // 신규/개선/변화없음/악화/삭제/- 순서대로 정렬
                 // asc=true 이면 나쁜 변화가 위로 -> 오름차순
                 // asc=false 이면 좋은 변화가 위로 -> 내림차순
                  let comparison = statusX - statusY;
                 return asc ? comparison : -comparison;
             }
 
-            // 같은 상태 내에서는 문자열 자체로 비교 (예: 'S→A' vs 'S+→B')
+            // 같은 상태 내에서는 문자열 자체로 비교
              return asc
                ? String(x).localeCompare(String(y))
                : String(y).localeCompare(String(x));
@@ -316,7 +324,6 @@ function sortData(data, column, asc, mode = 'value') { // mode 인자 추가, �
                : String(y).localeCompare(String(x));
        }
 
-       // 예상치 못한 경우 (동일하다고 간주)
        return 0;
    });
 }
@@ -530,8 +537,7 @@ function applyGradientColorsComparison(table) {
     headers.forEach((th, i) => {
         const col = th.dataset.col;
         const isGoodStat = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3'].includes(col);
-        const isBadStat = ['평균 순위'].includes(col);
-
+        const isBadStat = ['평균 순위'].includes(col); // 평균 순위 값 자체는 작을수록 좋음
 
         // 숫자 스탯 컬럼 (점수, 픽률 등)에 대한 색상 강조 (변화량 기준)
         if (isGoodStat || isBadStat || col === '표본수') {
@@ -562,31 +568,44 @@ function applyGradientColorsComparison(table) {
                     return;
                 }
 
-                let ratio; // 0 (변화 없음) ~ 1 (최대 변화)
+                let ratio;
                 let color;
 
                 if (v === 0) {
                      color = 'rgba(240, 240, 240, 0.3)';
                 } else if (isGoodStat) { // 클수록 좋은 변화 (점수, 픽률 등) -> 하양(0) ~ 빨강(1)
                      if (v > 0) { // 양수 변화
-                          ratio = max === 0 ? 0 : v / max; // 0 ~ max 를 0 ~ 1 로
-                          ratio = Math.max(0, Math.min(1, ratio)); // 비율 제한
-                          color = interpolateColor([255,255,255], [230,124,115], ratio); // 하양 -> 빨강
-                     } else { // 음수 변화
-                          ratio = min === 0 ? 0 : v / min; // min ~ 0 을 0 ~ 1 로 (음수 / 음수 = 양수)
+                          ratio = max === 0 ? 0 : v / max;
                           ratio = Math.max(0, Math.min(1, ratio));
-                          color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑
+                          color = interpolateColor([255,255,255], [230,124,115], ratio);
+                     } else { // 음수 변화
+                          ratio = min === 0 ? 0 : v / min;
+                          ratio = Math.max(0, Math.min(1, ratio));
+                          color = interpolateColor([255,255,255], [164,194,244], ratio);
                      }
-                } else if (isBadStat) { // 작을수록 좋은 변화 (평균 순위) -> 하양(0) ~ 빨강(1)
-                    if (v < 0) { // 음수 변화
-                         ratio = min === 0 ? 0 : v / min; // min ~ 0 을 0 ~ 1 로
+                } else if (isBadStat) { // 작을수록 좋은 변화 (평균 순위 값 자체의 변화량) -> 하양(0) ~ 빨강(1)
+                    // 이 경우 변화량(data-delta)은 작을수록 좋음.
+                    // 예: 평균 순위 4.0 -> 3.8 (변화량 -0.2, 좋아짐)
+                    // 예: 평균 순위 4.0 -> 4.2 (변화량 +0.2, 나빠짐)
+                    // 음수 변화가 좋아짐, 양수 변화가 나빠짐.
+                    if (v < 0) { // 음수 변화 (좋아짐)
+                         ratio = min === 0 ? 0 : v / min; // min~0 을 0~1 로 (음수 / 음수 = 양수)
                          ratio = Math.max(0, Math.min(1, ratio));
                          color = interpolateColor([255,255,255], [230,124,115], ratio); // 하양 -> 빨강 (좋아짐)
-                    } else { // 양수 변화
-                         ratio = max === 0 ? 0 : v / max; // 0 ~ max 를 0 ~ 1 로
+                    } else { // 양수 변화 (나빠짐)
+                         ratio = max === 0 ? 0 : v / max; // 0~max 를 0~1 로
                          ratio = Math.max(0, Math.min(1, ratio));
                          color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑 (나빠짐)
                     }
+                } else if (col === '표본수') { // 표본수 변화량 색상 (클수록 좋음 - 긍정적 변화)
+                     if (v > 0) { // 양수 변화
+                          ratio = max === 0 ? 0 : v / max;
+                          ratio = Math.max(0, Math.min(1, ratio));
+                          color = interpolateColor([255,255,255], [180,180,180], ratio); // 하양 -> 진한 회색 (표본수 증가는 긍정적)
+                     } else { // 음수 또는 0
+                          color = 'rgba(240, 240, 240, 0.3)'; // 연한 회색
+                     }
+
                 }
 
                 cell.style.backgroundColor = color;
@@ -621,9 +640,9 @@ function applyGradientColorsComparison(table) {
         if (col === '실험체') {
             rows.forEach(tr => {
                 const cell = tr.children[i];
-                const rankDeltaStatus = cell.dataset.rankdelta;
+                const rankDeltaStatus = cell.dataset.rankdelta; // 순위 변화 값 (-10, +5)
 
-                cell.style.backgroundColor = '';
+                cell.style.backgroundColor = ''; // 초기화
 
                 if (rankDeltaStatus === 'new') {
                      cell.style.backgroundColor = 'rgba(127, 255, 255, 0.3)';
