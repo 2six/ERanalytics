@@ -136,52 +136,54 @@ document.addEventListener('DOMContentLoaded', function() {
         data.forEach(row => {
             html += '<tr>';
             cols.forEach(col => {
-              let val = row[col];
-              if (['픽률','승률','TOP 3'].includes(col)) {
-                val = val.toFixed(2) + '%';
-              } else if (col === 'RP 획득' || col === '평균 순위') {
-                // RP획득과 평균순위는 소숫점 둘째 자리
-                val = val.toFixed(2);
-              }
-              html += `<td>${val}</td>`;
+                let val = row[col];
+                if (col === '승률' || col === 'TOP 3') { // 픽률 제외
+                    val = (val * 100).toFixed(2) + '%'; // 곱하기 100 적용
+                } else if (col === 'RP 획득' || col === '평균 순위') {
+                    // RP획득과 평균순위는 소숫점 둘째 자리
+                    val = val.toFixed(2);
+                } else if (col === '픽률') {
+                    val = val.toFixed(2) + '%'; // 픽률은 그대로 소수점 두 자리 + %
+                }
+                html += `<td>${val}</td>`;
             });
             html += '</tr>';
         });
-
+    
         const container = document.getElementById('data-container');
         container.innerHTML = html;
-      
+    
         // 2) 헤더에 클릭 이벤트 및 data-arrow 적용
         const ths = container.querySelectorAll('th');
         ths.forEach(th => {
-          const col = th.dataset.col;
-      
-          // ▶ data-arrow 리셋
-          th.setAttribute('data-arrow', '');
-      
-          if (col === currentSortColumn) {
-            // 오름차순 ▲, 내림차순 ▼
-            th.setAttribute('data-arrow', currentSortAsc ? '▲' : '▼');
-          }
-      
-          // 티어 컬럼은 정렬 대상에서 제외
-          if (col === '티어') {
-            th.style.cursor = 'default';
-            return;
-          }
-      
-          th.style.cursor = 'pointer';
-          th.onclick = () => {
-            if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
-            else {
-              currentSortColumn = col;
-              currentSortAsc = false;
+            const col = th.dataset.col;
+    
+            // ▶ data-arrow 리셋
+            th.setAttribute('data-arrow', '');
+    
+            if (col === currentSortColumn) {
+                // 오름차순 ▲, 내림차순 ▼
+                th.setAttribute('data-arrow', currentSortAsc ? '▲' : '▼');
             }
-            lastData = sortData(lastData, currentSortColumn, currentSortAsc);
-            renderTable(lastData);
-          };
+    
+            // 티어 컬럼은 정렬 대상에서 제외
+            if (col === '티어') {
+                th.style.cursor = 'default';
+                return;
+            }
+    
+            th.style.cursor = 'pointer';
+            th.onclick = () => {
+                if (currentSortColumn === col) currentSortAsc = !currentSortAsc;
+                else {
+                    currentSortColumn = col;
+                    currentSortAsc = false;
+                }
+                lastData = sortData(lastData, currentSortColumn, currentSortAsc);
+                renderTable(lastData);
+            };
         });
-      
+    
         // 3) 색상 강조
         if (gradientCheckbox.checked) applyGradientColors();
     }
