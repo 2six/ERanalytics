@@ -226,8 +226,53 @@ function sortData(data, column, asc, mode = 'value') {
 
        // --- 데이터 타입별 비교 로직 ---
 
-       // 1. 티어 변화 비교 (문자열) - sortKey가 '티어 변화'일 때 실행 (Delta 모드 '티어')
-       // 사용자 요구사항 반영: '티어 변화' 델타 정렬 시 '순위 변화값'을 기준으로 하므로 이 로직은 이제 sortKey가 '티어 변화'일 때는 사용되지 않습니다.
+       // 1. 티어 변화 비교 (문자열) - 이제 sortKey가 '티어 변화'일 때는 이 로직은 사용되지 않습니다.
+       /*
+       if (sortKey === '티어 변화') {
+           // ... (이전 로직) ...
+       }
+       */
+
+       // 2. 티어 값 비교 (S+ -> F 순서) - 이제 sortKey는 점수이므로 이 로직은 사용되지 않습니다.
+       /*
+        if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
+           // ... (이전 로직) ...
+        }
+       */
+
+
+       // 3. 숫자 비교 (value 또는 delta)
+       // 순위 관련 값 (평균 순위 값, 순위 변화값, 평균 순위 변화량)은 작을수록 좋음
+       // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량, 표본수 값/변화량)은 클수록 좋음
+
+       // 정렬 키에 따라 값이 작을수록 좋은지 판단
+       const isBetterWhenLower = (
+           sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || // 평균 순위 값
+           sortKey === '순위 변화값' || // 순위 변화값 (음수가 좋음)
+           sortKey === '평균 순위 변화량' // 평균 순위 변화량 (음수가 좋음) - 사용자 요구사항 반영
+       );
+
+
+       const xNum = parseFloat(String(x).replace(/[+%▲▼]/g, ''));
+       const yNum = parseFloat(String(y).replace(/[+%▲▼]/g, ''));
+
+
+       if (!isNaN(xNum) && !isNaN(yNum)) {
+            let comparison = xNum - yNum; // 기본 오름차순 숫자 비교
+
+            if (isBetterWhenLower) { // 값이 작을수록 좋은 경우 (순위, 순위 변화값, 평균 순위 변화량)
+                // asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로
+                // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (결과 뒤집기)
+                 return asc ? comparison : -comparison;
+            }
+            // 그 외 숫자 값 (점수 등) 또는 변화량 (점수 변화량 등) (클수록 좋음)
+            // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (결과 뒤집기)
+            // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
+             return asc ? -comparison : comparison;
+       }
+
+       // 4. 티어 변화 비교 (문자열) - sortKey가 '티어 변화'일 때 실행 (Delta 모드 '티어')
+       // 사용자 요구사항 반영: '티어 변화' 델타 정렬 시 '순위 변화값'을 기준으로 하므로 이 로직은 이제 사용되지 않습니다.
        if (sortKey === '티어 변화') {
             const changeStatusOrder = ['신규 →', '→', '', '삭제', '-'];
 
@@ -267,44 +312,6 @@ function sortData(data, column, asc, mode = 'value') {
                : String(y).localeCompare(String(x));
        }
 
-
-       // 2. 티어 값 비교 (S+ -> F 순서) - 이제 sortKey는 점수이므로 이 로직은 사용되지 않습니다.
-       /*
-        if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
-           // ... (이전 로직) ...
-        }
-       */
-
-
-       // 3. 숫자 비교 (value 또는 delta)
-       // 순위 관련 값 (평균 순위 값, 순위 변화값)은 작을수록 좋음
-       // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량, 표본수 값/변화량)은 클수록 좋음
-
-       // 정렬 키에 따라 값이 작을수록 좋은지 판단
-       const isBetterWhenLower = (
-           sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || // 평균 순위 값
-           sortKey === '순위 변화값' || // 순위 변화값 (음수가 좋음)
-           sortKey === '평균 순위 변화량' // 평균 순위 변화량 (음수가 좋음) - 사용자 요구사항 반영
-       );
-
-
-       const xNum = parseFloat(String(x).replace(/[+%▲▼]/g, ''));
-       const yNum = parseFloat(String(y).replace(/[+%▲▼]/g, ''));
-
-
-       if (!isNaN(xNum) && !isNaN(yNum)) {
-            let comparison = xNum - yNum; // 기본 오름차순 숫자 비교
-
-            if (isBetterWhenLower) { // 값이 작을수록 좋은 경우 (순위, 순위 변화값, 평균 순위 변화량)
-                // asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로
-                // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (결과 뒤집기)
-                 return asc ? comparison : -comparison;
-            }
-            // 그 외 숫자 값 (점수 등) 또는 변화량 (점수 변화량 등) (클수록 좋음)
-            // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (결과 뒤집기)
-            // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
-             return asc ? -comparison : comparison;
-       }
 
        // 5. 기본 문자열 비교 (실험체 이름)
        if (sortKey === '실험체') {
