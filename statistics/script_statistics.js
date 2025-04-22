@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 th.setAttribute('data-nosort', 'true');
                 return;
             }
-             th.style.cursor = 'pointer';
+                th.style.cursor = 'pointer';
 
 
             th.setAttribute('data-arrow', '');
@@ -632,7 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (currentSortMode === 'value2') {
                     arrow = currentSortAsc ? '▲2' : '▼2';
                 } else if (currentSortMode === 'delta') {
-                      arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 기호를 화살표 오른쪽에 붙여 표시
+                        arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 기호를 화살표 오른쪽에 붙여 표시
                 }
                 th.setAttribute('data-arrow', arrow);
             }
@@ -664,8 +664,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // 예외 처리: 평균 순위는 Value1 오름차순이 좋아지는 순서
                     if (col === '평균 순위') nextAsc = true;
-                     // 예외 처리: 티어는 Value1 오름차순이 나쁜 순서
-                     if (col === '티어') nextAsc = true;
+                        // 예외 처리: 티어는 Value1 오름차순이 나쁜 순서
+                        if (col === '티어') nextAsc = true;
 
                 }
 
