@@ -617,10 +617,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 th.setAttribute('data-nosort', 'true'); // 정렬 불가 명시
                 return;
             }
-                th.style.cursor = 'pointer';
+             th.style.cursor = 'pointer';
 
 
-            th.setAttribute('data-arrow', ''); // 이전 화살표 기호 리셋
+            th.setAttribute('data-arrow', ''); // 기존 화살표 리셋
             th.classList.remove('delta-sort-indicator'); // 델타 정렬 표시자 클래스 리셋
 
 
@@ -632,9 +632,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (currentSortMode === 'value2') {
                     arrow = currentSortAsc ? '▲2' : '▼2'; // Ver2 기준 오름/내림차순 기호
                 } else if (currentSortMode === 'delta') {
-                        arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 오름/내림차순 기호 + 델타 표시자 (▲/▼는 common.js 정렬 로직에 따름)
-                        // 델타 정렬일 경우 헤더에 델타 표시 클래스 추가
-                        th.classList.add('delta-sort-indicator');
+                      // 요구사항 반영: 델타 정렬 기호 ▲Δ 또는 ▼Δ
+                      arrow = currentSortAsc ? '▲Δ' : '▼Δ';
+                      // 델타 정렬일 경우 헤더에 델타 표시 클래스 추가
+                      th.classList.add('delta-sort-indicator');
                 }
                 th.setAttribute('data-arrow', arrow); // 헤더의 data-arrow 속성에 설정
             }
@@ -648,6 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let currentCycleIndex = -1;
                 // 현재 상태에 해당하는 순환 단계 찾기
                 for(let i = 0; i < modes.length; i++) {
+                    // 현재 컬럼이 정렬 기준 컬럼이고, 현재 모드와 방향이 순환 단계와 일치하는 경우
                     if(currentSortColumn === col && currentSortMode === modes[i] && currentSortAsc === directions[i]) {
                         currentCycleIndex = i;
                         break;
@@ -666,13 +668,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 다른 컬럼을 처음 클릭한 경우, 해당 컬럼의 Value1 내림차순 정렬로 시작
                     currentSortColumn = col; // 정렬 기준 컬럼을 클릭된 컬럼으로 변경
                     nextMode = 'value1'; // 다음 모드는 Value1
-                    nextAsc = false; // 다음 방향은 내림차순
+                    nextAsc = false; // 기본은 내림차순
 
-                    // 예외 처리: 평균 순위는 Value1 오름차순이 좋아지는 순서
+                    // 예외 처리: 평균 순위는 Value1 오름차순이 좋아지는 순서 (값이 작을수록 좋음)
                     if (col === '평균 순위') nextAsc = true;
-                        // 예외 처리: 티어는 Value1 오름차순이 나쁜 순서
-                        // 요구사항 반영: 티어 Value1 오름차순은 F 위로 (나쁨), 내림차순은 S+ 위로 (좋음)
-                        if (col === '티어') nextAsc = true; // 티어 Value1 오름차순 시작 (F 위로)
+                    // 예외 처리: 티어는 Value1 오름차순이 나쁜 순서 (F 위로) -> common.js sortData가 점수 기준으로 정렬하므로, 점수는 클수록 좋음 (내림차순). 따라서 티어 Value1 정렬 시 점수 내림차순이 되어야 S+이 위로 옴.
+                    // common.js sortData에서 '티어' Value1/Value2 정렬 시 '점수 (VerX)' 키를 사용하고, 점수는 클수록 좋음으로 처리합니다.
+                    // 따라서 '점수 (VerX)' 기준 내림차순 (asc=false)일 때 S+가 위로 옵니다.
+                    // 그래서 '티어' 컬럼 클릭 시 Value1 내림차순으로 시작하는 것이 맞습니다.
+                    if (col === '티어') nextAsc = false; // 티어 Value1 내림차순 시작 (S+ 위로)
+
                 }
 
                 currentSortMode = nextMode; // 현재 정렬 모드 업데이트

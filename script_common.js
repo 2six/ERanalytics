@@ -175,12 +175,12 @@ function sortData(data, column, asc, mode = 'value') {
    // column: 헤더의 data-col 값 ('점수', '티어' 등)
    // mode: 'value' (단일), 'value1', 'value2', 'delta'
    if (mode === 'value') { // 단일 모드
-        // 요구사항 반영: 단일 모드 티어 정렬 시 점수 기준
+        // 단일 모드 티어 정렬 시 점수 기준 (이전 요구사항 반영 유지)
         if (column === '티어') sortKey = '점수';
         else sortKey = column; // 단일 모드에서는 컬럼 이름 자체가 키
    } else if (mode === 'value1') { // 비교 모드, Ver1 값 기준
         if (column === '실험체') sortKey = '실험체';
-        // 요구사항 반영: 비교 모드 Ver1 티어 정렬 시 점수 (Ver1) 기준
+        // 비교 모드 Ver1 티어 정렬 시 점수 (Ver1) 기준 (이전 요구사항 반영 유지)
         else if (column === '티어') sortKey = '점수 (Ver1)';
         else if (column === '표본수') sortKey = '표본수 (Ver1)';
         else if (column === '평균 순위') sortKey = '평균 순위 (Ver1)'; // 평균 순위 값 기준 정렬 (Ver1)
@@ -189,7 +189,7 @@ function sortData(data, column, asc, mode = 'value') {
         }
    } else if (mode === 'value2') { // 비교 모드, Ver2 값 기준
         if (column === '실험체') sortKey = '실험체';
-        // 요구사항 반영: 비교 모드 Ver2 티어 정렬 시 점수 (Ver2) 기준
+        // 비교 모드 Ver2 티어 정렬 시 점수 (Ver2) 기준 (이전 요구사항 반영 유지)
         else if (column === '티어') sortKey = '점수 (Ver2)';
         else if (column === '표본수') sortKey = '표본수 (Ver2)';
         else if (column === '평균 순위') sortKey = '평균 순위 (Ver2)'; // 평균 순위 값 기준 정렬 (Ver2)
@@ -198,13 +198,13 @@ function sortData(data, column, asc, mode = 'value') {
         }
    }
     else { // mode === 'delta' (비교 모드, 변화량 기준)
-        // 요구사항 반영: '티어' 열 델타 정렬 시 '순위 변화값'으로 정렬
+        // 요구사항 반영: '티어' 열 델타 정렬 시 '순위 변화값'으로 정렬 (이전 요구사항 반영 유지)
         if (column === '티어') sortKey = '순위 변화값';
-        else if (column === '실험체') sortKey = '순위 변화값'; // 실험체 컬럼 델타 정렬 시 순위 변화값 기준
-        else if (column === '표본수') sortKey = '표본수 변화량'; // 표본수 변화량 기준 정렬
-        else if (column === '평균 순위') sortKey = '순위 변화값'; // 평균 순위 컬럼 델타 정렬 시 '순위 변화값'으로 정렬
+        else if (column === '실험체') sortKey = '순위 변화값'; // 실험체 컬럼 델타 정렬 시 순위 변화값 기준 (이전 요구사항 반영 유지)
+        else if (column === '표본수') sortKey = '표본수 변화량'; // 표본수 변화량 기준 정렬 (이전 요구사항 반영 유지)
+        else if (column === '평균 순위') sortKey = '순위 변화값'; // 평균 순위 컬럼 델타 정렬 시 '순위 변화값'으로 정렬 (이전 요구사항 반영 유지)
         else {
-            sortKey = `${column} 변화량`; // 점수, 픽률 등 숫자 스탯의 변화량 기준 정렬
+            sortKey = `${column} 변화량`; // 점수, 픽률 등 숫자 스탯의 변화량 기준 정렬 (이전 요구사항 반영 유지)
         }
    }
 
@@ -225,45 +225,11 @@ function sortData(data, column, asc, mode = 'value') {
 
        // --- 데이터 타입별 비교 로직 ---
 
-       // 1. 티어 변화 비교 (문자열)
-       if (sortKey === '티어 변화') {
-            const changeStatusOrder = ['신규 →', '→', '', '삭제', '-'];
-
-            const getChangeStatusIndex = (str) => {
-                 if (String(str).includes('신규 →')) return 0;
-                 if (String(str) === '-') return 4;
-                 if (String(str).includes('→ 삭제')) return 3;
-                 if (String(str).includes('→')) {
-                      const tiers = String(str).split('→').map(t => t.trim());
-                      const tier1 = tiers[0];
-                      const tier2 = tiers[1];
-                      const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-                      const index1 = tierOrder.indexOf(tier1);
-                      const index2 = tierOrder.indexOf(tier2);
-
-                      if (index1 !== -1 && index2 !== -1) {
-                          if (index2 < index1) return 1; // 개선
-                          if (index2 > index1) return 2; // 악화
-                      }
-                      return 1.5; // 알 수 없는 변화
-                 }
-                 return 2.5; // 변화 없음 또는 티어만 표시된 경우
-            };
-
-            const statusX = getChangeStatusIndex(x);
-            const statusY = getChangeStatusIndex(y);
-
-            if (statusX !== statusY) {
-                let comparison = statusX - statusY;
-                // 요구사항 반영: 티어 변화는 오름차순 (나쁜 변화 위로), 내림차순 (좋은 변화 위로)
-                return asc ? comparison : -comparison;
-            }
-
-            // 같은 상태 내에서는 문자열 자체로 비교 (예: 'S→A' vs 'S+→B')
-             return asc
-               ? String(x).localeCompare(String(y))
-               : String(y).localeCompare(String(x));
-       }
+        // 1. 티어 값 비교 (S+ -> F 순서) - 이제 sortKey는 점수이므로 이 로직은 사용되지 않습니다.
+        /*
+         if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
+            // ... (이전 로직) ...
+         }
 
         // 2. 티어 값 비교 (S+ -> F 순서)
          if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
@@ -282,16 +248,17 @@ function sortData(data, column, asc, mode = 'value') {
              // 요구사항 반영: 티어는 오름차순 (F 위로), 내림차순 (S+ 위로)
              return asc ? comparison : -comparison;
          }
+        */
 
 
-                // 3. 숫자 비교 (value 또는 delta)
+        // 2. 숫자 비교 (value 또는 delta)
         // 순위 관련 값 (평균 순위 값, 순위 변화값)은 작을수록 좋음
         // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량, 표본수 값/변화량)은 클수록 좋음
 
         // 정렬 키에 따라 값이 작을수록 좋은지 판단
         const isBetterWhenLower = (
             sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || // 평균 순위 값
-            sortKey === '순위 변화값' // 순위 변화값
+            sortKey === '순위 변화값' // 순위 변화값 (음수가 좋음)
         );
 
 
@@ -314,44 +281,12 @@ function sortData(data, column, asc, mode = 'value') {
         }
 
         // 4. 티어 변화 비교 (문자열) - sortKey가 '티어 변화'일 때 실행 (Delta 모드 '티어')
+        // 사용자 요구사항 반영: '티어 변화' 델타 정렬 시 '순위 변화값'을 기준으로 하므로 이 로직은 이제 사용되지 않습니다.
+        /*
         if (sortKey === '티어 변화') {
-             const changeStatusOrder = ['신규 →', '→', '', '삭제', '-'];
-
-             const getChangeStatusIndex = (str) => {
-                  if (String(str).includes('신규 →')) return 0;
-                  if (String(str) === '-') return 4;
-                  if (String(str).includes('→ 삭제')) return 3;
-                  if (String(str).includes('→')) {
-                       const tiers = String(str).split('→').map(t => t.trim());
-                       const tier1 = tiers[0];
-                       const tier2 = tiers[1];
-                       const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-                       const index1 = tierOrder.indexOf(tier1);
-                       const index2 = tierOrder.indexOf(tier2);
-
-                       if (index1 !== -1 && index2 !== -1) {
-                           if (index2 < index1) return 1; // 개선
-                           if (index2 > index1) return 2; // 악화
-                       }
-                       return 1.5; // 알 수 없는 변화
-                  }
-                  return 2.5; // 변화 없음 또는 티어만 표시된 경우
-             };
-
-             const statusX = getChangeStatusIndex(x);
-             const statusY = getChangeStatusIndex(y);
-
-             if (statusX !== statusY) {
-                 let comparison = statusX - statusY;
-                 // 요구사항 반영: 티어 변화는 오름차순 (나쁜 변화 위로), 내림차순 (좋은 변화 위로)
-                 return asc ? comparison : -comparison;
-             }
-
-             // 같은 상태 내에서는 문자열 자체로 비교 (예: 'S→A' vs 'S+→B')
-              return asc
-                ? String(x).localeCompare(String(y))
-                : String(y).localeCompare(String(x));
+           // ... (이전 로직) ...
         }
+        */
 
 
         // 5. 기본 문자열 비교 (실험체 이름)
