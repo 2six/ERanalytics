@@ -578,108 +578,99 @@ function applyGradientColorsSingle(table) {
 // sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
 function applyGradientColorsComparison(table, data, mode, sortedCol) {
     if (!table || !data || data.length === 0) return;
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const rows    = Array.from(table.querySelectorAll('tbody tr'));
     const headers = Array.from(table.querySelectorAll('thead th'));
 
-    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률');
-
+    // 1) 각 컬럼마다 처리
     headers.forEach((th, colIndex) => {
         const col = th.dataset.col;
-        const isNumeric = ['점수','픽률','RP 획득','승률','TOP 3','평균 순위','표본수'].includes(col);
-        if (!isNumeric) return;
+        // 숫자 컬럼만
+        if (!['점수','픽률','RP 획득','승률','TOP 3','평균 순위','표본수'].includes(col)) return;
 
-        // 1) 픽률 열은 무조건 단순 평균
+        // 2) 값(key) 결정
+        let key;
+        if (mode === 'value1') key = col + ' (Ver1)';
+        else if (mode === 'value2') key = col + ' (Ver2)';
+        else if (mode === 'delta') {
+            key = col === '평균 순위' ? '평균 순위 변화량' : col + ' 변화량';
+        } else {
+            key = col;
+        }
+
+        // 3) 값 배열 추출
+        const values = data.map(d => {
+            const raw = String(d[key] == null ? '' : d[key])
+                .replace(/[+%▲▼]/g, '');
+            return parseFloat(raw) || 0;
+        });
+
+        // 4) 평균 계산
         let avg;
         if (col === '픽률') {
-            // 단순 평균
-            const vals = rows.map(r => {
-                const txt = r.children[i].textContent.trim();
-                if (mode === 'value1')  return parsePickRate(txt, 'ver1');
-                if (mode === 'value2')  return parsePickRate(txt, 'ver2');
-                return parsePickRate(txt, 'delta');
-            });
-            avg = vals.reduce((s,v)=>s+v,0) / vals.length;
-        } 
-        // 2) 델타 모드는 변화량 단순 평균
+            // simple average of pick rates = 표본수/총합*100
+            const total = data.reduce((s,d)=>s + d['표본수'], 0);
+            const pickRates = data.map(d => (d['표본수'] / total) * 100);
+            avg = pickRates.reduce((s,v)=>s+v, 0) / pickRates.length;
+        }
         else if (mode === 'delta') {
-            const key = col === '평균 순위'
-                      ? '평균 순위 변화량'
-                      : col + ' 변화량';
-            const vals = data.map(d =>
-                parseFloat(String(d[key] || '').replace(/[^0-9.\-]/g, '')) || 0
-            );
-            avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+            avg = values.reduce((s,v)=>s+v, 0) / values.length;
         }
-        // 3) 나머지는 가중평균
         else {
-            const valueKey = col + (mode === 'value2'
-                ? ' (Ver2)' : mode === 'value1'
-                ? ' (Ver1)' : '');
-            const weightKey = mode === 'value2'
-                ? '픽률 (Ver2)' : mode === 'value1'
-                ? '픽률 (Ver1)' : '픽률';
-
-            const weighted = data
-                .map(d => {
-                    const v  = parseFloat(String(d[valueKey] || '').replace(/[^0-9.\-]/g, ''));
-                    const pr = (parseFloat(String(d[weightKey] || '').replace(/[^0-9.\-]/g, '')) || 0) / 100;
-                    return (isFinite(v) && pr > 0) ? { v, pr } : null;
-                })
-                .filter(x => x);
-            const totalPr   = weighted.reduce((s, x) => s + x.pr, 0);
-            const weightedSum = weighted.reduce((s, x) => s + x.v * x.pr, 0);
-            avg = totalPr > 0 ? weightedSum / totalPr : 0;
+            // weighted average by pick rate
+            const total = data.reduce((s,d)=>s + d['표본수'], 0);
+            const weighted = data.map(d => {
+                const rawV = String(d[key]).replace(/[+%▲▼]/g, '');
+                const v = parseFloat(rawV) || 0;
+                const prKey = (mode==='value2' ? '픽률 (Ver2)'
+                             : mode==='value1' ? '픽률 (Ver1)'
+                             : '픽률');
+                const rawP = String(d[prKey]).replace(/[+%▲▼]/g, '');
+                const p = (parseFloat(rawP) || 0) / 100;
+                return { v, p };
+            }).filter(x=>x.p>0);
+            const sumP = weighted.reduce((s,x)=>s+x.p,0);
+            const sumVP= weighted.reduce((s,x)=>s+x.v*x.p,0);
+            avg = sumP>0 ? sumVP/sumP : 0;
         }
 
-        // 값 배열 추출
-        const values = data.map(d => {
-            const key = mode === 'delta'
-                ? (col === '평균 순위' ? '평균 순위 변화량' : col + ' 변화량')
-                : (mode === 'value2'
-                    ? col + ' (Ver2)'
-                    : mode === 'value1'
-                    ? col + ' (Ver1)'
-                    : col);
-            return parseFloat(String(d[key] || '').replace(/[^0-9.\-]/g, '')) || 0;
-        });
         const min = Math.min(...values);
         const max = Math.max(...values);
+        const betterHigh = ['점수','픽률','RP 획득','승률','TOP 3','표본수'].includes(col);
+        const betterLow  = ['평균 순위'].includes(col);
 
-        const betterHigh = ['점수','픽률','RP 획득','승률','TOP 3','표본수'].includes(col);
-        const betterLow  = ['평균 순위'].includes(col);
-
-        rows.forEach((tr, rowIndex) => {
-            const cell = tr.children[colIndex];
-            let v = values[rowIndex];
-            if (!isFinite(v)) {
-                cell.style.backgroundColor = '';
-                return;
-            }
-
-            let ratio, color;
-            if (max === min) {
-                color = 'rgba(240,240,240,0.3)';
-            } else if (betterHigh) {
-                ratio = (v - min) / (max - min);
+        // 5) 각 셀에 색 적용
+        rows.forEach((tr, i) => {
+            const v = values[i];
+            let color = '';
+            if (max !== min && typeof v === 'number') {
+                let ratio;
+                if (betterHigh) {
+                    ratio = (v - min) / (max - min);
+                } else if (betterLow) {
+                    ratio = 1 - (v - min) / (max - min);
+                } else {
+                    ratio = (v - min) / (max - min);
+                }
                 ratio = Math.max(0, Math.min(1, ratio));
                 if (ratio < 0.5) {
-                    color = interpolateColor([164,194,244], [255,255,255], ratio * 2);
+                    // from blue to white
+                    const t = ratio * 2;
+                    color = `rgb(
+                        ${Math.round(164 + (255-164)*t)},
+                        ${Math.round(194 + (255-194)*t)},
+                        ${Math.round(244 + (255-244)*t)}
+                    )`;
                 } else {
-                    color = interpolateColor([255,255,255], [230,124,115], (ratio - 0.5) * 2);
+                    // from white to red
+                    const t = (ratio - 0.5) * 2;
+                    color = `rgb(
+                        ${Math.round(255 + (230-255)*t)},
+                        ${Math.round(255 + (124-255)*t)},
+                        ${Math.round(255 + (115-255)*t)}
+                    )`;
                 }
-            } else if (betterLow) {
-                ratio = 1 - (v - min) / (max - min);
-                ratio = Math.max(0, Math.min(1, ratio));
-                if (ratio < 0.5) {
-                    color = interpolateColor([164,194,244], [255,255,255], ratio * 2);
-                } else {
-                    color = interpolateColor([255,255,255], [230,124,115], (ratio - 0.5) * 2);
-                }
-            } else {
-                color = '';
             }
-
-            cell.style.backgroundColor = color;
+            tr.children[colIndex].style.backgroundColor = color;
         });
     });
 }
