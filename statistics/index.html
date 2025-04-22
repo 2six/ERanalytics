@@ -50,54 +50,22 @@ layout: none
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
     }
-
-    /* 비교 모드 컨트롤 그룹 */
-    #comparison-controls {
-        display: none; /* 기본적으로 숨김 */
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid #eee; /* 구분선 */
-    }
-    #comparison-controls label {
-        margin-left: 15px;
-    }
-    #comparison-controls label:first-child {
-         margin-left: 0; /* 첫 번째 라벨은 왼쪽 마진 없음 */
-    }
-
-    /* 비교 모드일 때 배경색 */
-    body.compare-mode header {
-        background-color: #ffe0e0; /* 예시: 비교 모드임을 나타내는 배경색 */
-    }
-
   </style>
 </head>
-<body class="{{ 'compare-mode' if jekyll.request.params['compare'] == '1' else '' }}"> {# Jekyll 사용 시 body 클래스 추가, JS에서도 추가 가능 #}
+<body>
   <header>
     {% include nav.html %}
-    <h1>실험체 통계 {% if jekyll.request.params['compare'] == '1' %} (비교 모드){% endif %}</h1> {# Jekyll 사용 시 제목에 비교 모드 표시 #}
+    <h1>실험체 통계</h1>
   </header>
 
   <main>
     <div class="dropdowns">
-      <!-- 기본 데이터 선택 -->
-      <div>
-          <span>데이터 1:</span>
-          <select id="version-select"></select>
-          <select id="tier-select"></select>
-          <select id="period-select"></select>
-          <label>
-            <input type="checkbox" id="gradient-checkbox"> 색상 강조
-          </label>
-      </div>
-
-      <!-- 비교 모드 데이터 선택 (기본 숨김) -->
-      <div id="comparison-controls">
-          <span>데이터 2 (비교):</span>
-          <select id="version-select-compare"></select>
-          <select id="tier-select-compare"></select>
-          <select id="period-select-compare"></select>
-      </div>
+      <select id="version-select"></select>
+      <select id="tier-select"></select>
+      <select id="period-select"></select>
+      <label>
+        <input type="checkbox" id="gradient-checkbox"> 색상 강조
+      </label>
     </div>
 
     <section>
