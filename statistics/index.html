@@ -33,9 +33,16 @@ layout: none
     /* 실험체 이름 컬럼 너비 조정 */
     #data-container th:first-child,
     #data-container td:first-child {
-      min-width: 150px; /* 순위 정보가 들어가면서 너비 조정 */
-      max-width: 150px;
+      min-width: 180px; /* 순위 정보가 들어가면서 너비 조정 */
+      max-width: 180px;
     }
+    /* 티어 컬럼 너비 조정 */
+     #data-container th[data-col="티어"],
+     #data-container td[data-col="티어"] {
+         min-width: 150px; /* 티어 변화 + 순위 변화 정보 */
+         max-width: 150px;
+     }
+
 
     /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
     #data-container th {
@@ -51,9 +58,15 @@ layout: none
       transform: translateY(-50%);
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
+      width: 20px; /* 화살표 및 숫자/델타 기호가 들어갈 공간 확보 */
+      text-align: right; /* 화살표 및 기호를 우측 정렬 */
+     /* background-color: yellow; *//* 디버그용 */
     }
 
     /* 델타 정렬 시 헤더에 Δ 표시 추가 */
+    /* ::before 대신 ::after에 Δ를 포함시키도록 JS에서 data-arrow 값을 조합할 수 있습니다. */
+    /* JS에서 data-arrow="▲Δ" 또는 "▼Δ" 형태로 만들고, CSS는 그대로 두는 방식이 더 간단합니다. */
+    /* 현재 JS 로직은 ::after와 ::before를 분리해서 사용하므로, CSS는 그대로 둡니다. */
     #data-container th.delta-sort-indicator::before {
         content: "Δ"; /* 델타 기호 */
         position: absolute;
