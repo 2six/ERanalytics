@@ -36,7 +36,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (params.has('tier')) tierSelect.value = params.get('tier');
         if (params.has('period')) periodSelect.value = params.get('period');
 
-        if (!isCompareMode && params.has('gradient')) gradientCheckbox.checked = params.get('gradient') === '1';
+        // 색상 강조 체크박스 상태 로드 (비교 모드가 아닐 때만)
+        if (!isCompareMode && params.has('gradient')) {
+            gradientCheckbox.checked = params.get('gradient') === '1';
+        } else if (isCompareMode) {
+             // 비교 모드에서는 색상 강조 항상 켜짐 및 비활성화
+             gradientCheckbox.checked = true;
+             gradientCheckbox.disabled = true;
+             gradientCheckbox.parentElement.style.opacity = '0.5';
+        }
+
 
         if (isCompareMode) {
             comparisonControlsDiv.style.display = 'flex';
@@ -47,10 +56,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (params.has('tier2')) tierSelectCompare.value = params.get('tier2');
             if (params.has('period2')) periodSelectCompare.value = params.get('period2');
 
-            // 비교 모드에서는 색상 강조 항상 켜짐 및 비활성화
-            gradientCheckbox.checked = true;
-            gradientCheckbox.disabled = true;
-            gradientCheckbox.parentElement.style.opacity = '0.5';
 
             // URL에서 정렬 상태 복원 시도 (비교 모드에서만)
             if (params.has('sortCol') && params.has('sortAsc') && params.has('sortMode')) {
@@ -348,8 +353,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderComparisonTable(data) {
          if (!isCompareMode) return;
 
-        // 기존 테이블 컬럼 목록
-        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위', '표본수']; // 비교 모드는 표본수 포함
+        // 기존 테이블 컬럼 목록 + 표본수 포함
+        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위','표본수'];
 
         let comparisonTableHtml = '<table><thead><tr>';
         cols.forEach(c => {
@@ -383,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                  } else if (col === '티어') {
                      // 티어 컬럼에는 티어 변화 정보와 순위 변화 정보를 함께 표시 (수정: 순위 변화는 실험체 열로 이동)
-                     // 이제 티어 열에는 티어 변화 정보만 표시합니다.
+                     // 이제 티어 열에는 티어 변화 정보와 순위 변화 정보를 함께 표시합니다. (요구사항 반영)
                      const tierChange = row['티어 변화'] || '-'; // string
                      const rank1 = row['순위 (Ver1)']; // number 또는 undefined
                      const rank2 = row['순위 (Ver2)']; // number 또는 undefined
@@ -511,8 +516,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dataContainer.innerHTML = comparisonTableHtml;
 
-        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable);
-        applyGradientColorsComparison(dataContainer.querySelector('table'));
+        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable); // 모든 th에 이벤트 부착
+        applyGradientColorsComparison(dataContainer.querySelector('table'), currentSortMode, currentSortColumn); // 색상 적용 함수 호출 시 정렬 모드와 컬럼 전달
     }
 
 
@@ -525,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = '<table><thead><tr>';
         cols.forEach(c => {
-             // 단일 모드에서는 티어 정렬 포함, 실험체 정렬 제외
+             // 단일 모드에서는 실험체 정렬 제외, 티어 정렬 포함
             const sortable = c !== '실험체';
             html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`;
         });
@@ -555,8 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dataContainer.innerHTML = html;
 
-        // 단일 모드용 정렬 이벤트 부착 (실험체 제외)
-        attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable);
+        attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable); // data-nosort 없는 th에만 부착
         if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
     }
 
@@ -564,6 +568,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function attachSingleSortEventListeners(ths, renderFunc) {
          ths.forEach(th => {
             const col = th.dataset.col;
+
+            // data-nosort 속성이 있다면 정렬 제외
+            if (th.hasAttribute('data-nosort')) {
+                 th.style.cursor = 'default';
+                 th.setAttribute('data-arrow', '');
+                 th.classList.remove('delta-sort-indicator');
+                 return; // 정렬 제외 컬럼
+            }
+
+            th.style.cursor = 'pointer'; // 정렬 가능 컬럼
 
             th.setAttribute('data-arrow', '');
             th.classList.remove('delta-sort-indicator');
@@ -645,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      } else if (currentSortMode === 'value2' && currentSortAsc) { // Value2 ▲ -> Delta ▼
                           nextMode = 'delta';
                           // common.js의 sortData 로직에 맞는 초기 방향 설정
-                          // 순위 관련 (평균 순위)는 asc=true가 좋아지는 순 (숫자 감소)
+                          // 순위 관련 (평균 순위, 실험체)는 asc=true가 좋아지는 순 (숫자 감소)
                           // 그 외 변화량은 asc=true가 나쁜 변화 순 (숫자 감소)
                           // 티어 변화는 asc=true가 나쁜 변화 순 (문자열 오름차순)
                           // 여기서는 클릭된 컬럼에 따라 초기 방향 설정
@@ -655,8 +669,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
                      } else if (currentSortMode === 'delta' && !currentSortAsc) { // Delta ▼ -> Delta ▲
-                          nextMode = 'delta';
-                          nextAsc = true;
+                          // delta 모드에서 오름차순으로 전환
+                         nextMode = 'delta';
+                         nextAsc = true;
                      }
                      else { // Delta ▲ -> Value1 ▼ (초기 상태로 회귀)
                           nextMode = 'value1';
