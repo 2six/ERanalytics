@@ -604,6 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // script_statistics.js - attachComparisonSortEventListeners 함수 (수정됨)
     // 10) 비교 모드용 정렬 이벤트 리스너 부착
     function attachComparisonSortEventListeners(ths, renderFunc) {
         ths.forEach(th => {

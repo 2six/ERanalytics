@@ -172,7 +172,7 @@ function sortData(data, column, asc, mode = 'value') {
 
    let sortKey;
    // 비교 모드에서 사용할 정렬 기준 키를 결정합니다.
-   // column: 헤더의 data-col 값 ('점수', '티어' 등)
+   // column: 헤더의 data-col 값 ('点数', '티어' 등)
    // mode: 'value' (단일), 'value1', 'value2', 'delta'
    if (mode === 'value') { // 단일 모드
         sortKey = column; // 단일 모드에서는 컬럼 이름 자체가 키
@@ -195,7 +195,7 @@ function sortData(data, column, asc, mode = 'value') {
    }
     else { // mode === 'delta' (비교 모드, 변화량 기준)
         if (column === '실험체') sortKey = '순위 변화값';
-        else if (column === '티어') sortKey = '티어 변화';
+        else if (column === '티어') sortKey = '순위 변화값'; // 요구사항 반영: '티어 변화' 대신 '순위 변화값'으로 정렬
         else if (column === '표본수') sortKey = '표본수 변화량';
         else if (column === '평균 순위') sortKey = '순위 변화값';
         else {
@@ -260,7 +260,7 @@ function sortData(data, column, asc, mode = 'value') {
                : String(y).localeCompare(String(x));
        }
 
-       // 2. 티어 값 비교 (S+ -> F 순서)
+        // 2. 티어 값 비교 (S+ -> F 순서)
         if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
             const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
             const indexX = tierOrder.indexOf(String(x));
@@ -278,41 +278,41 @@ function sortData(data, column, asc, mode = 'value') {
             return asc ? comparison : -comparison;
         }
 
+        // 3. 숫자 비교 (value 또는 delta)
+        // 순위 관련 값 (평균 순위 값, 순위 변화값)은 작을수록 좋음
+        // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량)은 클수록 좋음
 
-       // 3. 숫자 비교 (value 또는 delta)
-       // 순위 관련 값 (평균 순위 값, 순위 변화값)은 작을수록 좋음
-       // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량)은 클수록 좋음
+        const isRankRelatedNumeric = (sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)'); // 순위 값 자체
+        const isRankDeltaValue = (sortKey === '순위 변화값'); // 순위 변화량 값
 
-       const isRankRelatedNumeric = (sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || sortKey === '순위 변화값'); // 순위 값 또는 순위 변화값
-
-       const xNum = parseFloat(String(x).replace(/[+%▲▼]/g, ''));
-       const yNum = parseFloat(String(y).replace(/[+%▲▼]/g, ''));
+        const xNum = parseFloat(String(x).replace(/[+%▲▼]/g, ''));
+        const yNum = parseFloat(String(y).replace(/[+%▲▼]/g, ''));
 
 
-       if (!isNaN(xNum) && !isNaN(yNum)) {
-            let comparison = xNum - yNum; // 기본 오름차순 비교 (x < y 이면 음수, x > y 이면 양수)
+        if (!isNaN(xNum) && !isNaN(yNum)) {
+             let comparison = xNum - yNum; // 기본 오름차순 비교 (x < y 이면 음수, x > y 이면 양수)
 
-            if (isRankRelatedNumeric) {
-                // 순위 관련 값은 작을수록 좋음.
-                // asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로 (comparison)
-                // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (비교 결과 뒤집기)
-                 return asc ? comparison : -comparison;
-            }
-            // 그 외 숫자 값은 클수록 좋음
-            // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (비교 결과 뒤집기)
-            // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
-             return asc ? -comparison : comparison;
-       }
+             if (isRankRelatedNumeric || isRankDeltaValue) { // 순위 관련 값 또는 순위 변화량
+                 // 작을수록 좋음.
+                 // asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로 (comparison)
+                 // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (비교 결과 뒤집기)
+                  return asc ? comparison : -comparison;
+             }
+             // 그 외 숫자 값 (점수 등) 또는 변화량 (점수 변화량 등)은 클수록 좋음
+             // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (비교 결과 뒤집기)
+             // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
+              return asc ? -comparison : comparison;
+        }
 
-       // 4. 기본 문자열 비교 (실험체 이름)
-       if (sortKey === '실험체') {
-            return asc
-               ? String(x).localeCompare(String(y))
-               : String(y).localeCompare(String(x));
-       }
+        // 4. 기본 문자열 비교 (실험체 이름)
+        if (sortKey === '실험체') {
+             return asc
+                ? String(x).localeCompare(String(y))
+                : String(y).localeCompare(String(x));
+        }
 
-       return 0; // 예상치 못한 경우 (동일하다고 간주)
-   });
+        return 0; // 예상치 못한 경우 (동일하다고 간주)
+    });
 }
 
 // 9. 기간별 데이터 추출 함수
