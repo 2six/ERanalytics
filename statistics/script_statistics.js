@@ -1,6 +1,6 @@
 // script_statistics.js
 document.addEventListener('DOMContentLoaded', function() {
-    // common.js에 정의된 함수/변수들은 이제 전역 스코프에 있으므로 바로 사용 가능합니다.
+    // common.js에 정의된 함수/변수들은 전역 스코프에 있으므로 바로 사용 가능합니다.
 
     // DOM 요소
     const versionSelect = document.getElementById('version-select');
@@ -20,44 +20,58 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSortColumn = '점수';
     let currentSortAsc = false;
     let currentSortMode = 'value'; // 'value' (단일), 'value1', 'value2', 'delta'
-    let lastData = [];
-    let tierConfig = null;
+    let lastData = []; // 로드된 원본 데이터 또는 병합된 비교 데이터
+    let tierConfig = null; // config.ini에서 로드된 티어 설정
+    let versionList = []; // versions.json에서 로드된 버전 목록 (Promise.all 내부에서 할당)
+
 
     // URLSearchParams 인스턴스 생성
     const params = new URLSearchParams(location.search);
     const isCompareMode = params.get('compare') === '1';
 
     // 1) URL 파라미터 → 컨트롤에 반영
+    // 이 함수는 versionList가 로드된 후에 호출되어야 합니다.
     function applyParamsToControls() {
         if (params.has('version')) versionSelect.value = params.get('version');
         if (params.has('tier')) tierSelect.value = params.get('tier');
         if (params.has('period')) periodSelect.value = params.get('period');
+
         if (!isCompareMode && params.has('gradient')) gradientCheckbox.checked = params.get('gradient') === '1';
 
         if (isCompareMode) {
             comparisonControlsDiv.style.display = 'flex';
             compareModeLabel.style.display = 'inline';
-            populateVersionDropdown(versionSelectCompare, versionList);
-            populateTierDropdown(tierSelectCompare);
-            populatePeriodDropdown(periodSelectCompare);
 
-            // 비교 모드 기본 정렬: 점수 Ver1 내림차순
-            currentSortColumn = '점수';
-            currentSortAsc = false;
-            currentSortMode = 'value1';
+            // 비교 드롭다운 값 설정
+            if (params.has('version2')) versionSelectCompare.value = params.get('version2');
+            if (params.has('tier2')) tierSelectCompare.value = params.get('tier2');
+            if (params.has('period2')) periodSelectCompare.value = params.get('period2');
+
+            // 비교 모드에서는 색상 강조 항상 켜짐 및 비활성화
+            gradientCheckbox.checked = true;
+            gradientCheckbox.disabled = true;
+            gradientCheckbox.parentElement.style.opacity = '0.5';
+
+            // URL에서 정렬 상태 복원 시도 (비교 모드에서만)
+            if (params.has('sortCol') && params.has('sortAsc') && params.has('sortMode')) {
+                 currentSortColumn = params.get('sortCol');
+                 currentSortAsc = params.get('sortAsc') === 'true';
+                 currentSortMode = params.get('sortMode');
+            } else {
+                // URL 파라미터 없으면 비교 모드 기본 정렬 (점수 Ver1 내림차순)
+                currentSortColumn = '점수';
+                currentSortAsc = false;
+                currentSortMode = 'value1';
+            }
 
         } else {
-            // 단일 모드 기본 정렬: 점수 내림차순
+            // 단일 모드에서는 비활성화 해제 및 투명도 복원
+            gradientCheckbox.disabled = false;
+            gradientCheckbox.parentElement.style.opacity = '1';
+            // 단일 모드 기본 정렬 (점수 내림차순)
             currentSortColumn = '점수';
             currentSortAsc = false;
             currentSortMode = 'value';
-        }
-
-        // URL에서 정렬 상태 복원 시도 (Compare 모드에서만)
-        if (isCompareMode && params.has('sortCol') && params.has('sortAsc') && params.has('sortMode')) {
-             currentSortColumn = params.get('sortCol');
-             currentSortAsc = params.get('sortAsc') === 'true';
-             currentSortMode = params.get('sortMode');
         }
     }
 
@@ -69,20 +83,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!isCompareMode) {
             params.set('gradient', gradientCheckbox.checked ? '1' : '0');
+            // 비교 모드 관련 파라미터 제거
             params.delete('version2');
             params.delete('tier2');
             params.delete('period2');
             params.delete('compare');
-            // 단일 모드에서는 정렬 상태 URL 저장 안 함 (간결하게)
+            // 정렬 상태 파라미터도 제거 (단일 모드는 URL에 저장 안 함)
             params.delete('sortCol');
             params.delete('sortAsc');
             params.delete('sortMode');
 
         } else {
+            // 비교 모드 관련 파라미터 저장
             params.set('version2', versionSelectCompare.value);
             params.set('tier2', tierSelectCompare.value);
             params.set('period2', periodSelectCompare.value);
             params.set('compare', '1');
+            // gradient 파라미터 제거
             params.delete('gradient');
 
             // 비교 모드에서는 정렬 상태 URL 저장
@@ -99,7 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
     Promise.all([
         fetch('/config.ini').then(r => r.text()),
         fetch('/versions.json').then(r => r.json())
-    ]).then(([iniText, versionList]) => {
+    ]).then(([iniText, loadedVersionList]) => {
+        // 데이터 로드 성공 후 versionList와 tierConfig 설정
+        versionList = loadedVersionList; // 전역 versionList에 할당
         const config = parseINI(iniText);
         tierConfig = config.tiers;
 
@@ -111,24 +130,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isCompareMode) {
             comparisonControlsDiv.style.display = 'flex';
             compareModeLabel.style.display = 'inline';
+            // 비교 드롭다운도 채우기
             populateVersionDropdown(versionSelectCompare, versionList);
             populateTierDropdown(tierSelectCompare);
             populatePeriodDropdown(periodSelectCompare);
-
-            // 비교 모드 기본 정렬: 점수 Ver1 내림차순
-            currentSortColumn = '점수';
-            currentSortAsc = false;
-            currentSortMode = 'value1';
-
-        } else {
-            // 단일 모드 기본 정렬: 점수 내림차순
-            currentSortColumn = '점수';
-            currentSortAsc = false;
-            currentSortMode = 'value';
         }
 
-        applyParamsToControls(); // 컨트롤 상태 복원 후 데이터 로드
+        // URL 파라미터로부터 컨트롤 상태 복원 (versionList 로드 후 호출)
+        applyParamsToControls();
 
+        // 변경 시 URL 갱신 + 데이터 갱신
         const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle;
 
         versionSelect.addEventListener('change', () => { updateURL(); reloadData(); });
@@ -145,12 +156,14 @@ document.addEventListener('DOMContentLoaded', function() {
             periodSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
         }
 
+        // 첫 로드
         reloadData();
 
     }).catch(err => {
         console.error('초기화 실패:', err);
         dataContainer.innerHTML = '초기 설정 로드에 실패했습니다.';
     });
+
 
     // 4) 단일 데이터 로드 ∙ 가공 ∙ 렌더
     function loadAndDisplaySingle() {
@@ -291,8 +304,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // 티어 변화 계산
-             const tier1 = d1 ? d1['티어'] : '삭제';
-             const tier2 = d2 ? d2['티어'] : '삭제';
+             const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
+             const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
 
              if (!d1 && d2) {
                  result['티어 변화'] = `신규 → ${tier2}`;
@@ -335,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderComparisonTable(data) {
          if (!isCompareMode) return;
 
-        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위','표본수']; // 표본수 컬럼 다시 추가 (비교 모드에서는 Ver1/Ver2로 표시)
 
         let comparisonTableHtml = '<table><thead><tr>';
         cols.forEach(c => {
@@ -467,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dataContainer.innerHTML = comparisonTableHtml;
 
-        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable);
+        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable); // 모든 th에 이벤트 부착
         applyGradientColorsComparison(dataContainer.querySelector('table'));
     }
 
@@ -514,10 +527,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
     }
 
-    // 9) 단일 모드용 정렬 이벤트 리스너 부착 (수정)
+    // 9) 단일 모드용 정렬 이벤트 리스너 부착
     function attachSingleSortEventListeners(ths, renderFunc) {
          ths.forEach(th => {
             const col = th.dataset.col;
+
+            // 실험체 컬럼은 단일 모드에서 정렬 가능하도록 유지 (원래 코드대로)
+            // 티어 컬럼은 data-nosort="true" 속성을 가지고 있다면 정렬 제외
+
+            // data-nosort 속성이 있는지 확인
+            if (th.hasAttribute('data-nosort')) {
+                 th.style.cursor = 'default';
+                 th.setAttribute('data-arrow', '');
+                 th.classList.remove('delta-sort-indicator');
+                 return; // 정렬 제외 컬럼
+            }
+
+            th.style.cursor = 'pointer'; // 정렬 가능 컬럼
 
             th.setAttribute('data-arrow', '');
             th.classList.remove('delta-sort-indicator');
@@ -543,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 10) 비교 모드용 정렬 이벤트 리스너 부착 (수정)
+    // 10) 비교 모드용 정렬 이벤트 리스너 부착
      function attachComparisonSortEventListeners(ths, renderFunc) {
          ths.forEach(th => {
              const col = th.dataset.col;
@@ -594,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function() {
                           currentSortMode = 'delta';
                           // common.js의 sortData 로직에 맞는 초기 방향 설정
                           // 순위 관련 (평균 순위, 실험체)는 asc=true가 좋아지는 순 (숫자 감소)
-                          // 그 외 변화량은 asc=true가 나빠지는 순 (숫자 감소)
+                          // 그 외 변화량은 asc=true가 나쁜 변화 순 (숫자 감소)
                           // 티어 변화는 asc=true가 나쁜 변화 순 (문자열 오름차순)
                           // 여기서는 클릭된 컬럼에 따라 초기 방향 설정
                           if (col === '평균 순위') currentSortAsc = true; // 평균 순위 변화는 오름차순이 좋아지는 순

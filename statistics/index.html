@@ -65,8 +65,7 @@ layout: none
 
     /* 델타 정렬 시 헤더에 Δ 표시 추가 */
     /* ::before 대신 ::after에 Δ를 포함시키도록 JS에서 data-arrow 값을 조합할 수 있습니다. */
-    /* JS에서 data-arrow="▲Δ" 또는 "▼Δ" 형태로 만들고, CSS는 그대로 두는 방식이 더 간단합니다. */
-    /* 현재 JS 로직은 ::after와 ::before를 분리해서 사용하므로, CSS는 그대로 둡니다. */
+    /* JS에서 data-arrow="▲Δ" 또는 "▼Δ" 형태로 만들고, CSS는 그대로 둡니다. */
     #data-container th.delta-sort-indicator::before {
         content: "Δ"; /* 델타 기호 */
         position: absolute;

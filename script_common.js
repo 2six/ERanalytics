@@ -87,7 +87,7 @@ function calculateTier(score, avgScore, stddev, config) {
 }
 
 function calculateAverageScore(data) {
-    const validData = data.filter(item => (item['표본수'] || 0) > 0); // null/undefined 대비
+    const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
 
     if (total === 0) return 0;
@@ -103,7 +103,7 @@ function calculateAverageScore(data) {
 }
 
 function calculateStandardDeviation(data, avgScore) {
-    const validData = data.filter(item => (item['표본수'] || 0) > 0); // null/undefined 대비
+    const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
 
     if (total === 0) return 0;
@@ -116,13 +116,13 @@ function calculateStandardDeviation(data, avgScore) {
 }
 
 function calculateTiers(data, avgScore, stddev, config) {
-    const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0); // null/undefined 대비
+    const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0);
     const avgPickRate = total === 0 ? 0 : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0) / total / (data.length || 1);
 
     const k = 1.5;
 
     return data.map(item => {
-        if ((item['표본수'] || 0) === 0) { // null/undefined 대비
+        if ((item['표본수'] || 0) === 0) {
              return {
                  ...item,
                  '점수': 0.00,
@@ -131,7 +131,7 @@ function calculateTiers(data, avgScore, stddev, config) {
              };
         }
 
-        const pickRate = total === 0 ? 0 : (item['표본수'] || 0) / total; // null/undefined 대비
+        const pickRate = total === 0 ? 0 : (item['표본수'] || 0) / total;
         const r = avgPickRate ? pickRate / avgPickRate : 1;
         const originWeight =
             r <= 1/3
@@ -142,7 +142,7 @@ function calculateTiers(data, avgScore, stddev, config) {
         if (r > 5) {
             factor += 0.05 * (1 - Math.min((r - 5) / 5, 1));
         }
-        const baseScore = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 대비
+        const baseScore = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3;
         let score;
 
         if (avgPickRate !== 0 && (item['표본수'] || 0) < total * avgPickRate) {
@@ -160,7 +160,7 @@ function calculateTiers(data, avgScore, stddev, config) {
             ...item,
             '점수': parseFloat(score.toFixed(2)),
             '티어': tierLabel,
-            '픽률': parseFloat((pickRate * 100).toFixed(2)) // 픽률은 여기서 100 곱해서 백분율로 만듦
+            '픽률': parseFloat((pickRate * 100).toFixed(2))
         };
     });
 }
@@ -194,15 +194,15 @@ function sortData(data, column, asc, mode = 'value') {
          }
     }
      else { // mode === 'delta' (비교 모드, 변화량 기준)
-         // 해당 컬럼의 변화량 키를 사용합니다.
-         if (column === '실험체') sortKey = '순위 변화값'; // 실험체 컬럼 delta 정렬 시 순위 변화값 기준
-         else if (column === '티어') sortKey = '티어 변화'; // 티어 컬럼 delta 정렬 시 티어 변화 기준 (문자열)
-         else if (column === '표본수') sortKey = '표본수 변화량'; // 표본수 변화량
-         else if (column === '평균 순위') sortKey = '순위 변화값'; // 평균 순위 컬럼 delta 정렬 시 순위 변화값 기준
-         else { // 점수, 픽률, RP 획득, 승률, TOP 3
-             sortKey = `${column} 변화량`; // 예: '점수 변화량'
+         if (column === '실험체') sortKey = '순위 변화값';
+         else if (column === '티어') sortKey = '티어 변화';
+         else if (column === '표본수') sortKey = '표본수 변화량';
+         else if (column === '평균 순위') sortKey = '순위 변화값';
+         else {
+             sortKey = `${column} 변화량`;
          }
     }
+
 
      // console.log(`sortData: column=${column}, asc=${asc}, mode=${mode}, sortKey=${sortKey}`); // 디버그
 
@@ -225,11 +225,11 @@ function sortData(data, column, asc, mode = 'value') {
              const changeStatusOrder = ['신규 →', '→', '', '삭제', '-'];
 
              const getChangeStatusIndex = (str) => {
-                  if (str.includes('신규 →')) return 0;
-                  if (str === '-') return 4;
-                  if (str.includes('→ 삭제')) return 3;
-                  if (str.includes('→')) {
-                       const tiers = str.split('→').map(t => t.trim());
+                  if (String(str).includes('신규 →')) return 0;
+                  if (String(str) === '-') return 4;
+                  if (String(str).includes('→ 삭제')) return 3;
+                  if (String(str).includes('→')) {
+                       const tiers = String(str).split('→').map(t => t.trim());
                        const tier1 = tiers[0];
                        const tier2 = tiers[1];
                        const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
@@ -245,8 +245,8 @@ function sortData(data, column, asc, mode = 'value') {
                   return 2.5; // 변화 없음 또는 티어만 표시된 경우
              };
 
-             const statusX = getChangeStatusIndex(String(x));
-             const statusY = getChangeStatusIndex(String(y));
+             const statusX = getChangeStatusIndex(x);
+             const statusY = getChangeStatusIndex(y);
 
              if (statusX !== statusY) {
                  let comparison = statusX - statusY;
@@ -314,7 +314,7 @@ function sortData(data, column, asc, mode = 'value') {
 }
 
 
-// 9. 기간별 데이터 추출 함수 (이전 코드와 동일)
+// 9. 기간별 데이터 추출 함수
 function extractPeriodEntries(history, period) {
     const keys = Object.keys(history).sort();
     if (keys.length === 0) return [];
@@ -405,7 +405,7 @@ function extractPeriodEntries(history, period) {
     return delta;
 }
 
-// 10. 색상 보간 헬퍼 함수 (이전 코드와 동일)
+// 10. 색상 보간 헬퍼 함수
 function interpolateColor(start, end, ratio) {
     const t = Math.max(0, Math.min(1, ratio));
     const rgb = start.map((s,i) => Math.round(s + (end[i] - s) * t));
@@ -423,7 +423,7 @@ const TIER_COLORS_SINGLE = {
     'F':  'rgba(127,255,255, 0.3)',
 };
 
-// 11. 그라디언트 컬러 적용 (단일 데이터용) - 이전 코드와 동일
+// 11. 그라디언트 컬러 적용 (단일 데이터용)
 function applyGradientColorsSingle(table) {
      if (!table) return;
      const rows = [...table.querySelectorAll('tbody tr')];
@@ -443,13 +443,16 @@ function applyGradientColorsSingle(table) {
          }).filter(v => v !== null);
 
 
-         if (values.length === 0) {
+         if (values.length === 0) { // 오류 수정: values가 비어있을 때 계산 건너뛰기
               rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-              return;
+              return; // 이 컬럼에 대한 색상 적용 중단
          }
 
+         // 오류 수정: avg, min, max를 여기서 다시 계산하도록 scope 수정
+         const avg = values.reduce((a,b)=>a+b,0)/values.length;
          const min = Math.min(...values);
          const max = Math.max(...values);
+
 
          rows.forEach((r) => {
              const cell = r.children[i];
@@ -502,7 +505,7 @@ function applyGradientColorsSingle(table) {
      }
 }
 
-// 12. 그라디언트 컬러 적용 (비교 데이터용 - 변화량에 적용) - 재수정
+// 12. 그라디언트 컬러 적용 (비교 데이터용 - 변화량에 적용)
 function applyGradientColorsComparison(table) {
      if (!table) return;
      const rows = [...table.querySelectorAll('tbody tr')];
@@ -538,17 +541,9 @@ function applyGradientColorsComparison(table) {
                          if (color) cell.style.backgroundColor = color;
                    }
               });
-              // 티어 컬럼은 변화량 색칠 대상이 아니므로 여기서 종료
-              return;
+              return; // 티어 컬럼은 변화량 색칠 대상이 아니므로 여기서 종료
          }
 
-
-         // 순위 변화 색칠 (실험체 컬럼) - 이 로직은 실험체 열에 대한 것이므로 col === '실험체' 조건 내부로 이동 (아래 참조)
-         /*
-         if (col === '실험체') {
-             rows.forEach(tr => { ... });
-         }
-         */
 
          // 그 외 숫자 스탯 컬럼 (점수, 픽률 등, 표본수)에 대한 색상 강조 (변화량 기준)
          const isNumericStatColumn = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
@@ -564,17 +559,15 @@ function applyGradientColorsComparison(table) {
 
 
              if (values.length === 0) {
-                  // 유효한 변화량 값이 없으면 해당 컬럼의 모든 셀 배경색 제거
                   rows.forEach(tr => tr.children[i].style.backgroundColor = '');
                   return; // 다음 컬럼으로 이동
              }
 
              const min = Math.min(...values);
              const max = Math.max(...values);
-             // const range = max - min; // 사용되지 않음
 
              const isGoodStat = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3'].includes(col);
-             const isBadStat = ['평균 순위'].includes(col); // 평균 순위 값 자체는 작을수록 좋음
+             const isBadStat = ['평균 순위'].includes(col);
 
 
              rows.forEach((r) => {
@@ -590,8 +583,8 @@ function applyGradientColorsComparison(table) {
                      if (v === 0) {
                           color = 'rgba(240, 240, 240, 0.3)'; // 변화가 0인 경우 연한 회색
                      } else if (isGoodStat || col === '표본수') { // 클수록 좋은 변화 (점수, 픽률 등) 또는 표본수 증가 -> 하양(0) ~ 빨강(1) 또는 회색
-                         // 양수 변화 (좋아짐) -> 0~max 범위를 0~1로
-                         // 음수 변화 (나빠짐) -> min~0 범위를 0~1로
+                          // 양수 변화 (좋아짐) -> 0~max 범위를 0~1로
+                          // 음수 변화 (나빠짐) -> min~0 범위를 0~1로
                           if (v > 0) { // 양수 변화
                                ratio = max === 0 ? 0 : v / max; // 0 ~ max 를 0 ~ 1 로
                                ratio = Math.max(0, Math.min(1, ratio)); // 비율 제한
@@ -604,14 +597,14 @@ function applyGradientColorsComparison(table) {
                           }
                       } else if (isBadStat) { // 작을수록 좋은 변화 (평균 순위 값 자체의 변화량) -> 하양(0) ~ 빨강(1)
                          // 음수 변화가 좋아짐, 양수 변화가 나빠짐.
-                         if (v < 0) { // 음수 변화 (좋아짐)
+                         if (v < 0) {
                               ratio = min === 0 ? 0 : v / min; // min~0 을 0~1 로
                               ratio = Math.max(0, Math.min(1, ratio));
-                              color = interpolateColor([255,255,255], [230,124,115], ratio); // 하양 -> 빨강 (좋아짐)
-                         } else { // 양수 변화
+                              color = interpolateColor([255,255,255], [230,124,115], ratio);
+                         } else {
                               ratio = max === 0 ? 0 : v / max; // 0~max 를 0~1 로
                               ratio = Math.max(0, Math.min(1, ratio));
-                              color = interpolateColor([255,255,255], [164,194,244], ratio); // 하양 -> 파랑 (나빠짐)
+                              color = interpolateColor([255,255,255], [164,194,244], ratio);
                          }
                       }
 
