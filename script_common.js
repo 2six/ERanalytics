@@ -578,129 +578,105 @@ function applyGradientColorsSingle(table) {
 // sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
 function applyGradientColorsComparison(table, data, mode, sortedCol) {
     if (!table || !data || data.length === 0) return;
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const rows    = Array.from(table.querySelectorAll('tbody tr'));
     const headers = Array.from(table.querySelectorAll('thead th'));
-
-    // 픽률 컬럼의 데이터 키 매핑
-    function parsePickRate(val, which) {
-        // val 예시: "2.94% → 7.06% ▲4.12"
-        // which = 'ver1' / 'ver2' / 'delta'
-        const parts = String(val).split('→').map(s => s.trim());
-        if (which === 'ver1') {
-            return parseFloat(parts[0].replace('%', '')) || 0;
-        } else if (which === 'ver2') {
-            return parseFloat(parts[1].split('%')[0].trim()) || 0;
-        } else { // delta
-            const m = parts[1].match(/▲?([0-9.]+)%?/) || [];
-            return parseFloat(m[1]) || 0;
-        }
-    }
-
-    headers.forEach((th, i) => {
-        const col = th.dataset.col;
-        const isNumeric = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
-        if (!isNumeric) return;
-
-        // 값 꺼낼 키 결정
-        let valueKey;
+  
+    headers.forEach((th, colIndex) => {
+      const col = th.dataset.col;
+      if (!['점수','픽률','RP 획득','승률','TOP 3','평균 순위','표본수'].includes(col)) return;
+  
+      // — pick rate 평균 계산 (항상 단순 평균)
+      let avg;
+      if (col === '픽률') {
+        // Ver1 기준 sample 수 사용 (mode 따로 안 봄)
+        const totalSample = data.reduce((sum, d) => sum + d['표본수 (Ver1)'], 0);
+        const pickRates   = data.map(d => (d['표본수 (Ver1)'] / totalSample) * 100);
+        avg = pickRates.reduce((s, v) => s + v, 0) / pickRates.length;
+      }
+      // — delta 모드는 변화량 단순 평균
+      else if (mode === 'delta') {
+        const key = col === '평균 순위' ? '평균 순위 변화량' : col + ' 변화량';
+        const vals = data.map(d =>
+          parseFloat(String(d[key] || '').replace(/[^0-9.\-]/g, '')) || 0
+        );
+        avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+      }
+      // — 나머지는 가중평균
+      else {
+        const valueKey  = col + (mode === 'value2' ? ' (Ver2)' : mode === 'value1' ? ' (Ver1)' : '');
+        const weightKey = mode === 'value2' ? '픽률 (Ver2)' : mode === 'value1' ? '픽률 (Ver1)' : '픽률';
+  
+        const tuples = data.map(d => {
+          const v  = parseFloat(String(d[valueKey]  || '').replace(/[^0-9.\-]/g, '')) || 0;
+          const pr = (parseFloat(String(d[weightKey] || '').replace(/[^0-9.\-]/g, '')) || 0) / 100;
+          return pr > 0 ? { v, pr } : null;
+        }).filter(x => x);
+  
+        const totalPr   = tuples.reduce((s, x) => s + x.pr, 0);
+        const weighted  = tuples.reduce((s, x) => s + x.v * x.pr, 0);
+        avg = totalPr > 0 ? weighted / totalPr : 0;
+      }
+  
+      // 전체 값 배열(min/max 계산)
+      const values = rows.map((tr, i) => {
         if (col === '픽률') {
-            if (mode === 'value1')  valueKey = '픽률';  // 실제값은 비교 테이블에서 픽률 셀 자신의 textContent 사용
-            else if (mode === 'value2') valueKey = '픽률';
-            else valueKey = '픽률'; // delta 도 같은 셀 텍스트에서
-        } else if (mode === 'value1') {
-            valueKey = col + ' (Ver1)';
-        } else if (mode === 'value2') {
-            valueKey = col + ' (Ver2)';
-        } else {
-            valueKey = (col === '평균 순위') ? '평균 순위 변화량' : col + ' 변화량';
+          // 이미 pickRates 쓴 것과 동일
+          const pr1 = data[i]['표본수 (Ver1)'], tot = data.reduce((s,d)=>s+d['표본수 (Ver1)'],0);
+          return (pr1 / tot) * 100;
         }
-
-        // 평균 계산
-        let avg;
-        if (col === '픽률') {
-            // 단순 평균
-            const vals = rows.map(r => {
-                const txt = r.children[i].textContent.trim();
-                if (mode === 'value1')  return parsePickRate(txt, 'ver1');
-                if (mode === 'value2')  return parsePickRate(txt, 'ver2');
-                return parsePickRate(txt, 'delta');
-            });
-            avg = vals.reduce((s,v)=>s+v,0) / vals.length;
-        } else if (mode === 'delta') {
-            // 변화량 단순 평균
-            const vals = data.map(d => {
-                const v = d[valueKey];
-                return (typeof v === 'number') ? v : parseFloat(String(v).replace(/[+▲▼]/g, ''))||0;
-            });
-            avg = vals.reduce((s,v)=>s+v,0) / vals.length;
+        const key = mode === 'delta'
+          ? (col === '평균 순위' ? '평균 순위 변화량' : col + ' 변화량')
+          : (mode === 'value2'
+              ? col + ' (Ver2)'
+              : mode === 'value1'
+              ? col + ' (Ver1)'
+              : col);
+        return parseFloat(String(data[i][key] || '').replace(/[^0-9.\-]/g, '')) || 0;
+      });
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+  
+      const betterHigh = ['점수','픽률','RP 획득','승률','TOP 3','표본수'].includes(col);
+      const betterLow  = ['평균 순위'].includes(col);
+  
+      // 셀별 색칠
+      rows.forEach((tr, rowIndex) => {
+        const cell = tr.children[colIndex];
+        const v    = values[rowIndex];
+        let color = '';
+  
+        if (max === min) {
+          color = 'rgba(240,240,240,0.3)';
         } else {
-            // 가중평균 (픽률 열은 제외)
-            const tuples = data.map(d => {
-                const v = d[valueKey];
-                let pr = 0;
-                const pr1 = d['픽률 (Ver1)'], pr2 = d['픽률 (Ver2)'];
-                if (mode === 'value1') pr = (typeof pr1==='number'?pr1/100:0);
-                else pr = (typeof pr2==='number'?pr2/100:0);
-                return (typeof v==='number' && pr>0) ? {v, pr} : null;
-            }).filter(x=>x);
-            const totalPr = tuples.reduce((s,x)=>s+x.pr,0);
-            const wsum    = tuples.reduce((s,x)=>s+x.v*x.pr,0);
-            avg = totalPr>0 ? wsum/totalPr : 0;
+          let ratio;
+          if (betterHigh) {
+            ratio = (v - min) / (max - min);
+          } else if (betterLow) {
+            ratio = 1 - (v - min) / (max - min);
+          } else {
+            ratio = (v - min) / (max - min);
+          }
+          ratio = Math.max(0, Math.min(1, ratio));
+  
+          if (ratio < 0.5) {
+            // blue → white
+            const t = ratio * 2;
+            const r = Math.round(164 + (255 - 164) * t);
+            const g = Math.round(194 + (255 - 194) * t);
+            const b = Math.round(244 + (255 - 244) * t);
+            color = `rgb(${r},${g},${b})`;
+          } else {
+            // white → red
+            const t = (ratio - 0.5) * 2;
+            const r = Math.round(255 + (230 - 255) * t);
+            const g = Math.round(255 + (124 - 255) * t);
+            const b = Math.round(255 + (115 - 255) * t);
+            color = `rgb(${r},${g},${b})`;
+          }
         }
-
-        // 컬럼 전체 값 배열 (min/max 계산)
-        const allVals = rows.map(r => {
-            if (col === '픽률') {
-                const txt = r.children[i].textContent.trim();
-                if (mode === 'value1')  return parsePickRate(txt, 'ver1');
-                if (mode === 'value2')  return parsePickRate(txt, 'ver2');
-                return parsePickRate(txt, 'delta');
-            }
-            const raw = data[rows.indexOf(r)][valueKey];
-            return (typeof raw==='number')
-                ? raw
-                : parseFloat(String(raw).replace(/[+▲▼]/g, ''))||0;
-        });
-        const min = Math.min(...allVals), max = Math.max(...allVals);
-
-        // 좋음/나쁨 기준
-        const higherBetter = (col!=='평균 순위');
-        const lowerBetter  = (col==='평균 순위');
-
-        // 색상 입히기
-        rows.forEach((r, idx) => {
-            const cell = r.children[i];
-            let v = allVals[idx];
-            let ratio, color;
-            if (max === min) {
-                color = 'rgba(240,240,240,0.3)';
-            } else {
-                if ((higherBetter && v>=avg) || (lowerBetter && v<=avg)) {
-                    // 중간→최고(좋음)
-                    ratio = higherBetter
-                        ? (v-avg)/(max-avg)
-                        : (avg-v)/(avg-min);
-                    ratio = Math.max(0, Math.min(1, ratio));
-                    // 흰→빨
-                    color = interpolateColor([255,255,255],[230,124,115], ratio);
-                } else {
-                    // 최악→중간
-                    ratio = higherBetter
-                        ? (avg-v)/(avg-min)
-                        : (v-avg)/(max-avg);
-                    ratio = Math.max(0, Math.min(1, ratio));
-                    // 블루→흰
-                    color = interpolateColor([164,194,244],[255,255,255], ratio);
-                }
-            }
-            cell.style.backgroundColor = color;
-        });
+  
+        cell.style.backgroundColor = color;
+      });
     });
-}
-
-// 두 색상 간 보간 함수 (기존 그대로)
-function interpolateColor(start, end, t) {
-    const tt = Math.max(0, Math.min(1, t));
-    const rgb = start.map((s,i)=>Math.round(s + (end[i]-s)*tt));
-    return `rgb(${rgb.join(',')})`;
-}
+  }
+  
