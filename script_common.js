@@ -594,7 +594,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
                   const cell = tr.children[i];
                   cell.style.backgroundColor = ''; // 실험체 열의 모든 셀 배경색 초기화
              });
-             // 실험체 열 (순위 변화) 색칠은 이 함수에서 배경색이 아닌 다른 방식으로 처리할 수 있습니다.
+             // 실험체 열 (순위 변화) 색칠은 이제 이 함수에서 배경색이 아닌 다른 방식으로 처리할 수 있습니다.
              // 현재는 배경색 적용 로직 자체가 제거되었습니다.
               return; // 실험체 열 처리는 여기서 끝
          }
@@ -640,6 +640,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
         // 그 외 숫자 스탯 컬럼 (점수, 픽률 등, 평균 순위, 표본수)에 대한 색상 강조
         const isNumericStatColumn = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
         if (isNumericStatColumn) {
+
              // 색상 적용 기준이 되는 값을 컬럼의 모든 셀에서 모읍니다.
              let valuesToScale = [];
              let valueKey; // 어떤 데이터 키를 사용할지
@@ -649,18 +650,18 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
              } else if (mode === 'value2') {
                   valueKey = col + ' (Ver2)';
              } else if (mode === 'delta') {
-                  valueKey = col + ' 변화량'; // 평균 순위는 '순위 변화값'이 아니라 '평균 순위 변화량'이 됩니다.
-                  if (col === '평균 순위') valueKey = '평균 순위 변화량'; // 평균 순위 델타는 평균 순위 변화량 키 사용
+                  valueKey = col + ' 변화량';
+                  if (col === '평균 순위') valueKey = '평균 순위 변화량';
              } else { // 단일 모드 (이 함수는 비교 페이지에서만 호출되므로 이 경우는 발생하지 않아야 함)
                   valueKey = col;
              }
 
              // --- 평균값 계산 (가중평균 또는 단순평균) ---
              let avg;
-             if (mode === 'delta' || col === '픽률') { // 델타 모드는 변화량 자체의 평균, 픽률 열은 단순 평균
-                 // 델타 모드일 때는 변화량 값들만 모아서 단순 평균 계산
-                 // 픽률 열일 때는 픽률 값들만 모아서 단순 평균 계산
-                  const valuesForAvg = data.map(d => {
+             // 사용자 요구사항 반영: 픽률 열은 단순 평균 (모드 상관없이), 델타 모드도 단순 평균, Value1/Value2 모드 (픽률 제외)만 가중평균
+             if (col === '픽률' || mode === 'delta') {
+                 // 픽률 열 (모드 상관없이) 또는 델타 모드일 때는 단순 평균 계산
+                 const valuesForAvg = data.map(d => {
                       const val = d[valueKey];
                        return typeof val === 'number' ? val : parseFloat(String(val || '').replace(/[+%▲▼]/g, ''));
                   }).filter(v => !isNaN(v) && v !== null);
@@ -683,12 +684,13 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
 
                        } else {
                             // 만약 픽률 컬럼이 없는데 가중평균이 필요하다면 다른 가중치 기준 필요
-                            console.error("픽률 컬럼이 없습니다. 가중평균 계산 불가.");
+                            console.error("applyGradientColorsComparison: 픽률 컬럼이 없습니다. 가중평균 계산 불가.");
                             return null; // 계산 불가 시 해당 항목 제외
                        }
 
                        return typeof val === 'number' ? { value: val, pickRate: pickRate } : null; // 유효한 값만 포함
                   }).filter(item => item !== null && item.pickRate !== 0); // 유효한 값 + 픽률 0이 아닌 항목만 사용
+
 
                   let totalPickRate = valuesWithPickRate.reduce((sum, item) => sum + item.pickRate, 0);
                   let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
@@ -699,6 +701,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
              // --- 평균값 계산 끝 ---
 
 
+             // 스케일링에 사용할 실제 값들
              valuesToScale = data.map(d => {
                   const val = d[valueKey];
                    return typeof val === 'number' ? val : parseFloat(String(val || '').replace(/[+%▲▼]/g, ''));
@@ -743,7 +746,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
                      return;
                  }
 
-                 let ratio; // 0 (스케일 기준점) ~ 1 (스케일 끝점)
+                 let ratio; // 0 (min end) to 1 (max end)
                  let color;
 
                  // 값이 min/max와 같을 때 ratio 계산 오류 방지 및 스케일링
