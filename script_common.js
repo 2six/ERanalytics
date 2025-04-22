@@ -171,7 +171,7 @@ function sortData(data, column, asc, mode = 'value') {
      if (!data || data.length === 0) return [];
 
     let sortKey;
-    // 비교 모드에서 사용할 정렬 기준 키를 결정합니다.
+    // 정렬 기준 키를 결정합니다.
     // column: 헤더의 data-col 값 ('점수', '티어' 등)
     // mode: 'value' (단일), 'value1', 'value2', 'delta'
     if (mode === 'value') { // 단일 모드
@@ -443,12 +443,11 @@ function applyGradientColorsSingle(table) {
          }).filter(v => v !== null);
 
 
-         if (values.length === 0) { // 오류 수정: values가 비어있을 때 계산 건너뛰기
+         if (values.length === 0) {
               rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-              return; // 이 컬럼에 대한 색상 적용 중단
+              return;
          }
 
-         // 오류 수정: avg, min, max를 여기서 다시 계산하도록 scope 수정
          const avg = values.reduce((a,b)=>a+b,0)/values.length;
          const min = Math.min(...values);
          const max = Math.max(...values);
@@ -566,6 +565,7 @@ function applyGradientColorsComparison(table) {
              const min = Math.min(...values);
              const max = Math.max(...values);
 
+
              const isGoodStat = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3'].includes(col);
              const isBadStat = ['평균 순위'].includes(col);
 
@@ -610,8 +610,8 @@ function applyGradientColorsComparison(table) {
 
                       cell.style.backgroundColor = color;
 
-                 } else { // data-delta가 숫자가 아닌 경우 (new, removed, none)
-                      // 배경색 제거 (이미 위에 실험체 열과 티어 열은 처리됨)
+                 } else { // data-delta가 숫자가 아닌 경우 (new, removed, none) 또는 숫자 스탯 컬럼이 아님
+                      // 이미 위에 실험체 열과 티어 열은 처리됨
                      if (col !== '실험체' && col !== '티어') cell.style.backgroundColor = '';
                  }
              });

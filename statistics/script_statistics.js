@@ -348,7 +348,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderComparisonTable(data) {
          if (!isCompareMode) return;
 
-        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위','표본수']; // 표본수 컬럼 다시 추가 (비교 모드에서는 Ver1/Ver2로 표시)
+        // 기존 테이블 컬럼 목록
+        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위', '표본수']; // 비교 모드는 표본수 포함
 
         let comparisonTableHtml = '<table><thead><tr>';
         cols.forEach(c => {
@@ -381,11 +382,41 @@ document.addEventListener('DOMContentLoaded', function() {
                       }
 
                  } else if (col === '티어') {
-                     // 티어 컬럼에는 티어 변화 정보만 표시
+                     // 티어 컬럼에는 티어 변화 정보와 순위 변화 정보를 함께 표시 (수정: 순위 변화는 실험체 열로 이동)
+                     // 이제 티어 열에는 티어 변화 정보만 표시합니다.
                      const tierChange = row['티어 변화'] || '-'; // string
+                     const rank1 = row['순위 (Ver1)']; // number 또는 undefined
+                     const rank2 = row['순위 (Ver2)']; // number 또는 undefined
+                     const rankChangeValue = row['순위 변화값']; // number 또는 string
 
-                     // 표시될 내용: 티어 변화
-                     displayVal = tierChange;
+                     let rankInfo = '';
+                      if (typeof rank1 === 'number' && typeof rank2 === 'number') {
+                           const rankChangeFormatted = Math.abs(rankChangeValue);
+                           // 순위 숫자가 작아지면 개선 (▼), 커지면 악화 (▲) -> 표시 기호 반전
+                           // 요구사항에 따라 순위 숫자 감소 (좋아짐)는 ▲, 순위 숫자 증가 (나빠짐)는 ▼ 사용
+                            rankInfo = `${rank1}위 → ${rank2}위 ${rankChangeValue < 0 ? `▲${rankChangeFormatted}` : (rankChangeValue > 0 ? `▼${rankChangeFormatted}` : '')}`;
+                      } else if (rankChangeValue === '신규 → ') {
+                           rankInfo = `(신규)`;
+                      } else if (rankChangeValue === '→ 삭제') {
+                           rankInfo = `(삭제)`;
+                      } else if (typeof rank1 === 'number') { // Ver1에만 데이터 있고 Ver2에 없는 경우
+                           rankInfo = `${rank1}위 → -`;
+                      } else if (typeof rank2 === 'number') { // Ver2에만 데이터 있고 Ver1에 없는 경우
+                           rankInfo = `- → ${rank2}위`;
+                      } else {
+                            rankInfo = '-';
+                      }
+
+
+                     // 표시될 내용 조합: 티어 변화 + 순위 변화 정보 (함께 표시)
+                     if (tierChange === '-') {
+                          if (rankInfo === '-') displayVal = '-';
+                          else displayVal = rankInfo; // 티어 정보는 없지만 순위 정보는 있는 경우
+                     }
+                     else {
+                          displayVal = `${tierChange} ${rankInfo && rankInfo !== '-' ? `<span class="rank-info">(${rankInfo})</span>` : ''}`;
+                     }
+
 
                      // 티어 변화 색상 강조를 위한 data 속성
                       if (tierChange.includes('→')) {
@@ -480,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dataContainer.innerHTML = comparisonTableHtml;
 
-        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable); // 모든 th에 이벤트 부착
+        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable);
         applyGradientColorsComparison(dataContainer.querySelector('table'));
     }
 
@@ -489,12 +520,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderTable(data) {
          if (isCompareMode) return;
 
+        // 기존 테이블 컬럼 목록
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
         let html = '<table><thead><tr>';
         cols.forEach(c => {
-             // 단일 모드에서는 티어 정렬 제외 유지
-            const sortable = c !== '티어';
+             // 단일 모드에서는 티어 정렬 포함, 실험체 정렬 제외
+            const sortable = c !== '실험체';
             html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`;
         });
         html += '</tr></thead><tbody>';
@@ -523,6 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dataContainer.innerHTML = html;
 
+        // 단일 모드용 정렬 이벤트 부착 (실험체 제외)
         attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable);
         if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
     }
@@ -531,19 +564,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function attachSingleSortEventListeners(ths, renderFunc) {
          ths.forEach(th => {
             const col = th.dataset.col;
-
-            // 실험체 컬럼은 단일 모드에서 정렬 가능하도록 유지 (원래 코드대로)
-            // 티어 컬럼은 data-nosort="true" 속성을 가지고 있다면 정렬 제외
-
-            // data-nosort 속성이 있는지 확인
-            if (th.hasAttribute('data-nosort')) {
-                 th.style.cursor = 'default';
-                 th.setAttribute('data-arrow', '');
-                 th.classList.remove('delta-sort-indicator');
-                 return; // 정렬 제외 컬럼
-            }
-
-            th.style.cursor = 'pointer'; // 정렬 가능 컬럼
 
             th.setAttribute('data-arrow', '');
             th.classList.remove('delta-sort-indicator');
@@ -606,36 +626,45 @@ document.addEventListener('DOMContentLoaded', function() {
              // 클릭 이벤트 리스너 추가
              th.onclick = () => {
                  // 정렬 순환: Value1 ▼ -> Value1 ▲ -> Value2 ▼ -> Value2 ▲ -> Delta ▼ -> Delta ▲ -> Value1 ▼ ...
+                 const modes = ['value1', 'value2', 'delta'];
+                 let nextModeIndex = (modes.indexOf(currentSortMode) + 1) % modes.length;
+                 let nextMode = modes[nextModeIndex];
+                 let nextAsc = false; // 기본은 내림차순
 
                  if (currentSortColumn === col) {
                      // 같은 컬럼 다시 클릭 시 순환 로직
                      if (currentSortMode === 'value1' && !currentSortAsc) { // Value1 ▼ -> Value1 ▲
-                         currentSortAsc = true;
+                         nextMode = 'value1';
+                         nextAsc = true;
                      } else if (currentSortMode === 'value1' && currentSortAsc) { // Value1 ▲ -> Value2 ▼
-                          currentSortMode = 'value2';
-                          currentSortAsc = false;
+                          nextMode = 'value2';
+                          nextAsc = false;
                      } else if (currentSortMode === 'value2' && !currentSortAsc) { // Value2 ▼ -> Value2 ▲
-                          currentSortAsc = true;
+                          nextMode = 'value2';
+                          nextAsc = true;
                      } else if (currentSortMode === 'value2' && currentSortAsc) { // Value2 ▲ -> Delta ▼
-                          currentSortMode = 'delta';
+                          nextMode = 'delta';
                           // common.js의 sortData 로직에 맞는 초기 방향 설정
-                          // 순위 관련 (평균 순위, 실험체)는 asc=true가 좋아지는 순 (숫자 감소)
+                          // 순위 관련 (평균 순위)는 asc=true가 좋아지는 순 (숫자 감소)
                           // 그 외 변화량은 asc=true가 나쁜 변화 순 (숫자 감소)
                           // 티어 변화는 asc=true가 나쁜 변화 순 (문자열 오름차순)
                           // 여기서는 클릭된 컬럼에 따라 초기 방향 설정
-                          if (col === '평균 순위') currentSortAsc = true; // 평균 순위 변화는 오름차순이 좋아지는 순
-                          else if (col === '티어') currentSortAsc = true; // 티어 변화는 오름차순이 나쁜 변화 순 (문자열 오름차순)
-                          else currentSortAsc = false; // 그 외 스탯 변화량은 내림차순이 좋아지는 순
+                          if (col === '평균 순위') nextAsc = true; // 평균 순위 변화는 오름차순이 좋아지는 순
+                          else if (col === '티어') nextAsc = true; // 티어 변화는 오름차순이 나쁜 변화 순 (문자열 오름차순)
+                          else nextAsc = false; // 그 외 스탯 변화량은 내림차순이 좋아지는 순
 
 
                      } else if (currentSortMode === 'delta' && !currentSortAsc) { // Delta ▼ -> Delta ▲
-                          // delta 모드에서 오름차순으로 전환
-                         currentSortAsc = true;
+                          nextMode = 'delta';
+                          nextAsc = true;
                      }
                      else { // Delta ▲ -> Value1 ▼ (초기 상태로 회귀)
-                          currentSortMode = 'value1';
-                          currentSortAsc = false;
+                          nextMode = 'value1';
+                          nextAsc = false;
                      }
+                     currentSortMode = nextMode;
+                     currentSortAsc = nextAsc;
+
                  } else {
                      // 다른 컬럼 클릭 시
                      currentSortColumn = col; // 컬럼 변경

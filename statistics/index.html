@@ -94,6 +94,11 @@ layout: none
         flex-wrap: wrap;
     }
 
+    /* "데이터 1 :" 레이블 숨김 */
+     .dropdowns > div:first-child > span {
+         display: none;
+     }
+
     /* 비교 모드 테이블의 셀 스타일 */
      #data-container td {
          font-size: 0.9em; /* 글자 크기 약간 줄임 */
@@ -125,7 +130,7 @@ layout: none
     <div class="dropdowns">
       <!-- 데이터 1 선택 -->
       <div>
-          <span>데이터 1:</span>
+          <span>데이터 1:</span> {# 이 레이블은 CSS로 숨겨짐 #}
           <select id="version-select"></select>
           <select id="tier-select"></select>
           <select id="period-select"></select>
