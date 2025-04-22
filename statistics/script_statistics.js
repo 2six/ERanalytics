@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (col === '실험체') {
                 th.style.cursor = 'default';
                 th.setAttribute('data-arrow', '');
-                th.classList.remove('delta-sort-indicator');
+                th.classList.remove('delta-sort-indicator'); // 혹시 모를 클래스 제거
                 th.setAttribute('data-nosort', 'true'); // 정렬 불가 명시
                 return;
             }
@@ -677,7 +677,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 따라서 '점수 (VerX)' 기준 내림차순 (asc=false)일 때 S+가 위로 옵니다.
                     // 그래서 '티어' 컬럼 클릭 시 Value1 내림차순으로 시작하는 것이 맞습니다.
                     if (col === '티어') nextAsc = false; // 티어 Value1 내림차순 시작 (S+ 위로)
-
                 }
 
                 currentSortMode = nextMode; // 현재 정렬 모드 업데이트
