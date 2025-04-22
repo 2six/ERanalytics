@@ -424,13 +424,13 @@ function interpolateColor(start, end, ratio) {
 
 // 티어 색상 (단일 모드)
 const TIER_COLORS_SINGLE = {
-    'S+': 'rgba(255,127,127, 0.3)',
-    'S':  'rgba(255,191,127, 0.3)',
-    'A':  'rgba(255,223,127, 0.3)',
-    'B':  'rgba(255,255,127, 0.3)',
-    'C':  'rgba(191,255,127, 0.3)',
-    'D':  'rgba(127,255,127, 0.3)',
-    'F':  'rgba(127,255,255, 0.3)',
+    'S+': 'rgba(255,127,127, 1)',
+    'S':  'rgba(255,191,127, 1)',
+    'A':  'rgba(255,223,127, 1)',
+    'B':  'rgba(255,255,127, 1)',
+    'C':  'rgba(191,255,127, 1)',
+    'D':  'rgba(127,255,127, 1)',
+    'F':  'rgba(127,255,255, 1)',
 };
 
 // 11. 단일 데이터용 그라디언트 색상 적용
@@ -581,10 +581,14 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
     const rows = [...table.querySelectorAll('tbody tr')];
     const headers = [...table.querySelectorAll('thead th')];
 
+    // 픽률 정보를 가져올 컬럼 인덱스를 찾습니다. (가중치로 사용)
+    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률'); // 픽률 컬럼 인덱스
+
+
     headers.forEach((th, i) => {
         const col = th.dataset.col;
 
-        // 사용자 요구사항 반영: 실험체 열은 배경색 적용 안 함
+        // 사용자 요구사항 반영: 실험체 열은 배경색 적용 안 함 (이전 수정에서 이미 제거됨)
         if (col === '실험체') {
              rows.forEach(tr => {
                   const cell = tr.children[i];
@@ -651,10 +655,53 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
                   valueKey = col;
              }
 
+             // --- 평균값 계산 (가중평균 또는 단순평균) ---
+             let avg;
+             if (mode === 'delta' || col === '픽률') { // 델타 모드는 변화량 자체의 평균, 픽률 열은 단순 평균
+                 // 델타 모드일 때는 변화량 값들만 모아서 단순 평균 계산
+                 // 픽률 열일 때는 픽률 값들만 모아서 단순 평균 계산
+                  const valuesForAvg = data.map(d => {
+                      const val = d[valueKey];
+                       return typeof val === 'number' ? val : parseFloat(String(val || '').replace(/[+%▲▼]/g, ''));
+                  }).filter(v => !isNaN(v) && v !== null);
+
+                  avg = valuesForAvg.length === 0 ? 0 : valuesForAvg.reduce((sum, v) => sum + v, 0) / valuesForAvg.length;
+
+             } else { // Value1 또는 Value2 모드 (픽률 열 제외)는 가중평균 계산
+                  // 해당 컬럼의 값과 픽률 데이터를 함께 모읍니다.
+                  const valuesWithPickRate = data.map(d => {
+                       const val = d[valueKey]; // 해당 컬럼의 값 (Value1 또는 Value2)
+
+                       let pickRate = 0;
+                       if (pickRateColIndex !== -1) {
+                            // 해당 행의 픽률 데이터를 가져옵니다. (Value1 또는 Value2 모드에 따라)
+                            const pickRateVer1 = d['픽률 (Ver1)'];
+                            const pickRateVer2 = d['픽률 (Ver2)'];
+
+                             if (mode === 'value1') pickRate = typeof pickRateVer1 === 'number' ? pickRateVer1 / 100 : 0;
+                             else if (mode === 'value2') pickRate = typeof pickRateVer2 === 'number' ? pickRateVer2 / 100 : 0;
+
+                       } else {
+                            // 만약 픽률 컬럼이 없는데 가중평균이 필요하다면 다른 가중치 기준 필요
+                            console.error("픽률 컬럼이 없습니다. 가중평균 계산 불가.");
+                            return null; // 계산 불가 시 해당 항목 제외
+                       }
+
+                       return typeof val === 'number' ? { value: val, pickRate: pickRate } : null; // 유효한 값만 포함
+                  }).filter(item => item !== null && item.pickRate !== 0); // 유효한 값 + 픽률 0이 아닌 항목만 사용
+
+                  let totalPickRate = valuesWithPickRate.reduce((sum, item) => sum + item.pickRate, 0);
+                  let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
+
+                  // 픽률 합이 0이면 단순 평균 또는 0 처리
+                  avg = totalPickRate === 0 ? 0 : weightedSum / totalPickRate;
+             }
+             // --- 평균값 계산 끝 ---
+
+
              valuesToScale = data.map(d => {
-                 const val = d[valueKey];
-                 // 숫자 파싱 시 기호 (+%▲▼) 제거
-                 return typeof val === 'number' ? val : parseFloat(String(val || '').replace(/[+%▲▼]/g, ''));
+                  const val = d[valueKey];
+                   return typeof val === 'number' ? val : parseFloat(String(val || '').replace(/[+%▲▼]/g, ''));
              }).filter(v => !isNaN(v) && v !== null); // 유효한 숫자만 필터링 (null 제외)
 
 
@@ -696,7 +743,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) { // data, 
                      return;
                  }
 
-                 let ratio; // 0 (min end) to 1 (max end)
+                 let ratio; // 0 (스케일 기준점) ~ 1 (스케일 끝점)
                  let color;
 
                  // 값이 min/max와 같을 때 ratio 계산 오류 방지 및 스케일링
