@@ -30,11 +30,16 @@ layout: none
       white-space: nowrap;
       padding: 4px 6px;
     }
+    /* 실험체 이름 컬럼 너비 조정 */
     #data-container th:first-child,
     #data-container td:first-child {
       min-width: 120px;
       max-width: 120px;
     }
+    /* 비교 모드에서 각 스탯 컬럼 그룹의 너비 조정 (예: 점수, 점수 차이) */
+     /* 이 부분은 JS로 클래스를 추가하고 CSS에서 제어하는 것이 더 유연할 수 있습니다. */
+
+
     /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
     #data-container th {
       position: relative;
@@ -50,22 +55,70 @@ layout: none
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
     }
+
+    /* 비교 모드 컨트롤 그룹 */
+    #comparison-controls {
+        display: none; /* 기본적으로 숨김 */
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #eee; /* 구분선 */
+    }
+    /* 드롭다운 그룹 레이아웃 */
+    .dropdowns > div {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        /* 모바일에서 세로로 쌓이도록 조정 */
+        flex-wrap: wrap;
+    }
+
+    /* 비교 모드일 때 배경색 등 시각적 표시 (선택 사항) */
+     body.compare-mode {
+         /* background-color: #fffbe6; */ /* 연한 노란색 등 */
+     }
+     body.compare-mode header h1 {
+         /* color: #ffac2b; */ /* 강조 색상 */
+     }
+
+    /* 비교 테이블의 차이값에 대한 스타일 */
+    .diff-positive { color: green; font-weight: bold; } /* 상승 */
+    .diff-negative { color: red; font-weight: bold; }    /* 하락 */
+    .rank-up     { color: green; font-weight: bold; } /* 순위 상승 */
+    .rank-down   { color: red; font-weight: bold; }    /* 순위 하락 */
+
+    /* 비교 모드 테이블의 컬럼 너비 조정 (예시) */
+    /* 각 스탯에 대해 [스탯], [차이] 2개 컬럼이 생기므로 너비 조정 필요 */
+    /* JS에서 컬럼에 클래스를 추가하여 제어하는 것을 추천 */
+    /* 예: th.score, td.score, th.score-diff, td.score-diff */
+
   </style>
 </head>
 <body>
   <header>
     {% include nav.html %}
-    <h1>실험체 통계</h1>
+    <h1>실험체 통계 <span id="compare-mode-label" style="font-size: 0.8em; color: #888; display: none;">(비교 모드)</span></h1>
   </header>
 
   <main>
     <div class="dropdowns">
-      <select id="version-select"></select>
-      <select id="tier-select"></select>
-      <select id="period-select"></select>
-      <label>
-        <input type="checkbox" id="gradient-checkbox"> 색상 강조
-      </label>
+      <!-- 데이터 1 선택 -->
+      <div>
+          <span>데이터 1:</span>
+          <select id="version-select"></select>
+          <select id="tier-select"></select>
+          <select id="period-select"></select>
+          <label>
+            <input type="checkbox" id="gradient-checkbox"> 색상 강조
+          </label>
+      </div>
+
+      <!-- 비교 모드 데이터 2 선택 (기본 숨김) -->
+      <div id="comparison-controls">
+          <span>데이터 2 (비교):</span>
+          <select id="version-select-compare"></select>
+          <select id="tier-select-compare"></select>
+          <select id="period-select-compare"></select>
+      </div>
     </div>
 
     <section>
