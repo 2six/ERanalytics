@@ -388,8 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       }
 
                  } else if (col === '티어') {
-                     // 티어 컬럼에는 티어 변화 정보와 순위 변화 정보를 함께 표시 (수정: 순위 변화는 실험체 열로 이동)
-                     // 이제 티어 열에는 티어 변화 정보와 순위 변화 정보를 함께 표시합니다. (요구사항 반영)
+                     // 티어 컬럼에는 티어 변화 정보만 표시
                      const tierChange = row['티어 변화'] || '-'; // string
                      const rank1 = row['순위 (Ver1)']; // number 또는 undefined
                      const rank2 = row['순위 (Ver2)']; // number 또는 undefined
@@ -662,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      } else if (currentSortMode === 'value2' && currentSortAsc) { // Value2 ▲ -> Delta ▼
                           nextMode = 'delta';
                           // common.js의 sortData 로직에 맞는 초기 방향 설정
-                          // 순위 관련 (평균 순위)는 asc=true가 좋아지는 순 (숫자 감소)
+                          // 순위 관련 (평균 순위, 실험체)는 asc=true가 좋아지는 순 (숫자 감소)
                           // 그 외 변화량은 asc=true가 나쁜 변화 순 (숫자 감소)
                           // 티어 변화는 asc=true가 나쁜 변화 순 (문자열 오름차순)
                           // 여기서는 클릭된 컬럼에 따라 초기 방향 설정
