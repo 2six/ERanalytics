@@ -261,22 +261,23 @@ function sortData(data, column, asc, mode = 'value') {
        }
 
         // 2. 티어 값 비교 (S+ -> F 순서)
-        if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
-            const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-            const indexX = tierOrder.indexOf(String(x));
-            const indexY = tierOrder.indexOf(String(y));
+         if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
+             const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
+             const indexX = tierOrder.indexOf(String(x));
+             const indexY = tierOrder.indexOf(String(y));
 
-            const xNotInOrder = indexX === -1;
-            const yNotInOrder = indexY === -1;
+             const xNotInOrder = indexX === -1;
+             const yNotInOrder = indexY === -1;
 
-            if (xNotInOrder && yNotInOrder) return 0;
-            if (xNotInOrder) return asc ? 1 : -1;
-            if (yNotInOrder) return asc ? -1 : 1;
+             if (xNotInOrder && yNotInOrder) return 0;
+             if (xNotInOrder) return asc ? 1 : -1;
+             if (yNotInOrder) return asc ? -1 : 1;
 
-            let comparison = indexX - indexY; // S+가 0, F가 6
-            // 요구사항 반영: 티어는 오름차순 (F 위로), 내림차순 (S+ 위로)
-            return asc ? comparison : -comparison;
-        }
+             let comparison = indexX - indexY; // S+가 0, F가 6
+             // 요구사항 반영: 티어는 오름차순 (F 위로), 내림차순 (S+ 위로)
+             return asc ? comparison : -comparison;
+         }
+
 
         // 3. 숫자 비교 (value 또는 delta)
         // 순위 관련 값 (평균 순위 값, 순위 변화값)은 작을수록 좋음

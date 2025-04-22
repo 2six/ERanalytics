@@ -604,7 +604,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // script_statistics.js - attachComparisonSortEventListeners 함수 (수정됨)
     // 10) 비교 모드용 정렬 이벤트 리스너 부착
     function attachComparisonSortEventListeners(ths, renderFunc) {
         ths.forEach(th => {
@@ -629,11 +628,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentSortColumn === col) {
                 let arrow = '';
                 if (currentSortMode === 'value1') {
-                    arrow = currentSortAsc ? '1▲' : '1▼';
+                    arrow = currentSortAsc ? '▲1' : '▼1';
                 } else if (currentSortMode === 'value2') {
-                    arrow = currentSortAsc ? '2▲' : '2▼';
+                    arrow = currentSortAsc ? '▲2' : '▼2';
                 } else if (currentSortMode === 'delta') {
-                      arrow = currentSortAsc ? 'Δ▲' : 'Δ▼'; // 델타 기호를 화살표 오른쪽에 붙여 표시
+                      arrow = currentSortAsc ? '▲Δ' : '▼Δ'; // 델타 기호를 화살표 오른쪽에 붙여 표시
                 }
                 th.setAttribute('data-arrow', arrow);
             }
