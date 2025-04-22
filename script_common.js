@@ -441,48 +441,66 @@ function applyGradientColorsSingle(table) {
     const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
     const badCols = ['평균 순위'];
 
-    // 표본수와 픽률 정보를 가져올 컬럼 인덱스를 찾습니다.
-    const sampleColIndex = headers.findIndex(th => th.dataset.col === '표본수'); // 단일 페이지에 표본수 컬럼이 있다면 사용
-    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률');
+    // 픽률 정보를 가져올 컬럼 인덱스를 찾습니다. (가중치로 사용)
+    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률'); // 픽률 컬럼 인덱스
+
 
     headers.forEach((th, i) => {
         const col = th.dataset.col;
         if (![...goodCols, ...badCols].includes(col)) return;
 
-        // 색상 스케일링에 사용할 값들과 해당 값의 '픽률' 데이터를 모읍니다.
-        const valuesWithPickRate = rows.map(r => {
+        // 색상 스케일링에 사용할 값들을 모읍니다.
+        const valuesOnly = rows.map(r => {
              const cell = r.children[i];
              const text = cell.textContent.replace('%','');
              const val = parseFloat(text);
-
-             // 해당 행의 픽률 데이터를 가져옵니다. (픽률 컬럼이 있다고 가정)
-             let pickRate = 0;
-             if (pickRateColIndex !== -1) {
-                  const pickRateCell = r.children[pickRateColIndex];
-                  pickRate = parseFloat(pickRateCell.textContent.replace('%','')) / 100; // 0~1 사이 값으로 변환
-             }
-             // 만약 표본수 컬럼이 있다면, 표본수를 사용하거나 다른 방식으로 픽률을 계산해야 할 수 있습니다.
-             // 여기서는 일단 픽률 컬럼이 있다고 가정합니다.
-
-             return isNaN(val) ? null : { value: val, pickRate: pickRate };
-        }).filter(item => item !== null);
+             return isNaN(val) ? null : val;
+        }).filter(v => v !== null);
 
 
-        if (valuesWithPickRate.length === 0) { // 유효한 값이 없으면
+        if (valuesOnly.length === 0) { // 유효한 값이 없으면
              rows.forEach(tr => tr.children[i].style.backgroundColor = '');
              return; // 이 컬럼 색칠 중단
         }
 
-        // 사용자 요구사항 반영: 픽률을 감안한 가중평균 계산
-        let totalPickRate = valuesWithPickRate.reduce((sum, item) => sum + item.pickRate, 0);
-        let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
-
-        // 픽률 합이 0이면 단순 평균 또는 0 처리 (나눗셈 오류 방지)
-        const avg = totalPickRate === 0 ? 0 : weightedSum / totalPickRate;
-
-        const valuesOnly = valuesWithPickRate.map(item => item.value);
         const min = Math.min(...valuesOnly);
         const max = Math.max(...valuesOnly);
+
+        let avg; // 평균값
+
+        // 사용자 요구사항 반영: 픽률 열은 단순 평균, 그 외는 가중평균
+        if (col === '픽률') {
+            // 픽률 열은 단순 평균
+            avg = valuesOnly.reduce((sum, value) => sum + value, 0) / valuesOnly.length;
+        } else {
+             // 그 외 스탯 열은 픽률을 가중치로 사용한 가중평균
+             const valuesWithPickRate = rows.map(r => {
+                  const cell = r.children[i];
+                  const text = cell.textContent.replace('%','');
+                  const val = parseFloat(text);
+
+                  let pickRate = 0;
+                  if (pickRateColIndex !== -1) {
+                       const pickRateCell = r.children[pickRateColIndex];
+                       pickRate = parseFloat(pickRateCell.textContent.replace('%','')) / 100; // 0~1 사이 값으로 변환
+                  } else {
+                       // 만약 픽률 컬럼이 없는데 가중평균이 필요하다면 다른 가중치 기준 필요
+                       // 현재는 픽률 컬럼이 있다고 가정
+                       console.error("픽률 컬럼이 없습니다. 가중평균 계산 불가.");
+                       return null; // 계산 불가 시 해당 항목 제외
+                  }
+
+                  return isNaN(val) ? null : { value: val, pickRate: pickRate };
+             }).filter(item => item !== null && item.pickRate !== 0); // 유효한 값 + 픽률 0이 아닌 항목만 사용
+
+
+             let totalPickRate = valuesWithPickRate.reduce((sum, item) => sum + item.pickRate, 0);
+             let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
+
+             // 픽률 합이 0이면 단순 평균 또는 0 처리 (나눗셈 오류 방지)
+             avg = totalPickRate === 0 ? 0 : weightedSum / totalPickRate;
+
+        }
 
 
         rows.forEach((r) => {
@@ -498,7 +516,7 @@ function applyGradientColorsSingle(table) {
             let ratio;
             const isBad = badCols.includes(col);
 
-            // 가중평균(avg)을 기준으로 스케일링
+            // 평균값(avg)을 기준으로 스케일링
             if (max === min) {
                 ratio = 0.5; // 범위가 없으면 중간값
             } else if (!isBad) { // 클수록 좋음 (점수, 픽률 등)
@@ -526,17 +544,14 @@ function applyGradientColorsSingle(table) {
                    ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
                    : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
             } else { // 작을수록 좋음 (평균 순위)
-                color = (ratio >= 0.5)
-                    ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best - because lower is better)
-                    : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg - because higher is worse)
-                 // Check if interpolation direction should be reversed for color mapping compared to ratio mapping
-                 // If isBad is true, ratio 1 is min (best), ratio 0 is max (worst).
-                 // We want ratio 1 to be Red (best), ratio 0 to be Blue (worst).
-                 // So, interpolate from Blue to White to Red based on the inverted ratio.
-                 const invertedRatio = 1 - ratio; // Ratio 1 becomes 0, ratio 0 becomes 1
-                  color = (invertedRatio >= 0.5)
-                      ? interpolateColor([255,255,255], [230,124,115], (invertedRatio-0.5)*2) // White -> Red (Avg to Best)
-                      : interpolateColor([164,194,244], [255,255,255], invertedRatio*2); // Blue -> White (Worst to Avg)
+                // If isBad is true, ratio 1 is min (best), ratio 0 is max (worst).
+                // We want ratio 1 to be Red (best), ratio 0 to be Blue (worst).
+                // So, interpolate from Blue to White to Red based on the ratio.
+                // The previous invertedRatio logic was unnecessary if ratio is already mapped 0=worst, 1=best
+                // The ratio calculation logic above (isBad branch) already maps min(best) to ratio 1, max(worst) to ratio 0.
+                 color = (ratio >= 0.5)
+                      ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
+                      : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
             }
             cell.style.backgroundColor = color;
         });
