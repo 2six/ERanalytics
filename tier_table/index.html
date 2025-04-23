@@ -187,13 +187,13 @@ layout: none
 
     /* 툴팁 컨테이너 (이미지 감싸는 span) */
     .tooltip-container {
-        position: relative; /* 툴팁 위치 기준 (기존 유지) */
-        display: inline-block; /* 이미지 크기에 맞게 (기존 유지) */
-        cursor: pointer; /* 마우스 오버 시 커서 변경 (기존 유지) */
+        position: relative; /* 툴팁 위치 기준 */
+        display: inline-block; /* 이미지 크기에 맞게 */
+        cursor: pointer; /* 마우스 오버 시 커서 변경 */
         /* --- 추가: 가변 너비 설정 --- */
-        width: calc(100% / 15); /* 부모 너비의 1/15로 설정 (기존 유지) */
+        width: calc(100% / 15); /* 부모 너비의 1/15로 설정 */
     }
-    /* 툴팁 박스 스타일 */
+    /* 툴팁 박스 스타일 유지 */
     .tooltip-box {
         visibility: hidden;
         background-color: rgba(0, 0, 0, 0.8); /* 기존 배경색 유지 */
@@ -201,13 +201,11 @@ layout: none
         text-align: left;
         border-radius: 6px;
         padding: 6px 10px;
-        /* --- 수정 제안: position을 fixed로 변경하여 새로운 쌓임 맥락 형성 및 최상단 배치 시도 --- */
-        position: fixed; /* 뷰포트 기준으로 배치, 새로운 쌓임 맥락 형성 */
-        z-index: 9999; /* 가장 높은 레벨에 오도록 시도 */
-        /* ----------------------------------------------------------------------------- */
-        bottom: 110%; /* position: fixed일 때 뷰포트 기준으로 계산됨 */
-        left: 50%; /* position: fixed일 때 뷰포트 기준으로 계산됨 */
-        transform: translateX(-50%); /* position: fixed일 때도 적용됨 */
+        position: absolute;
+        z-index: 100;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
         white-space: nowrap;
         font-size: 12px;
         opacity: 0;
