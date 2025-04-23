@@ -22,6 +22,7 @@ layout: none
     }
     #data-container table {
       min-width: 600px; /* 테이블이 충분히 넓어야 스크롤이 생김 */
+      border-collapse: collapse; /* 셀 간 간격 제거 */
     }
     /* 공통: 텍스트 넘칠 때 줄임표 */
     #data-container th,
@@ -29,12 +30,14 @@ layout: none
       overflow: hidden;
       white-space: nowrap;
       padding: 4px 6px;
+      border: 1px solid #ddd; /* 셀 경계선 추가 */
     }
     /* 실험체 이름 컬럼 너비 조정 */
     #data-container th:first-child,
     #data-container td:first-child {
       min-width: 180px; /* 순위 정보가 들어가면서 너비 조정 */
       max-width: 180px;
+      text-align: left; /* 실험체 이름은 좌측 정렬 */
     }
     /* 티어 컬럼 너비 조정 */
      #data-container th[data-col="티어"],
@@ -48,6 +51,7 @@ layout: none
     #data-container th {
       position: relative;
       padding-right: 30px; /* 화살표 공간 확보 */
+      text-align: center; /* 헤더 텍스트 중앙 정렬 */
     }
      /* 델타 기호 공간 확보 (화살표 + 숫자/기호 공간) */
      #data-container th.delta-sort-indicator {
@@ -59,15 +63,14 @@ layout: none
     #data-container th::after {
       content: attr(data-arrow);
       position: absolute;
-      /* right: 6px; */ /* JS에서 data-arrow 값에 기호 포함시키므로 right 위치 조정 */
-      right: 0; /* 오른쪽 정렬 기준점 */
+      right: 4px; /* 오른쪽 정렬 기준점 */
       top: 50%;
       transform: translateY(-50%);
       font-size: 0.8em; /* 화살표 크기 */
       pointer-events: none; /* 클릭 영역 방해하지 않게 */
-      min-width: 30px; /* 화살표 + 숫자/기호 공간 확보 */
+      min-width: 20px; /* 화살표 + 숫자/기호 공간 확보 */
       text-align: right; /* 화살표 및 기호를 우측 정렬 */
-     /* background-color: yellow; *//* 디버그용 */
+      color: #555; /* 화살표 색상 */
     }
 
     /* 비교 모드 컨트롤 그룹 */
@@ -94,21 +97,56 @@ layout: none
     /* 비교 모드 테이블의 셀 스타일 */
      #data-container td {
          font-size: 0.9em; /* 글자 크기 약간 줄임 */
+         text-align: center; /* 숫자 셀 중앙 정렬 */
+     }
+     #data-container td:first-child {
+         text-align: left; /* 실험체 이름은 좌측 정렬 유지 */
      }
 
+
      /* 변화량 텍스트에 대한 스타일 */
+     /* renderComparisonTable에서 span 태그로 감싸지 않으므로 이 스타일은 사용되지 않음 */
+     /*
      #data-container .delta-info {
-          font-size: 0.9em; /* 변화량 텍스트 크기 */
-          margin-left: 5px; /* 값과의 간격 */
-          font-weight: bold; /* 변화량 강조 */
+          font-size: 0.9em;
+          margin-left: 5px;
+          font-weight: bold;
      }
+     */
      #data-container .rank-info {
           font-size: 0.8em; /* 순위 정보는 더 작게 */
           font-weight: normal; /* 순위 정보는 굵게 하지 않음 */
           margin-left: 0; /* 실험체 이름 바로 옆에 붙도록 */
+          color: #555; /* 순위 정보 색상 */
      }
 
     /* 셀 배경 색상은 JS에서 data-* 속성 기준으로 적용 */
+
+    /* --- 비교 모드 특정 셀 색상 (CSS) --- */
+
+    /* 실험체 컬럼 (순위 변화) */
+    td[data-col="실험체"][data-rankdelta="new"] { background-color: rgba(144, 238, 144, 0.5); /* 연한 초록 */ } /* 신규 */
+    td[data-col="실험체"][data-rankdelta="removed"] { background-color: rgba(255, 182, 193, 0.5); /* 연한 빨강 */ } /* 삭제 */
+    /* JS에서 data-rankdelta에 숫자를 넣었을 때 CSS로 범위 색칠하는 것은 제한적입니다. */
+    /* JS에서 data-rankdelta-category="great-up", "up", "down", "great-down" 등으로 카테고리를 추가하는 것이 더 현실적입니다. */
+    /* 현재는 신규/삭제만 CSS로 처리하고, 숫자 변화량 색칠은 JS의 applyGradientColorsComparison에서 처리합니다. */
+
+
+    /* 티어 컬럼 (티어 변화) */
+    td[data-col="티어"][data-tierchange="new"] { background-color: rgba(144, 238, 144, 0.5); /* 연한 초록 */ } /* 신규 */
+    td[data-col="티어"][data-tierchange="removed"] { background-color: rgba(255, 182, 193, 0.5); /* 연한 빨강 */ } /* 삭제 */
+    td[data-col="티어"][data-tierchange="up"] { background-color: rgba(255, 192, 203, 0.5); /* 연한 분홍 (개선) */ }
+    td[data-col="티어"][data-tierchange="down"] { background-color: rgba(173, 216, 230, 0.5); /* 연한 파랑 (악화) */ }
+    td[data-col="티어"][data-tierchange="same"] { background-color: rgba(240, 240, 240, 0.3); /* 연한 회색 (동일) */ }
+     /* 단일 모드 티어 색상 (비교 모드에서는 data-tierchange="same"일 때만 적용될 수 있음) */
+     td[data-col="티어"][data-tier="S+"] { background-color: rgba(255,127,127, 1); }
+     td[data-col="티어"][data-tier="S"] { background-color: rgba(255,191,127, 1); }
+     td[data-col="티어"][data-tier="A"] { background-color: rgba(255,223,127, 1); }
+     td[data-col="티어"][data-tier="B"] { background-color: rgba(255,255,127, 1); }
+     td[data-col="티어"][data-tier="C"] { background-color: rgba(191,255,127, 1); }
+     td[data-col="티어"][data-tier="D"] { background-color: rgba(127,255,127, 1); }
+     td[data-col="티어"][data-tier="F"] { background-color: rgba(127,255,255, 1); }
+
 
   </style>
 </head>
