@@ -20,7 +20,8 @@ layout: none
       /* --- 수정: 데이터 표 너비 설정 --- */
       width: 1400px;
       max-width: 95vw;
-      min-width: 600px;
+      /* --- 추가: 최소 너비 설정 --- */
+      min-width: 1000px;
       /* ----------------------------- */
       border-collapse: collapse; /* 셀 간 간격 제거 */
       margin-bottom: 0;
@@ -32,6 +33,13 @@ layout: none
       /* 또는 단축 속성: margin: 0 auto; */
     }
 
+    /* --- 추가: 테이블 컨테이너에 가로 스크롤 적용 --- */
+    #tier-table-container {
+        overflow-x: auto;
+    }
+    /* --------------------------------------------- */
+
+
     .tier-table tr {
         border: none; /* 행 테두리 제거 (기존 유지) */
     }
@@ -40,7 +48,9 @@ layout: none
     .tier-table td {
         /* --- 복원: 셀 테두리 --- */
         border: 1px solid white;
-        padding: 0; /* 기본 패딩 제거 (기존 유지) */
+        /* --- 수정: 기본 패딩 제거 (기존 유지) --- */
+        padding: 0;
+        /* ------------------------------------ */
         vertical-align: top; /* 셀 내용 상단 정렬 (기존 유지) */
     }
 
@@ -56,11 +66,15 @@ layout: none
           -1px -1px 0 #000, 1px -1px 0 #000,
           -1px  1px 0 #000, 1px  1px 0 #000; /* 기존 유지 */
         padding: 10px; /* 패딩 유지 */
+        /* --- 추가: 수직 중앙 정렬 --- */
+        vertical-align: middle;
     }
 
     /* 실험체 이미지 열 (<td>) 스타일 */
     .tier-table td {
-        padding: 5px; /* 이미지 주변 패딩 유지 */
+        /* --- 수정: 이미지 주변 패딩 제거 --- */
+        padding: 0;
+        /* -------------------------------- */
         display: block; /* 기존 display: block 유지 */
         /* --- 복원: 배경색 --- */
         background-color: #1a1a17;
