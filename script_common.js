@@ -433,7 +433,7 @@ const TIER_COLORS_SINGLE = {
     'F':  'rgba(127,255,255, 1)',
 };
 
-// 11. 단일 데이터용 그라디언트 색상 적용
+// 11. 단일 데이터용 그라디언트 색상 적용 (gradientEnabled 인자 추가 및 로직 감싸기)
 // gradientEnabled: 색상 강조가 활성화되었는지 여부
 function applyGradientColorsSingle(table, gradientEnabled) { // gradientEnabled 인자 추가
     // 색상 강조 비활성화 시 모든 배경색 초기화 후 종료 (요청 사항 반영)
@@ -693,7 +693,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol, gradientEna
                    // 현재 renderComparisonTable에서는 단일 티어 속성(data-tier-single)을 티어 변화 없을 때만 저장하고 있습니다.
                    // Value2 모드일 때 Ver2 티어 색상을 정확히 적용하려면, renderComparisonTable에서 Ver2 티어 값을 다른 data 속성에 저장하거나
                    // data 배열의 itemData['티어 (Ver2)'] 값을 사용해야 합니다.
-                   // 사용자께서 원본 객체 수정을 금지하셨으므로, renderComparisonTable 수정이 필요합니다.
+                   // 사용자께서 원본 객체 수정을 금지하셨므로, renderComparisonTable 수정이 필요합니다.
                    // 현재 renderComparisonTable 수정 범위 밖이므로, data 배열에서 값을 가져오되, 사용자께 renderComparisonTable 수정 필요성을 보고해야 합니다.
                    // 임시로 data 배열에서 Ver2 티어 값을 사용합니다. (data 배열은 정렬되어 있으므로 rowIndex로 접근 가능)
                    const itemData = data[rowIndex]; // data 배열 사용
@@ -790,14 +790,14 @@ function applyGradientColorsComparison(table, data, mode, sortedCol, gradientEna
             }
 
             let ratio;
-            // 평균값(avg)을 기준으로 스케일링 (원본 코드 로직 유지)
-             if ((!isBad && v >= avg) || (isBad && v <= avg)) { // 평균보다 좋거나 같음
+            // 平均값(avg)을 기준으로 스케일링 (원본 코드 로직 유지)
+             if ((!isBad && v >= avg) || (isBad && v <= avg)) { // 平均보다 좋거나 같음
                  // Map [avg, max] (higher better) or [min, avg] (lower better) to [0.5, 1]
                   const rangeSize = !isBad ? (max - avg) : (avg - min);
                   const valueDiff = !isBad ? (v - avg) : (avg - v);
                   // 0으로 나누는 경우 방지 (rangeSize가 0일 때)
                   ratio = 0.5 + (rangeSize === 0 ? 0 : valueDiff / rangeSize * 0.5); // 0.5 ~ 1
-            } else { // 평균보다 나쁨
+            } else { // 平均보다 나쁨
                  // Map [min, avg] (higher better) or [avg, max] (lower better) to [0, 0.5]
                  const rangeSize = !isBad ? (avg - min) : (max - avg);
                  const valueDiff = !isBad ? (avg - v) : (v - avg);
