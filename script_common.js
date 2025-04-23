@@ -688,4 +688,106 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
             cell.style.backgroundColor = color;
         });
     });
+
+    // 6) 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
+    function mergeDataForComparison(data1, data2) {
+        const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
+        const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
+
+        const allCharacters = new Set([...Object.keys(map1), ...Object.keys(map2)]);
+        const comparisonResult = [];
+
+        const statsCols = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'];
+
+        // 순위 계산을 위해 data1, data2를 점수 기준으로 미리 정렬합니다.
+        const sortedData1 = [...data1].sort((a,b) => {
+             if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
+             return String(a['실험체']).localeCompare(String(b['실험체']));
+        });
+         const sortedData2 = [...data2].sort((a,b) => {
+             if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
+             return String(a['실험체']).localeCompare(String(b['실험체']));
+         });
+
+        const rankMap1 = Object.fromEntries(sortedData1.map((d, i) => [d['실험체'], i + 1])); // 1부터 시작하는 순위
+        const rankMap2 = Object.fromEntries(sortedData2.map((d, i) => [d['실험체'], i + 1]));
+
+
+        allCharacters.forEach(charName => {
+            const d1 = map1[charName];
+            const d2 = map2[charName];
+
+            const result = { '실험체': charName };
+
+            statsCols.forEach(col => {
+                 const val1 = d1 ? d1[col] : null;
+                 const val2 = d2 ? d2[col] : null;
+
+                 result[`${col} (Ver1)`] = val1;
+                 result[`${col} (Ver2)`] = val2;
+
+                 // 숫자 값인 경우에만 변화량 계산
+                 if (typeof val1 === 'number' && typeof val2 === 'number') {
+                      result[`${col} 변화량`] = val2 - val1;
+                 } else {
+                      result[`${col} 변화량`] = null; // 둘 중 하나라도 숫자가 아니면 변화량 없음
+                 }
+            });
+
+            // 티어 변화 계산
+             const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
+             const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
+
+             // --- 추가: Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장 ---
+             result['티어 (Ver1)'] = d1 ? d1['티어'] : null;
+             result['티어 (Ver2)'] = d2 ? d2['티어'] : null;
+             // ----------------------------------------------------
+
+
+             if (!d1 && d2) {
+                 result['티어 변화'] = `신규 → ${tier2}`;
+             } else if (d1 && !d2) {
+                 result['티어 변화'] = `${tier1} → 삭제`;
+             } else if (d1 && d2) {
+                 if (tier1 === tier2) {
+                      result['티어 변화'] = tier1; // 티어 변화 없으면 현재 티어만 표시 (string)
+                 } else {
+                      result['티어 변화'] = `${tier1} → ${tier2}`; // 티어 변화 표시 (string)
+                 }
+             } else {
+                 result['티어 변화'] = '-';
+             }
+
+            // 순위 변화 계산 (점수 기준)
+            const rank1 = rankMap1[charName];
+            const rank2 = rankMap2[charName];
+
+            result['순위 (Ver1)'] = rank1;
+            result['순위 (Ver2)'] = rank2;
+
+            if (typeof rank1 === 'number' && typeof rank2 === 'number') {
+                 result['순위 변화값'] = rank2 - rank1; // 실제 변화량 (-10, +10 등)
+            } else if (typeof rank1 === 'number') {
+                 result['순위 변화값'] = '→ 삭제'; // string
+            } else if (typeof rank2 === 'number') {
+                 result['순위 변화값'] = '신규 → '; // string
+            } else {
+                 result['순위 변화값'] = '-'; // string
+            }
+
+            // 평균 순위 변화량 계산 (숫자)
+            const avgRank1 = d1 ? d1['평균 순위'] : null;
+            const avgRank2 = d2 ? d2['평균 순위'] : null;
+            if (typeof avgRank1 === 'number' && typeof avgRank2 === 'number') {
+                 result['평균 순위 변화량'] = avgRank2 - avgRank1;
+            } else {
+                 result['평균 순위 변화량'] = null;
+            }
+
+
+            comparisonResult.push(result);
+        });
+
+        return comparisonResult;
+    }
 }
