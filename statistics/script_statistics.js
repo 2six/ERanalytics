@@ -563,8 +563,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 원본 코드와 동일하게 undefined/null 체크
                 if (val === undefined || val === null) {
                     val = '-';
-                } else if (col === '승률' || col === 'TOP 3' || col === '픽률') {
+                } else if (col === '승률' || col === 'TOP 3') { // <- 픽률이 여기서 분리됨
                     val = typeof val === 'number' ? (val * 100).toFixed(2) + '%' : '-';
+                } else if (col === '픽률') { // <- 픽률이 별도의 else if 블록
+                    val = typeof val === 'number' ? val.toFixed(2) + '%' : '-';
                 } else if (col === '점수' || col === 'RP 획득' || col === '평균 순위') {
                     val = typeof val === 'number' ? parseFloat(val).toFixed(2) : '-';
                 } else { // 실험체, 티어 등 (문자열)
