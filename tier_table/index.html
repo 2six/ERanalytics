@@ -14,6 +14,56 @@ layout: none
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
   <link rel="manifest" href="/favicon/site.webmanifest" />
   <style>
+    
+    /* --- 수정: 드롭다운 컨트롤 영역 레이아웃 (1행 2열 테이블 사용) --- */
+    .dropdowns {
+        /* 기존 Flexbox 설정 제거 */
+        /* display: flex; flex-direction: column; align-items: center; gap: 10px; */
+        margin-bottom: 10px; /* 드롭다운 아래에 여백 추가 (기존 20px에서 10px로 줄임) */
+        text-align: center; /* 내부 테이블을 가운데 정렬하기 위해 부모에 text-align */
+        background-color: transparent; /* 부모 컨테이너 배경색 투명 */
+    }
+    .dropdowns table {
+        /* 테이블 자체 스타일 */
+        margin: 0 auto; /* 가운데 정렬 */
+        border-collapse: collapse; /* 셀 간 간격 제거 */
+        border: none; /* 테이블 테두리 제거 */
+        background-color: transparent; /* 배경색 투명 */
+        border-spacing: 0; /* 셀 간격 제거 */
+        /* --- 추가: 데이터 표와 동일한 너비 설정 --- */
+        width: 1400px;
+        max-width: 95vw;
+        min-width: 600px;
+        /* --------------------------------------- */
+    }
+    .dropdowns table tr {
+        border: none; /* 행 테두리 제거 */
+    }
+    .dropdowns table td {
+        border: none; /* 셀 테두리 제거 */
+        padding: 5px; /* 셀 패딩 조정 */
+        vertical-align: top; /* 셀 내용 상단 정렬 */
+        background-color: transparent; /* 셀 배경색 투명 */
+    }
+
+    /* 1행 1열 (드롭다운 세트들) 셀 스타일 */
+    .dropdowns .tier-dropdown-cell {
+        /* 너비는 내용에 따라 자동 조정 */
+        padding-right: 20px; /* 팝업 버튼 셀과의 간격 */
+        white-space: nowrap; /* 줄바꿈 방지 */
+    }
+
+    /* 1행 2열 (팝업 버튼) 셀 스타일 */
+    .dropdowns .popup-button-cell {
+        white-space: nowrap; /* 줄바꿈 방지 */
+    }
+
+    /* 드롭다운 요소 자체 스타일 */
+    .dropdowns select {
+         margin: 0 5px; /* 드롭다운들 사이 간격 조정 */
+         padding: 4px; /* 기존 패딩 유지 */
+    }
+    /* ------------------------------------------------- */
     /* --- 수정: 티어 테이블 페이지 스타일 --- */
     /* tier-table 클래스를 가진 테이블에 적용 */
     .tier-table {
