@@ -692,8 +692,11 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 
 // 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
 function mergeDataForComparison(data1, data2) {
-    const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
-    const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
+    // --- 수정: 입력 데이터가 null/undefined가 아닐 경우에만 map 호출하도록 방어 코드 추가 ---
+    // TypeError: Cannot read properties of undefined (reading 'map') 오류 방지
+    const map1 = Object.fromEntries((data1 || []).map(d => [d['실험체'], d]));
+    const map2 = Object.fromEntries((data2 || []).map(d => [d['실험체'], d]));
+    // ----------------------------------------------------------------------------
 
     const allCharacters = new Set([...Object.keys(map1), ...Object.keys(map2)]);
     const comparisonResult = [];
@@ -701,14 +704,16 @@ function mergeDataForComparison(data1, data2) {
     const statsCols = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'];
 
     // 순위 계산을 위해 data1, data2를 점수 기준으로 미리 정렬합니다.
-    const sortedData1 = [...data1].sort((a,b) => {
+    // --- 수정: data1 또는 data2가 null/undefined일 경우 빈 배열로 처리 ---
+    const sortedData1 = [...(data1 || [])].sort((a,b) => {
          if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
          return String(a['실험체']).localeCompare(String(b['실험체']));
     });
-     const sortedData2 = [...data2].sort((a,b) => {
+     const sortedData2 = [...(data2 || [])].sort((a,b) => {
          if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
          return String(a['실험체']).localeCompare(String(b['실험체']));
      });
+    // -----------------------------------------------------------------
 
     const rankMap1 = Object.fromEntries(sortedData1.map((d, i) => [d['실험체'], i + 1])); // 1부터 시작하는 순위
     const rankMap2 = Object.fromEntries(sortedData2.map((d, i) => [d['실험체'], i + 1]));
@@ -739,7 +744,7 @@ function mergeDataForComparison(data1, data2) {
          const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
          const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
 
-         // --- 추가: Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장 ---
+         // --- 추가: Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장 (기존 추가 유지) ---
          result['티어 (Ver1)'] = d1 ? d1['티어'] : null;
          result['티어 (Ver2)'] = d2 ? d2['티어'] : null;
          // ----------------------------------------------------
