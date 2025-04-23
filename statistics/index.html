@@ -86,7 +86,7 @@ layout: none
       color: #555; /* 화살표 색상 */
     }
 
-    /* --- 수정: 드롭다운 컨트롤 영역 레이아웃 (테이블 사용) --- */
+    /* --- 수정: 드롭다운 컨트롤 영역 레이아웃 (1행 2열 테이블 사용) --- */
     .dropdowns {
         /* 기존 Flexbox 설정 제거 */
         /* display: flex; flex-direction: column; align-items: center; gap: 10px; */
@@ -98,6 +98,7 @@ layout: none
         margin: 0 auto; /* 가운데 정렬 */
         border-collapse: collapse; /* 셀 간 간격 제거 */
         border: none; /* 테이블 테두리 제거 */
+        background-color: transparent; /* 배경색 투명 */
     }
     .dropdowns table tr {
         border: none; /* 행 테두리 제거 */
@@ -106,34 +107,55 @@ layout: none
         border: none; /* 셀 테두리 제거 */
         padding: 5px; /* 셀 패딩 조정 */
         vertical-align: top; /* 셀 내용 상단 정렬 */
+        background-color: transparent; /* 셀 배경색 투명 */
     }
 
-    /* 레이블 셀 스타일 */
-    .dropdowns .dropdown-label-cell {
-        width: 80px; /* 레이블 셀 고정 너비 (텍스트 길이에 따라 조정 필요) */
-        text-align: right; /* 레이블 텍스트 우측 정렬 */
-        padding-right: 10px; /* 레이블과 드롭다운 세트 사이 간격 */
+    /* 1행 1열 (데이터 세트들) 셀 스타일 */
+    .dropdowns .data-sets-cell {
+        /* 너비는 내용에 따라 자동 조정 */
+        padding-right: 20px; /* 체크박스 셀과의 간격 */
     }
 
-    /* 색상 강조 체크박스 셀 스타일 */
-    .dropdowns .color-checkbox-cell {
-        padding-left: 20px; /* 드롭다운 세트와 체크박스 사이 간격 */
+    /* 1행 2열 (체크박스) 셀 스타일 */
+    .dropdowns .checkbox-cell {
         white-space: nowrap; /* 줄바꿈 방지 */
+    }
+
+
+    /* 각 데이터 세트 (레이블 + 드롭다운 세트) 컨테이너 */
+    .dropdowns .data-set-row {
+        display: flex; /* 내부 요소들을 가로로 배치 */
+        align-items: center; /* 세로 중앙 정렬 */
+        gap: 10px; /* 레이블과 드롭다운 세트 사이 간격 */
+        /* div는 기본적으로 블록 요소이므로 줄바꿈 발생 */
     }
 
     /* "데이터 1 :" 및 "데이터 2 :" 레이블 스타일 */
      .dropdowns .dropdown-label { /* 클래스 선택자 사용 */
          display: none; /* 기본 숨김 */
-         /* 너비와 정렬은 부모 td에서 처리 */
+         /* --- 추가: 레이블 너비 및 정렬 --- */
+         width: 80px; /* 레이블 고정 너비 (텍스트 길이에 따라 조정 필요) */
+         flex-shrink: 0; /* 공간 부족해도 줄어들지 않음 */
+         text-align: right; /* 텍스트 우측 정렬 */
+         /* ----------------------------- */
      }
     /* 비교 모드일 때만 표시 */
      body.is-compare-mode .dropdowns .dropdown-label { /* 비교 모드일 때 모든 레이블 span 표시 */
-         display: inline; /* 또는 inline-block 등 원하는 표시 방식 */
+         display: inline-block; /* inline-block으로 설정하여 너비 적용 */
      }
 
-    /* 데이터 2 행 (비교 모드 컨트롤) */
+    /* 드롭다운 세트 컨테이너 스타일 */
+    .dropdowns .dropdown-set {
+        display: flex; /* 내부 드롭다운들을 Flexbox로 배치 */
+        gap: 10px; /* 드롭다운들 사이에 간격 추가 */
+        align-items: center; /* 드롭다운들 세로 중앙 정렬 */
+        flex-wrap: wrap; /* 공간 부족 시 줄바꿈 허용 */
+    }
+
+    /* 데이터 2 세트 (비교 모드 컨트롤) */
     #comparison-controls {
         display: none; /* 기본적으로 숨김 (JS에서 제어) */
+        margin-top: 10px; /* 데이터 1 세트와의 세로 간격 */
     }
     /* ------------------------------------------------- */
 
@@ -241,30 +263,29 @@ layout: none
     <div class="dropdowns">
       <table>
         <tr>
-          <td class="dropdown-label-cell"><span class="dropdown-label">데이터 1 :</span></td>
-          <td class="dropdown-set-cell">
+          <td class="data-sets-cell"> <!-- 1행 1열: 데이터 1, 데이터 2 세트 -->
+            <div class="data-set-row"> <!-- 데이터 1 세트 -->
+              <span class="dropdown-label">데이터 1 :</span>
               <div class="dropdown-set">
-                  <select id="version-select"></select>
-                  <select id="tier-select"></select>
-                  <select id="period-select"></select>
+                <select id="version-select"></select>
+                <select id="tier-select"></select>
+                <select id="period-select"></select>
               </div>
-          </td>
-          <td class="color-checkbox-cell" rowspan="2"> <!-- 색상 강조 체크박스 셀, 2행 병합 -->
-              <label>
-                <input type="checkbox" id="gradient-checkbox"> 색상 강조
-              </label>
-          </td>
-        </tr>
-        <tr id="comparison-controls"> <!-- 데이터 2 행 전체가 comparison-controls -->
-          <td class="dropdown-label-cell"><span class="dropdown-label">데이터 2 :</span></td>
-          <td class="dropdown-set-cell">
+            </div>
+            <div id="comparison-controls" class="data-set-row"> <!-- 데이터 2 세트 (비교 모드 컨트롤) -->
+              <span class="dropdown-label">데이터 2 :</span>
               <div class="dropdown-set">
-                  <select id="version-select-compare"></select>
-                  <select id="tier-select-compare"></select>
-                  <select id="period-select-compare"></select>
+                <select id="version-select-compare"></select>
+                <select id="tier-select-compare"></select>
+                <select id="period-select-compare"></select>
               </div>
+            </div>
           </td>
-          <!-- 색상 강조 체크박스 셀은 rowspan으로 위에서 병합됨 -->
+          <td class="checkbox-cell"> <!-- 1행 2열: 색상 강조 체크박스 -->
+            <label>
+              <input type="checkbox" id="gradient-checkbox"> 색상 강조
+            </label>
+          </td>
         </tr>
       </table>
     </div>
