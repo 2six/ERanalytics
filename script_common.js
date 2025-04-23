@@ -215,62 +215,56 @@ function sortData(data, column, asc, mode = 'value') {
        const yIsNull = (y === undefined || y === null);
 
        // null/undefined 값을 처리 (asc에 따라 맨 끝 또는 맨 앞으로)
-       // 단, 델타 정렬 시 '신규', '삭제', '-' 같은 문자열 값도 있을 수 있으므로 숫자 변환 후 처리
-       const xIsNumeric = typeof x === 'number';
-       const yIsNumeric = typeof y === 'number';
-
-       if (!xIsNumeric && !yIsNumeric) {
-           // 둘 다 숫자가 아니면 문자열 비교 (예: '신규' vs '삭제' vs '-')
-           // '신규' > '-' > '삭제' 순서로 정렬 (좋은 것 -> 나쁜 것)
-           const order = {'신규 → ': 2, '-': 1, '→ 삭제': 0}; // 순위 변화값 문자열
-           const tierOrder = {'신규 →': 2, '-': 1, '→ 삭제': 0}; // 티어 변화 문자열
-           const sampleOrder = {'new': 2, 'none': 1, 'removed': 0}; // 표본수 변화량 문자열 (data-delta 값)
-
-           let orderX, orderY;
-           if (sortKey === '순위 변화값') {
-               orderX = order[x] !== undefined ? order[x] : -1;
-               orderY = order[y] !== undefined ? order[y] : -1;
-           } else if (sortKey === '티어 변화') { // 이 경우는 sortKey가 '티어 변화'일 때만 해당 (현재는 순위 변화값으로 정렬)
-                // 티어 변화 문자열 자체 비교 (예: S+→S vs S→A)
-                // '신규 →' > 'S+→S' > 'S→A' > ... > 'F→D' > '→ 삭제'
-                const tierChangeOrder = (tc) => {
-                    if (tc === '신규 →') return 1000;
-                    if (tc === '→ 삭제') return -1000;
-                    if (tc === '-') return 0;
-                    const [t1, t2] = tc.split('→').map(t => t.trim());
-                    const tierRank = {'S+': 7, 'S': 6, 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1};
-                    // 티어 변화는 나중 티어 순위 - 이전 티어 순위 (음수면 개선, 양수면 악화)
-                    return (tierRank[t2] || 0) - (tierRank[t1] || 0);
-                };
-                orderX = tierChangeOrder(x);
-                orderY = tierChangeOrder(y);
-
-           } else if (sortKey === '표본수 변화량') { // data-delta 값 기준
-                orderX = sampleOrder[x] !== undefined ? sampleOrder[x] : -1;
-                orderY = sampleOrder[y] !== undefined ? sampleOrder[y] : -1;
-           }
-           else { // 다른 문자열 (실험체 이름 등)
-                return asc
-                   ? String(x).localeCompare(String(y))
-                   : String(y).localeCompare(String(x));
-           }
+       // '더 좋은' 값이 위로 오는 정렬 (asc=false) 시 null은 맨 뒤로
+       // '더 나쁜' 값이 위로 오는 정렬 (asc=true) 시 null은 맨 앞으로
+       if (xIsNull && yIsNull) return 0;
+       if (xIsNull) return asc ? -1 : 1; // asc=true(나쁜 위로)이면 null이 앞으로(-1); asc=false(좋은 위로)이면 null이 뒤로(1)
+       if (yIsNull) return asc ? 1 : -1; // asc=true(나쁜 위로)이면 null이 뒤로(1); asc=false(좋은 위로)이면 null이 앞으로(-1)
 
 
-           // 문자열 순서 비교 (숫자 순서와 반대)
-           let comparison = orderX - orderY;
-           // asc=true이면 작은 값(나쁜)이 위로 -> 오름차순 (결과 뒤집기)
-           // asc=false이면 큰 값(좋은)이 위로 -> 내림차순 그대로
-           return asc ? -comparison : comparison;
+       // --- 데이터 타입별 비교 로직 ---
 
-       } else if (!xIsNumeric) { // x만 숫자가 아님 (y는 숫자)
-            return asc ? 1 : -1; // asc=true이면 x(비숫자)가 뒤로; asc=false이면 x(비숫자)가 앞으로
-       } else if (!yIsNumeric) { // y만 숫자가 아님 (x는 숫자)
-            return asc ? -1 : 1; // asc=true이면 y(비숫자)가 앞으로; asc=false이면 y(비숫자)가 뒤로
+       // 1. 기본 문자열 비교 (실험체 이름)
+       if (sortKey === '실험체') {
+            // 실험체 이름은 항상 가나다순 오름차순 / 역순 내림차순
+            return asc
+               ? String(x).localeCompare(String(y)) // asc=true: 오름차순
+               : String(y).localeCompare(String(x)); // asc=false: 내림차순
+       }
+
+       // 2. 순서가 정의된 문자열 비교 (티어 변화 상태, 순위 변화값 문자열, 표본수 변화량 문자열)
+       // '신규 → ' > '-' > '→ 삭제' 순서로 정렬 (좋은 것 -> 나쁜 것)
+       const order = {'신규 → ': 2, '-': 1, '→ 삭제': 0}; // 순위 변화값 문자열 순서 (높을수록 좋음)
+       const sampleOrder = {'new': 2, 'none': 1, 'removed': 0}; // 표본수 변화량 문자열 순서 (높을수록 좋음)
+
+       let orderX, orderY;
+       let isStringOrderComparison = false;
+
+       if (sortKey === '순위 변화값' && typeof x !== 'number' && typeof y !== 'number') {
+           orderX = order[x] !== undefined ? order[x] : -1;
+           orderY = order[y] !== undefined ? order[y] : -1;
+           isStringOrderComparison = true;
+       } else if (sortKey === '표본수 변화량' && typeof x !== 'number' && typeof y !== 'number') {
+            orderX = sampleOrder[x] !== undefined ? sampleOrder[x] : -1;
+            orderY = sampleOrder[y] !== undefined ? sampleOrder[y] : -1;
+            isStringOrderComparison = true;
+       }
+       // Note: '티어 변화' sortKey는 현재 사용되지 않음 (순위 변화값으로 정렬)
+
+       if (isStringOrderComparison) {
+            // order 값이 높을수록 좋음 -> 숫자 비교와 동일하게 처리
+            const xOrder = orderX;
+            const yOrder = orderY;
+
+            // --- 수정: 정렬 방향 로직 변경 ---
+            // asc=false (좋은 것 위로): order 값이 큰 것이 위로 -> 내림차순 (yOrder - xOrder)
+            // asc=true (나쁜 것 위로): order 값이 작은 것이 위로 -> 오름차순 (xOrder - yOrder)
+            return asc ? (xOrder - yOrder) : (yOrder - xOrder);
+            // ---------------------------------
        }
 
 
-       // --- 데이터 타입별 비교 로직 (둘 다 숫자일 경우) ---
-
+       // 3. 숫자 비교 (value 또는 delta)
        // 순위 관련 값 (평균 순위 값, 순위 변화값, 평균 순위 변화량)은 작을수록 좋음
        // 그 외 숫자 값 (점수, 픽률, RP 획득, 승률, TOP 3, 해당 변화량, 표본수 값/변화량)은 클수록 좋음
 
@@ -278,26 +272,27 @@ function sortData(data, column, asc, mode = 'value') {
        const isBetterWhenLower = (
            sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || // 평균 순위 값
            sortKey === '순위 변화값' || // 순위 변화값 (음수가 좋음)
-           sortKey === '평균 순위 변화량' // 평균 순위 변화량 (음수가 좋음) - 사용자 요구사항 반영
+           sortKey === '평균 순위 변화량' // 평균 순위 변화량 (음수가 좋음)
        );
 
 
-       const xNum = x; // 이미 숫자임
-       const yNum = y; // 이미 숫자임
+       const xNum = typeof x === 'number' ? x : parseFloat(String(x).replace(/[+%▲▼]/g, ''))||0;
+       const yNum = typeof y === 'number' ? y : parseFloat(String(y).replace(/[+%▲▼]/g, ''))||0;
 
 
-       let comparison = xNum - yNum; // 기본 오름차순 숫자 비교
-
-       if (isBetterWhenLower) { // 값이 작을수록 좋은 경우 (순위, 순위 변화값, 평균 순위 변화량)
-           // asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로
-           // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (결과 뒤집기)
-            return asc ? comparison : -comparison;
+       // --- 수정: 정렬 방향 로직 변경 ---
+       let comparison;
+       if (isBetterWhenLower) { // 값이 작을수록 좋음 (평균 순위, 순위 변화값, 평균 순위 변화량)
+           // asc=false (좋은 것 위로): 작은 값(좋은)이 위로 -> 오름차순 (xNum - yNum)
+           // asc=true (나쁜 것 위로): 큰 값(나쁜)이 위로 -> 내림차순 (yNum - xNum)
+           comparison = asc ? (yNum - xNum) : (xNum - yNum);
+       } else { // 값이 클수록 좋음 (점수 등)
+           // asc=false (좋은 것 위로): 큰 값(좋은)이 위로 -> 내림차순 (yNum - xNum)
+           // asc=true (나쁜 것 위로): 작은 값(나쁜)이 위로 -> 오름차순 (xNum - yNum)
+           comparison = asc ? (xNum - yNum) : (yNum - xNum);
        }
-       // 그 외 숫자 값 (점수 등) 또는 변화량 (점수 변화량 등) (클수록 좋음)
-       // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (결과 뒤집기)
-       // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
-        return asc ? -comparison : comparison;
-
+       return comparison;
+       // ---------------------------------
    });
 }
 
