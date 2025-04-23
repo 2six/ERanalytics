@@ -690,7 +690,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
                         : (v-avg)/(max-avg);
                     ratio = Math.max(0, Math.min(1, ratio));
                     // 블루→흰
-                    color = interpolateColor([164,194,244],[255,255,255], ratio);
+                    color = interpolateColor([255,255,255],[164,194,244], ratio);
                 }
             }
             cell.style.backgroundColor = color;
