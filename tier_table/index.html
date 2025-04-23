@@ -14,130 +14,7 @@ layout: none
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
   <link rel="manifest" href="/favicon/site.webmanifest" />
   <style>
-    /* 통계 페이지 테이블 압축 & 반응형 컬럼 숨김 */
-    #data-container {
-      max-width: 95vw;       /* 화면 너비의 90% 만큼만 차지 */
-      margin: 0 auto;        /* 가운데 정렬 */
-      overflow-x: auto;
-    }
-    #data-container table {
-      /* --- 수정: 테이블 너비 설정 및 가운데 정렬 --- */
-      width: 1400px;
-      max-width: 95vw;
-      min-width: 600px; /* 테이블이 충분히 넓어야 스크롤이 생김 */
-      margin: 0 auto; /* 테이블 자체를 가운데 정렬 */
-      /* ----------------------------------------- */
-      border-collapse: collapse; /* 셀 간 간격 제거 */
-    }
-    /* 공통: 텍스트 넘칠 때 줄임표 */
-    #data-container th,
-    #data-container td {
-      overflow: hidden;
-      white-space: nowrap;
-      padding: 4px 6px;
-      border: 1px solid #ddd; /* 셀 경계선 추가 */
-    }
-    /* 실험체 이름 컬럼 너비 조정 */
-    #data-container th:first-child,
-    #data-container td:first-child {
-      min-width: 180px; /* 순위 정보가 들어가면서 너비 조정 */
-      max-width: 180px;
-      text-align: left; /* 실험체 이름은 좌측 정렬 */
-    }
-    /* 티어 컬럼 너비 조정 */
-     /* --- 수정: 기본 너비를 좁게 설정 --- */
-     #data-container th[data-col="티어"],
-     #data-container td[data-col="티어"] {
-         min-width: 80px; /* 일반 모드에 적합한 좁은 너비 */
-         max-width: 80px;
-     }
-     /* --- 추가: 비교 모드일 때 티어 컬럼 너비를 넓게 재정의 --- */
-     body.is-compare-mode #data-container th[data-col="티어"],
-     body.is-compare-mode #data-container td[data-col="티어"] {
-         min-width: 150px; /* 비교 모드에 적합한 넓은 너비 */
-         max-width: 150px;
-     }
-     /* ------------------------------------------------- */
-
-
-    /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
-    #data-container th {
-      position: relative;
-      padding-right: 30px; /* 화살표 공간 확보 */
-      text-align: center; /* 헤더 텍스트 중앙 정렬 */
-    }
-     /* 델타 기호 공간 확보 (화살표 + 숫자/기호 공간) */
-     #data-container th.delta-sort-indicator {
-         padding-right: 40px;
-     }
-
-
-    /* data-arrow 속성에 담긴 문자를, 우측에 겹치도록 표시 */
-    #data-container th::after {
-      content: attr(data-arrow);
-      position: absolute;
-      right: 4px; /* 오른쪽 정렬 기준점 */
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.8em; /* 화살표 크기 */
-      pointer-events: none; /* 클릭 영역 방해하지 않게 */
-      min-width: 20px; /* 화살표 + 숫자/기호 공간 확보 */
-      text-align: right; /* 화살표 및 기호를 우측 정렬 */
-      color: #555; /* 화살표 색상 */
-    }
-
-    /* --- 수정: 드롭다운 컨트롤 영역 레이아웃 (1행 2열 테이블 사용) --- */
-    .dropdowns {
-        /* 기존 Flexbox 설정 제거 */
-        /* display: flex; flex-direction: column; align-items: center; gap: 10px; */
-        margin-bottom: 10px; /* 드롭다운 아래에 여백 추가 (기존 20px에서 10px로 줄임) */
-        text-align: center; /* 내부 테이블을 가운데 정렬하기 위해 부모에 text-align */
-        background-color: transparent; /* 부모 컨테이너 배경색 투명 */
-    }
-    .dropdowns table {
-        /* 테이블 자체 스타일 */
-        margin: 0 auto; /* 가운데 정렬 */
-        border-collapse: collapse; /* 셀 간 간격 제거 */
-        border: none; /* 테이블 테두리 제거 */
-        background-color: transparent; /* 배경색 투명 */
-        border-spacing: 0; /* 셀 간격 제거 */
-        /* --- 추가: 데이터 표와 동일한 너비 설정 --- */
-        width: 1400px;
-        max-width: 95vw;
-        min-width: 600px;
-        /* --------------------------------------- */
-    }
-    .dropdowns table tr {
-        border: none; /* 행 테두리 제거 */
-    }
-    .dropdowns table td {
-        border: none; /* 셀 테두리 제거 */
-        padding: 5px; /* 셀 패딩 조정 */
-        vertical-align: top; /* 셀 내용 상단 정렬 */
-        background-color: transparent; /* 셀 배경색 투명 */
-    }
-
-    /* 1행 1열 (드롭다운 세트들) 셀 스타일 */
-    .dropdowns .tier-dropdown-cell {
-        /* 너비는 내용에 따라 자동 조정 */
-        padding-right: 20px; /* 팝업 버튼 셀과의 간격 */
-        white-space: nowrap; /* 줄바꿈 방지 */
-    }
-
-    /* 1행 2열 (팝업 버튼) 셀 스타일 */
-    .dropdowns .popup-button-cell {
-        white-space: nowrap; /* 줄바꿈 방지 */
-    }
-
-    /* 드롭다운 요소 자체 스타일 */
-    .dropdowns select {
-         margin: 0 5px; /* 드롭다운들 사이 간격 조정 */
-         padding: 4px; /* 기존 패딩 유지 */
-    }
-    /* ------------------------------------------------- */
-
-
-    /* --- 수정: 티어 테이블 페이지 스타일 (메인 표) --- */
+    /* --- 수정: 티어 테이블 페이지 스타일 --- */
     /* tier-table 클래스를 가진 테이블에 적용 */
     .tier-table {
       /* --- 수정: 데이터 표 너비 설정 --- */
@@ -152,6 +29,7 @@ layout: none
       /* --- 추가: 가운데 정렬 --- */
       margin-left: auto;
       margin-right: auto;
+      /* 또는 단축 속성: margin: 0 auto; */
     }
 
     .tier-table tr {
@@ -200,101 +78,99 @@ layout: none
     .tier-table td > div {
       display: flex;
       flex-wrap: wrap;
-      gap: 0; /* 기존 gap: 0 유지 */
+      gap: 0; /* 기존 gap: 0 유지 - 이미지 간 간격은 .tooltip-container에서 조정 */
       padding: 0; /* 기존 padding: 0 유지 */
     }
 
     /* 실험체 이미지 스타일 */
     .tier-table td img {
       vertical-align: middle;
-      width: 90px; /* 이미지 너비 고정 (기존 90px 유지) */
+      /* --- 수정: 고정 너비 제거 --- */
+      /* width: 90px; */
+      /* ------------------------- */
       height: auto; /* 높이 자동 유지 */
       cursor: pointer;
+      /* --- 추가: 이미지 자체의 크기는 부모(.tooltip-container)에 맞춤 --- */
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 이미지 비율 유지하며 채우기 (기존 유지) */
     }
 
-    /* 팝업 관련 스타일 유지 */
-    .image-popup {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.9); /* 기존 배경색 유지 */
-        }
-        .image-popup-content {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            max-width: 90%; max-height: 90%;
-            object-fit: contain;
-        }
-        .image-popup-close {
-            position: absolute;
-            top: 15px; right: 35px;
-            color: #f1f1f1;
-            font-size: 40px;
-            font-weight: bold;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-        .image-popup-close:hover,
-        .image-popup-close:focus {
-            color: #bbb;
-            text-decoration: none;
-            cursor: pointer;
-        }
+    /* 툴팁 컨테이너 (이미지 감싸는 span) */
+    .tooltip-container {
+        position: relative; /* 툴팁 위치 기준 */
+        display: inline-block; /* 이미지 크기에 맞게 */
+        cursor: pointer; /* 마우스 오버 시 커서 변경 */
+        /* --- 추가: 가변 너비 설정 --- */
+        width: calc(100% / 15); /* 부모 너비의 1/15로 설정 */
+        /* --- 추가: 이미지 간 간격 (필요시 조정) --- */
+        /* margin: 1px; */ /* 예시: 이미지 주변에 1px 마진 추가 */
+        /* --------------------------------------- */
+    }
+    /* 툴팁 박스 스타일 유지 */
+    .tooltip-box {
+        visibility: hidden;
+        background-color: rgba(0, 0, 0, 0.8); /* 기존 배경색 유지 */
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 6px 10px;
+        position: absolute;
+        z-index: 100;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    /* 툴팁 컨테이너에 마우스 오버 시 툴팁 표시 */
+    .tooltip-container:hover .tooltip-box {
+        visibility: visible;
+        opacity: 1;
+    }
 
-        /* 툴팁 관련 스타일 유지 */
-        .tooltip-container {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip-box {
-            visibility: hidden;
-            background-color: rgba(0, 0, 0, 0.8); /* 기존 배경색 유지 */
-            color: #fff;
-            text-align: left;
-            border-radius: 6px;
-            padding: 6px 10px;
-            position: absolute;
-            z-index: 100;
-            bottom: 110%;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip-container:hover .tooltip-box {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* 우측 상단 버전/티어 정보 박스 스타일 (displayTierTable에서 생성) */
-        .tier-info {
-             position: absolute;
-             top: 4px;
-             right: 4px;
-             padding: 2px 6px;
-             background: rgba(255,255,255,0.8);
-             border-radius: 4px;
-             font-size: 0.85em;
-             font-weight: bold;
-             white-space: nowrap; /* 줄바꿈 방지 */
-             z-index: 5; /* 이미지나 툴팁 아래에 오도록 */
-        }
+    /* 우측 상단 버전/티어 정보 박스 스타일 (displayTierTable에서 생성) */
+    .tier-info {
+         position: absolute;
+         top: 4px;
+         right: 4px;
+         padding: 2px 6px;
+         background: rgba(255,255,255,0.8);
+         border-radius: 4px;
+         font-size: 0.85em;
+         font-weight: bold;
+         white-space: nowrap; /* 줄바꿈 방지 */
+         z-index: 5; /* 이미지나 툴팁 아래에 오도록 */
+    }
 
 
-        /* 티어별 배경색 (<th>) - 기존 nth-child 선택자 유지 */
-        .tier-row th:first-child { background-color: rgb(255,127,127); }
-        .tier-row:nth-child(2) th:first-child { background-color: rgb(255,191,127); }
-        .tier-row:nth-child(3) th:first-child { background-color: rgb(255,223,127); }
-        .tier-row:nth-child(4) th:first-child { background-color: rgb(255,255,127); }
-        .tier-row:nth-child(5) th:first-child { background-color: rgb(191,255,127); }
-        .tier-row:nth-child(6) th:first-child { background-color: rgb(127,255,127); }
-        .tier-row:nth-child(7) th:first-child { background-color: rgb(127,255,255); }
+    /* 티어별 배경색 (<th>) - 기존 nth-child 선택자 유지 */
+    .tier-row th:first-child { background-color: rgb(255,127,127); }
+    .tier-row:nth-child(2) th:first-child { background-color: rgb(255,191,127); }
+    .tier-row:nth-child(3) th:first-child { background-color: rgb(255,223,127); }
+    .tier-row:nth-child(4) th:first-child { background-color: rgb(255,255,127); }
+    .tier-row:nth-child(5) th:first-child { background-color: rgb(191,255,127); }
+    .tier-row:nth-child(6) th:first-child { background-color: rgb(127,255,127); }
+    .tier-row:nth-child(7) th:first-child { background-color: rgb(127,255,255); }
+
+    /* 티어별 배경색 (<td>) - 기존 nth-child 선택자 유지 */
+    /* displayTierTable 함수에서 td에 직접 배경색을 설정하지 않으므로, CSS로 설정 */
+    /* --- 복원: td 티어별 배경색 (기존 rgba 대신 단색) --- */
+    /* 사용자님께서 제공하신 코드에는 td에 티어별 배경색이 없었으므로, 이 부분은 복원하지 않습니다. */
+    /* 대신 .tier-table td에 #1a1a17 배경색이 적용됩니다. */
+    /*
+    .tier-row:first-child td { background-color: rgba(255,127,127, 0.3); }
+    .tier-row:nth-child(2) td { background-color: rgba(255,191,127, 0.3); }
+    .tier-row:nth-child(3) td { background-color: rgba(255,223,127, 0.3); }
+    .tier-row:nth-child(4) td { background-color: rgba(255,255,127, 0.3); }
+    .tier-row:nth-child(5) td { background-color: rgba(191,255,127, 0.3); }
+    .tier-row:nth-child(6) td { background-color: rgba(127,255,127, 0.3); }
+    .tier-row:nth-child(7) td { background-color: rgba(127,255,255, 0.3); }
+    */
+
+
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
