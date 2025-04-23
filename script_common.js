@@ -527,46 +527,106 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
              return;
         }
 
+        // --- 티어 컬럼 색상 로직 ---
+        if (col === '티어') {
+            rows.forEach((r, idx) => {
+                const cell = r.children[i];
+                let tierValue = null;
+                let color = '';
+
+                if (mode === 'value1') {
+                    // Value1 모드: Ver1 티어 값에 따른 색상
+                    tierValue = data[idx]['티어 (Ver1)'];
+                    color = TIER_COLORS_SINGLE[tierValue];
+                } else if (mode === 'value2') {
+                    // Value2 모드: Ver2 티어 값에 따른 색상
+                    tierValue = data[idx]['티어 (Ver2)'];
+                    color = TIER_COLORS_SINGLE[tierValue];
+                } else if (mode === 'delta') {
+                    // Delta 모드: 순위 변화값에 따른 그라데이션
+                    const valueKey = '순위 변화값';
+                    const isBetterWhenLower = true; // Lower rank change (more negative) is better
+
+                    // Collect numeric rank change values for gradient calculation
+                    const valuesOnly = data.map(d => {
+                         const val = d[valueKey];
+                         return (typeof val === 'number') ? val : null;
+                    }).filter(v => v !== null);
+
+                    if (valuesOnly.length === 0) {
+                         cell.style.backgroundColor = '';
+                         return; // Skip coloring this cell if no numeric delta data in column
+                    }
+
+                    const min = Math.min(...valuesOnly);
+                    const max = Math.max(...valuesOnly);
+                    const avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length; // Simple average for rank change
+
+                    const v = data[idx][valueKey]; // Get rank change for this row
+
+                    // Apply gradient only if rank change is numeric
+                    if (typeof v === 'number' && v !== null && v !== undefined) {
+                        let ratio;
+                        if (max === min) {
+                            ratio = 0.5;
+                        } else if (!isBetterWhenLower) { // Higher is better (not applicable for rank change)
+                            ratio = (v >= avg)
+                                ? 0.5 + (v - avg) / (max - avg) * 0.5
+                                : 0.5 - (avg - v) / (avg - min) * 0.5;
+                        } else { // Lower is better (rank change)
+                            ratio = (v <= avg)
+                                ? 0.5 + (avg - v) / (avg - min) * 0.5
+                                : 0.5 - (v - avg) / (max - avg) * 0.5;
+                        }
+                        ratio = Math.max(0, Math.min(1, ratio));
+
+                        // Interpolate from Blue (Worst) to White (0.5 - Avg) to Red (1 - Best)
+                        color = (ratio >= 0.5)
+                             ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
+                             : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+
+                    } else {
+                         // Non-numeric rank change (신규, 삭제, -) handled by CSS data-* rules
+                         cell.style.backgroundColor = '';
+                         return; // Skip JS coloring
+                    }
+                }
+
+                // Apply the determined color (standard tier color or gradient color)
+                if (color) {
+                    cell.style.backgroundColor = color;
+                } else {
+                    // Clear background if no specific color is determined by JS
+                    // This allows CSS data-* rules (like new/removed/up/down) to take effect
+                    cell.style.backgroundColor = '';
+                }
+            });
+            return; // Finished processing Tier column, move to next header
+        }
+
+        // --- 다른 숫자 컬럼 색상 로직 (기존 그대로) ---
         let valueKey; // Key to get the value for gradient calculation
         let isBetterWhenLower; // Is lower value better for coloring?
         let useSimpleAverage = false; // Should we use simple average instead of weighted?
 
-        if (col === '티어') {
-            useSimpleAverage = true; // Always use simple average for Tier column coloring based on score/rank change
-            if (mode === 'delta') {
-                valueKey = '순위 변화값'; // Use rank change for delta sort coloring
-                isBetterWhenLower = true; // Lower rank change (more negative) is better
-            } else if (mode === 'value1') {
-                valueKey = '점수 (Ver1)'; // Use Ver1 score for value1 sort coloring
-                isBetterWhenLower = false; // Higher score is better
-            } else if (mode === 'value2') {
-                valueKey = '점수 (Ver2)'; // Use Ver2 score for value2 sort coloring
-                isBetterWhenLower = false; // Higher score is better
-            } else {
-                // Should not happen in comparison mode with current sort logic, but handle defensively
-                rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-                return;
-            }
-        } else {
-            // Logic for other numeric stat columns (Score, Pick Rate, RP, Win Rate, Top 3, Avg Rank, Sample Size)
-             if (mode === 'value1') {
-                 valueKey = col + ' (Ver1)';
-             } else if (mode === 'value2') {
-                 valueKey = col + ' (Ver2)';
-             } else { // mode === 'delta'
-                 valueKey = (col === '평균 순위') ? '평균 순위 변화량' : col + ' 변화량';
-             }
+        // Logic for other numeric stat columns (Score, Pick Rate, RP, Win Rate, Top 3, Avg Rank, Sample Size)
+         if (mode === 'value1') {
+             valueKey = col + ' (Ver1)';
+         } else if (mode === 'value2') {
+             valueKey = col + ' (Ver2)';
+         } else { // mode === 'delta'
+             valueKey = (col === '평균 순위') ? '평균 순위 변화량' : col + ' 변화량';
+         }
 
-             // Determine if lower is better based on the valueKey
-             const lowerKeysAreBetter = ['평균 순위', '평균 순위 (Ver1)', '평균 순위 (Ver2)', '순위 변화값', '평균 순위 변화량'];
-             isBetterWhenLower = lowerKeysAreBetter.includes(valueKey);
+         // Determine if lower is better based on the valueKey
+         const lowerKeysAreBetter = ['평균 순위', '평균 순위 (Ver1)', '평균 순위 (Ver2)', '순위 변화값', '평균 순위 변화량'];
+         isBetterWhenLower = lowerKeysAreBetter.includes(valueKey);
 
-             // Use simple average for Pick Rate (any mode) and any column in Delta mode
-             if (col === '픽률' || mode === 'delta') {
-                 useSimpleAverage = true;
-             }
-             // Otherwise, use weighted average (default is false)
-        }
+         // Use simple average for Pick Rate (any mode) and any column in Delta mode
+         if (col === '픽률' || mode === 'delta') {
+             useSimpleAverage = true;
+         }
+         // Otherwise, use weighted average (default is false)
 
 
         // Collect numeric values for the determined valueKey
