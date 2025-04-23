@@ -37,9 +37,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (params.has('period')) periodSelect.value = params.get('period');
 
         // 색상 강조 체크박스 상태 로드 (비교 모드가 아닐 때만)
-        if (!isCompareMode && params.has('gradient')) {
-            gradientCheckbox.checked = params.get('gradient') === '1';
-        } else if (isCompareMode) {
+        if (!isCompareMode) {
+            if (params.has('gradient')) {
+                 gradientCheckbox.checked = params.get('gradient') === '1';
+            } else {
+                 // 단일 모드 기본값: 색상 강조 켜짐
+                 gradientCheckbox.checked = true;
+            }
+            gradientCheckbox.disabled = false;
+            gradientCheckbox.parentElement.style.opacity = '1';
+        } else {
              // 비교 모드에서는 색상 강조 항상 켜짐 및 비활성화
              gradientCheckbox.checked = true;
              gradientCheckbox.disabled = true;
@@ -70,9 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } else {
-            // 단일 모드에서는 비활성화 해제 및 투명도 복원
-            gradientCheckbox.disabled = false;
-            gradientCheckbox.parentElement.style.opacity = '1';
             // 단일 모드 기본 정렬 (점수 내림차순)
             currentSortColumn = '점수';
             currentSortAsc = false;
@@ -152,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
         periodSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         gradientCheckbox.addEventListener('change', () => {
             updateURL();
+            // 단일 모드에서만 색상 강조 적용/해제
             if (!isCompareMode && lastData && lastData.length > 0) renderTable(lastData);
         });
 
@@ -172,6 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 4) 단일 데이터 로드 ∙ 가공 ∙ 렌더
     function loadAndDisplaySingle() {
+        if (isCompareMode) return; // 비교 모드에서는 실행되지 않음
+
         dataContainer.innerHTML = '데이터 로딩 중...';
         const version = versionSelect.value;
         const tier = tierSelect.value;
@@ -205,6 +212,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 5) 비교 데이터 로드 ∙ 가공 ∙ 렌더
     function loadAndDisplayComparison() {
+        if (!isCompareMode) return; // 단일 모드에서는 실행되지 않음
+
         dataContainer.innerHTML = '비교 데이터 로딩 중...';
         const version1 = versionSelect.value;
         const tier1 = tierSelect.value;
@@ -225,21 +234,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         Promise.all([
             fetch(url1).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url1}`);
                 return res.json();
-            }),
+            }).catch(err => { console.error(`Failed to fetch ${url1}:`, err); return null; }), // 에러 발생 시 null 반환
             fetch(url2).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url2}`);
                 return res.json();
-            })
+            }).catch(err => { console.error(`Failed to fetch ${url2}:`, err); return null; }) // 에러 발생 시 null 반환
         ])
         .then(([json1, json2]) => {
-            const history1 = json1['통계'];
-            const history2 = json2['통계'];
+            if (!json1 && !json2) {
+                 dataContainer.innerHTML = '두 데이터 모두 불러오는 데 실패했습니다.';
+                 lastData = [];
+                 return;
+            }
 
+            const history1 = json1 ? json1['통계'] : {};
+            const history2 = json2 ? json2['통계'] : {};
+
+            // extractPeriodEntries는 이제 델타 계산 없이 해당 기간 데이터만 반환
             const entries1 = extractPeriodEntries(history1, period1);
             const entries2 = extractPeriodEntries(history2, period2);
 
+            // 데이터가 하나라도 없으면 비교 불가
+            if (entries1.length === 0 && entries2.length === 0) {
+                 dataContainer.innerHTML = '선택한 기간에 해당하는 데이터가 없습니다.';
+                 lastData = [];
+                 return;
+            }
+
+
+            // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
             const avgScore1 = calculateAverageScore(entries1);
             const stddev1 = calculateStandardDeviation(entries1, avgScore1);
             const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfig);
@@ -259,95 +284,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         })
         .catch(err => {
-            console.error('비교 데이터 로드 실패:', err);
-            dataContainer.innerHTML = `데이터를 불러오는 데 실패했습니다: ${err.message}`;
+            // Promise.all 내부에서 catch 했으므로 여기는 거의 오지 않음
+            console.error('비교 데이터 처리 실패:', err);
+            dataContainer.innerHTML = `데이터 처리 중 오류가 발생했습니다: ${err.message}`;
         });
     }
 
-    // 6) 두 데이터셋 병합 및 변화량 계산
-     function mergeDataForComparison(data1, data2) {
-        const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
-        const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
-
-        const allCharacters = new Set([...Object.keys(map1), ...Object.keys(map2)]);
-        const comparisonResult = [];
-
-        const statsCols = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'];
-
-        // 순위 계산을 위해 data1, data2를 점수 기준으로 미리 정렬합니다.
-        const sortedData1 = [...data1].sort((a,b) => {
-             if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
-             return String(a['실험체']).localeCompare(String(b['실험체']));
-        });
-         const sortedData2 = [...data2].sort((a,b) => {
-             if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
-             return String(a['실험체']).localeCompare(String(b['실험체']));
-        });
-
-        const rankMap1 = Object.fromEntries(sortedData1.map((d, i) => [d['실험체'], i + 1])); // 1부터 시작하는 순위
-        const rankMap2 = Object.fromEntries(sortedData2.map((d, i) => [d['실험체'], i + 1]));
-
-
-        allCharacters.forEach(charName => {
-            const d1 = map1[charName];
-            const d2 = map2[charName];
-
-            const result = { '실험체': charName };
-
-            statsCols.forEach(col => {
-                 const val1 = d1 ? d1[col] : null;
-                 const val2 = d2 ? d2[col] : null;
-
-                 result[`${col} (Ver1)`] = val1;
-                 result[`${col} (Ver2)`] = val2;
-
-                 if (typeof val1 === 'number' && typeof val2 === 'number') {
-                      result[`${col} 변화량`] = val2 - val1;
-                 } else {
-                      result[`${col} 변화량`] = null;
-                 }
-            });
-
-            // 티어 변화 계산
-             const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
-             const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
-
-             if (!d1 && d2) {
-                 result['티어 변화'] = `신규 → ${tier2}`;
-             } else if (d1 && !d2) {
-                 result['티어 변화'] = `${tier1} → 삭제`;
-             } else if (d1 && d2) {
-                 if (tier1 === tier2) {
-                      result['티어 변화'] = tier1; // 티어 변화 없으면 현재 티어만 표시 (string)
-                 } else {
-                      result['티어 변화'] = `${tier1} → ${tier2}`; // 티어 변화 표시 (string)
-                 }
-             } else {
-                 result['티어 변화'] = '-';
-             }
-
-            // 순위 변화 계산 (점수 기준)
-            const rank1 = rankMap1[charName];
-            const rank2 = rankMap2[charName];
-
-            result['순위 (Ver1)'] = rank1;
-            result['순위 (Ver2)'] = rank2;
-
-            if (typeof rank1 === 'number' && typeof rank2 === 'number') {
-                 result['순위 변화값'] = rank2 - rank1; // 실제 변화량 (-10, +10 등)
-            } else if (typeof rank1 === 'number') {
-                 result['순위 변화값'] = '→ 삭제'; // string
-            } else if (typeof rank2 === 'number') {
-                 result['순위 변화값'] = '신규 → '; // string
-            } else {
-                 result['순위 변화값'] = '-'; // string
-            }
-
-            comparisonResult.push(result);
-        });
-
-        return comparisonResult;
-    }
+    // 6) 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
+    // 이 함수는 이제 common.js에 정의되어 있습니다.
 
     // 7) 비교 테이블 렌더링
     function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
@@ -390,23 +334,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (col === '티어') {
                     // 티어 컬럼에는 티어 변화 정보만 표시
                     const tierChange = row['티어 변화'] || '-'; // string
-                    const rank1 = row['순위 (Ver1)']; // number 또는 undefined
-                    const rank2 = row['순위 (Ver2)']; // number 또는 undefined
-                    const rankChangeValue = row['순위 변화값']; // number 또는 string
+                    const rank1 = row['순위 (Ver1)'] !== null && row['순위 (Ver1)'] !== undefined ? row['순위 (Ver1)'] : '-'; // number 또는 '-'
+                    const rank2 = row['순위 (Ver2)'] !== null && row['순위 (Ver2)'] !== undefined ? row['순위 (Ver2)'] : '-'; // number 또는 '-'
+                    const rankChangeValue = row['순위 변화값']; // number or string
 
                     let rankInfo = '';
                      if (typeof rank1 === 'number' && typeof rank2 === 'number') {
                           const rankChangeFormatted = Math.abs(rankChangeValue);
-                          // 순위 숫자가 작아지면 개선 (▼), 커지면 악화 (▲) -> 표시 기호 반전
-                          // 요구사항에 따라 순위 숫자 감소 (좋아짐)는 ▲, 순위 숫자 증가 (나빠짐)는 ▼ 사용
+                          // 순위 숫자가 작아지면 개선 (▲), 커지면 악화 (▼)
                            rankInfo = `${rank1}위 → ${rank2}위 ${rankChangeValue < 0 ? `▲${rankChangeFormatted}` : (rankChangeValue > 0 ? `▼${rankChangeFormatted}` : '')}`;
                      } else if (rankChangeValue === '신규 → ') {
                           rankInfo = `(신규)`;
                      } else if (rankChangeValue === '→ 삭제') {
                           rankInfo = `(삭제)`;
-                     } else if (typeof rank1 === 'number') { // Ver1에만 데이터 있고 Ver2에 없는 경우
+                     } else if (rank1 !== '-') { // Ver1에만 데이터 있고 Ver2에 없는 경우
                           rankInfo = `${rank1}위 → -`;
-                     } else if (typeof rank2 === 'number') { // Ver2에만 데이터 있고 Ver1에 없는 경우
+                     } else if (rank2 !== '-') { // Ver2에만 데이터 있고 Ver1에 없는 경우
                           rankInfo = `- → ${rank2}위`;
                      } else {
                            rankInfo = '-';
@@ -447,59 +390,50 @@ document.addEventListener('DOMContentLoaded', function() {
                              dataAttributes += ` data-tier="${tierChange}"`;
                       }
 
-                } else if (col === '표본수') { // 이 블록은 이제 사용되지 않지만 데이터 구조 키는 존재할 수 있습니다.
-                     const val1 = row['표본수 (Ver1)'] !== null && row['표본수 (Ver1)'] !== undefined ? row['표본수 (Ver1)'] : '-';
-                     const val2 = row['표본수 (Ver2)'] !== null && row['표본수 (Ver2)'] !== undefined ? row['표본수 (Ver2)'] : '-';
-                     displayVal = `${val1} / ${val2}`; // 이 내용은 표본수 열이 없을 때 표시되지 않음
-
-                      const delta = row['표본수 변화량'];
-                      if (typeof delta === 'number') {
-                           dataAttributes += ` data-delta="${delta}"`;
-                      } else if (val1 === '-' && val2 !== '-') {
-                           dataAttributes += ` data-delta="new"`;
-                      } else if (val1 !== '-' && val2 === '-') {
-                           dataAttributes += ` data-delta="removed"`;
-                      } else {
-                          dataAttributes += ` data-delta="none"`;
-                      }
-
-
                 } else { // Other numeric stat columns
                      const val1 = row[`${col} (Ver1)`];
                      const val2 = row[`${col} (Ver2)`];
                      const delta = row[`${col} 변화량`]; // Numeric delta value
 
                      // Display Ver1 value → Ver2 value Delta format
-                     let valueText = (typeof val1 === 'number') ? val1.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
-                     if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val1 === 'number') valueText += '%';
+                     let valueText1 = (typeof val1 === 'number') ? val1.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
+                     if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val1 === 'number') valueText1 += '%';
 
-                      let deltaText = '';
-                      if (typeof val2 === 'number') {
-                           let val2Text = val2.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                            if (['픽률', '승률', 'TOP 3'].includes(col)) val2Text += '%';
+                      let valueText2 = (typeof val2 === 'number') ? val2.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
+                      if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val2 === 'number') valueText2 += '%';
 
-                          if (typeof delta === 'number') {
-                               const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                                deltaText = `${val2Text} ${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
-                          } else {
-                               deltaText = `${val2Text}`; // Just display Ver2 value if delta is not numeric
-                          }
-                          displayVal = `${valueText} → ${deltaText}`;
 
-                      } else if (val1 !== null) { // Only Ver1 data exists (removed)
-                           displayVal = `${valueText} → 삭제`;
-                      } else if (val2 === null && val1 === null) { // Neither has data
-                           displayVal = '-';
-                      } else { // Should not be reached
-                           displayVal = `${valueText}`;
+                      let verValuesHtml;
+                      let deltaHtml = '';
+
+                      if (typeof val1 === 'number' && typeof val2 === 'number') {
+                           verValuesHtml = `${valueText1} → ${valueText2}`;
+                           if (typeof delta === 'number') {
+                                const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
+                                deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
+                           }
+                      } else if (typeof val1 === 'number' && (val2 === null || val2 === undefined)) { // Only Ver1 data exists (removed)
+                           verValuesHtml = `${valueText1} → 삭제`;
+                      } else if ((val1 === null || val1 === undefined) && typeof val2 === 'number') { // Only Ver2 data exists (new)
+                           verValuesHtml = `신규 → ${valueText2}`;
+                      } else { // Neither has data
+                           verValuesHtml = '-';
                       }
 
-                     // Store delta value for color grading
+
+                    // Construct the final cell HTML with spans
+                    displayVal = `<span class="ver-values">${verValuesHtml}</span>`;
+                    if (deltaHtml) { // Only add delta span if there's a numeric delta
+                         displayVal += `<span class="delta-value">${deltaHtml}</span>`;
+                    }
+
+
+                     // Store delta value for color grading (numeric delta or status string)
                      if (typeof delta === 'number') {
                           dataAttributes += ` data-delta="${delta}"`;
-                     } else if (val1 === null && val2 !== null) { // New (based on data existence)
+                     } else if ((val1 === null || val1 === undefined) && (val2 !== null && val2 !== undefined)) { // New
                            dataAttributes += ` data-delta="new"`;
-                     } else if (val1 !== null && val2 === null) { // Removed (based on data existence)
+                     } else if ((val1 !== null && val1 !== undefined) && (val2 === null || val2 === undefined)) { // Removed
                            dataAttributes += ` data-delta="removed"`;
                      } else {
                           dataAttributes += ` data-delta="none"`;
@@ -514,15 +448,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
        dataContainer.innerHTML = comparisonTableHtml;
 
-       attachComparisonSortEventListeners(dataContainer.querySelectorAll('th'), renderComparisonTable); // Attach to all headers
-       // 오류 수정: applyGradientColorsComparison 호출 시 정렬된 data 배열 전달
-       applyGradientColorsComparison(dataContainer.querySelector('table'), data, currentSortMode, currentSortColumn); // Pass data, mode, column for color grading
+       // Attach sort event listeners to headers (excluding '실험체')
+       attachComparisonSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderComparisonTable);
+       // Apply gradient colors to numeric columns based on the current sort mode
+       if (gradientCheckbox.checked) applyGradientColorsComparison(dataContainer.querySelector('table'), data, currentSortMode, currentSortColumn);
    }
 
 
     // 8) 테이블 렌더링 (기존 로직 - 단일 데이터용)
     function renderTable(data) {
-         if (isCompareMode) return;
+         if (isCompareMode) return; // 비교 모드에서는 실행되지 않음
 
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
@@ -558,7 +493,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dataContainer.innerHTML = html;
 
-        attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable); // data-nosort 없는 th에만 부착
+        // Attach sort event listeners to headers (excluding '실험체')
+        attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable);
+        // Apply gradient colors if checkbox is checked
         if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
     }
 
@@ -567,20 +504,26 @@ document.addEventListener('DOMContentLoaded', function() {
          ths.forEach(th => {
             const col = th.dataset.col;
 
-            // data-nosort 속성이 있다면 정렬 제외
+            // data-nosort 속성이 있다면 정렬 제외 (실험체 컬럼)
             if (th.hasAttribute('data-nosort')) {
                  th.style.cursor = 'default';
                  th.setAttribute('data-arrow', '');
                  th.classList.remove('delta-sort-indicator');
+                 th.onclick = null; // 기존 클릭 이벤트 제거
                  return; // 정렬 제외 컬럼
             }
 
             th.style.cursor = 'pointer'; // 정렬 가능 컬럼
 
-            th.setAttribute('data-arrow', '');
-            th.classList.remove('delta-sort-indicator');
+            // 기존 이벤트 리스너가 있다면 제거 (중복 부착 방지)
+            if (th.onclick) {
+                 th.onclick = null;
+            }
 
-            // 단일 모드 정렬은 항상 'value' 모드 기준
+            th.setAttribute('data-arrow', ''); // 기존 화살표 리셋
+            th.classList.remove('delta-sort-indicator'); // 델타 정렬 표시자 클래스 리셋
+
+            // 현재 정렬 기준과 일치하면 화살표 표시
             if (currentSortColumn === col && currentSortMode === 'value') {
                 th.setAttribute('data-arrow', currentSortAsc ? '▲' : '▼');
             }
@@ -591,12 +534,15 @@ document.addEventListener('DOMContentLoaded', function() {
                      currentSortAsc = !currentSortAsc;
                 } else {
                     currentSortColumn = col;
-                    currentSortAsc = false; // 기본 내림차순
+                    // 기본 정렬 방향 설정 (평균 순위는 오름차순, 나머지는 내림차순)
+                    const isBetterWhenLower = (col === '평균 순위');
+                    currentSortAsc = isBetterWhenLower ? true : false; // 평균 순위는 오름차순(작은 값 위로), 나머지는 내림차순(큰 값 위로)
+
                     currentSortMode = 'value'; // 단일 모드는 value 고정
                 }
                 //console.log(`Single Sort: column=${currentSortColumn}, asc=${currentSortAsc}, mode=${currentSortMode}`); // 디버그
                 const sortedData = sortData(lastData, currentSortColumn, currentSortAsc, currentSortMode);
-                renderFunc(sortedData);
+                renderFunc(sortedData); // renderTable 호출
             };
         });
     }
@@ -612,10 +558,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 th.setAttribute('data-arrow', '');
                 th.classList.remove('delta-sort-indicator'); // 혹시 모를 클래스 제거
                 th.setAttribute('data-nosort', 'true'); // 정렬 불가 명시
+                th.onclick = null; // 기존 클릭 이벤트 제거
                 return;
             }
              th.style.cursor = 'pointer';
 
+            // 기존 이벤트 리스너가 있다면 제거 (중복 부착 방지)
+            if (th.onclick) {
+                 th.onclick = null;
+            }
 
             th.setAttribute('data-arrow', ''); // 기존 화살표 리셋
             th.classList.remove('delta-sort-indicator'); // 델타 정렬 표시자 클래스 리셋
@@ -664,15 +615,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 다른 컬럼을 처음 클릭한 경우, 해당 컬럼의 Value1 내림차순 정렬로 시작
                     currentSortColumn = col; // 정렬 기준 컬럼을 클릭된 컬럼으로 변경
                     nextMode = 'value1'; // 다음 모드는 Value1
-                    nextAsc = false; // 기본은 내림차순
-
-                    // 예외 처리: 평균 순위는 Value1 오름차순이 좋아지는 순서 (값이 작을수록 좋음)
-                    if (col === '평균 순위') nextAsc = true;
-                    // 예외 처리: 티어는 Value1 오름차순이 나쁜 순서 (F 위로) -> common.js sortData가 점수 기준으로 정렬하므로, 점수는 클수록 좋음 (내림차순). 따라서 티어 Value1 정렬 시 점수 내림차순이 되어야 S+이 위로 옴.
-                    // common.js sortData에서 '티어' Value1/Value2 정렬 시 '점수 (VerX)' 키를 사용하고, 점수는 클수록 좋음으로 처리합니다.
-                    // 따라서 '점수 (VerX)' 기준 내림차순 (asc=false)일 때 S+가 위로 옵니다.
-                    // 그래서 '티어' 컬럼 클릭 시 Value1 내림차순으로 시작하는 것이 맞습니다.
-                    if (col === '티어') nextAsc = false; // 티어 Value1 내림차순 시작 (S+ 위로)
+                    // 기본 정렬 방향 설정 (평균 순위는 오름차순, 나머지는 내림차순)
+                    const isBetterWhenLower = (col === '평균 순위');
+                    nextAsc = isBetterWhenLower ? true : false; // 평균 순위는 오름차순(작은 값 위로), 나머지는 내림차순(큰 값 위로)
                 }
 
                 currentSortMode = nextMode; // 현재 정렬 모드 업데이트
@@ -684,8 +629,107 @@ document.addEventListener('DOMContentLoaded', function() {
                 const sortedData = sortData(lastData, currentSortColumn, currentSortAsc, currentSortMode); // common.js의 sortData 함수 호출
                 renderFunc(sortedData); // 테이블 렌더링 함수 호출 (renderComparisonTable)
 
-                // 화살표 및 델타 표시자는 다음 renderFunc 호출 시 applyGradientColorsComparison 함수에 의해 업데이트됨
+                // URL 업데이트 (정렬 상태 포함)
+                updateURL();
+
+                // 화살표 및 델타 표시자는 renderFunc 호출 시 applyGradientColorsComparison 함수에 의해 업데이트됨
             };
         });
+    }
+
+    // 6) 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
+     function mergeDataForComparison(data1, data2) {
+        const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
+        const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
+
+        const allCharacters = new Set([...Object.keys(map1), ...Object.keys(map2)]);
+        const comparisonResult = [];
+
+        const statsCols = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'];
+
+        // 순위 계산을 위해 data1, data2를 점수 기준으로 미리 정렬합니다.
+        const sortedData1 = [...data1].sort((a,b) => {
+             if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
+             return String(a['실험체']).localeCompare(String(b['실험체']));
+        });
+         const sortedData2 = [...data2].sort((a,b) => {
+             if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
+             return String(a['실험체']).localeCompare(String(b['실험체']));
+         });
+
+        const rankMap1 = Object.fromEntries(sortedData1.map((d, i) => [d['실험체'], i + 1])); // 1부터 시작하는 순위
+        const rankMap2 = Object.fromEntries(sortedData2.map((d, i) => [d['실험체'], i + 1]));
+
+
+        allCharacters.forEach(charName => {
+            const d1 = map1[charName];
+            const d2 = map2[charName];
+
+            const result = { '실험체': charName };
+
+            statsCols.forEach(col => {
+                 const val1 = d1 ? d1[col] : null;
+                 const val2 = d2 ? d2[col] : null;
+
+                 result[`${col} (Ver1)`] = val1;
+                 result[`${col} (Ver2)`] = val2;
+
+                 // 숫자 값인 경우에만 변화량 계산
+                 if (typeof val1 === 'number' && typeof val2 === 'number') {
+                      result[`${col} 변화량`] = val2 - val1;
+                 } else {
+                      result[`${col} 변화량`] = null; // 둘 중 하나라도 숫자가 아니면 변화량 없음
+                 }
+            });
+
+            // 티어 변화 계산
+             const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
+             const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
+
+             if (!d1 && d2) {
+                 result['티어 변화'] = `신규 → ${tier2}`;
+             } else if (d1 && !d2) {
+                 result['티어 변화'] = `${tier1} → 삭제`;
+             } else if (d1 && d2) {
+                 if (tier1 === tier2) {
+                      result['티어 변화'] = tier1; // 티어 변화 없으면 현재 티어만 표시 (string)
+                 } else {
+                      result['티어 변화'] = `${tier1} → ${tier2}`; // 티어 변화 표시 (string)
+                 }
+             } else {
+                 result['티어 변화'] = '-';
+             }
+
+            // 순위 변화 계산 (점수 기준)
+            const rank1 = rankMap1[charName];
+            const rank2 = rankMap2[charName];
+
+            result['순위 (Ver1)'] = rank1;
+            result['순위 (Ver2)'] = rank2;
+
+            if (typeof rank1 === 'number' && typeof rank2 === 'number') {
+                 result['순위 변화값'] = rank2 - rank1; // 실제 변화량 (-10, +10 등)
+            } else if (typeof rank1 === 'number') {
+                 result['순위 변화값'] = '→ 삭제'; // string
+            } else if (typeof rank2 === 'number') {
+                 result['순위 변화값'] = '신규 → '; // string
+            } else {
+                 result['순위 변화값'] = '-'; // string
+            }
+
+            // 평균 순위 변화량 계산 (숫자)
+            const avgRank1 = d1 ? d1['평균 순위'] : null;
+            const avgRank2 = d2 ? d2['평균 순위'] : null;
+            if (typeof avgRank1 === 'number' && typeof avgRank2 === 'number') {
+                 result['평균 순위 변화량'] = avgRank2 - avgRank1;
+            } else {
+                 result['평균 순위 변화량'] = null;
+            }
+
+
+            comparisonResult.push(result);
+        });
+
+        return comparisonResult;
     }
 });
