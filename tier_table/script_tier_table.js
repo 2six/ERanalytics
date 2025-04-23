@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let tierConfigGlobal = null;
 
     Promise.all([
-        fetch('config.ini').then(r => r.text()),
-        fetch('versions.json').then(r => r.json())
+        fetch('/config.ini').then(r => r.text()),
+        fetch('/versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
         const config = parseINI(iniString);
         tierConfigGlobal = config.tiers;
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tier = tierSelect.value;
         const period = periodSelect.value;
 
-        fetch(`data/${version}/${tier}.json`)
+        fetch(`/data/${version}/${tier}.json`)
             .then(res => res.json())
             .then(json => {
                 const history = json["통계"];
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (entries.length === 0) {
                 html += `
                     <span class="tooltip-container">
-                        <img src="image/placeholder.png" alt="빈 슬롯" style="opacity: 0;">
+                        <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity: 0;">
                     </span>
                 `;
             } else {
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     html += `
                         <span class="tooltip-container">
-                            <img src="image/${imgName}.png" alt="${entry.실험체}">
+                            <img src="/image/${imgName}.png" alt="${entry.실험체}">
                             ${tooltipHTML}
                         </span>
                     `;

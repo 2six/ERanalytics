@@ -1,9 +1,4 @@
 // script_common.js
-/**
- * script_common.js
- * 공통 기능 모듈
- */
-
 // 필요한 함수들을 전역 스코프에 둡니다.
 
 function parseINI(iniString) {
@@ -220,25 +215,53 @@ function sortData(data, column, asc, mode = 'value') {
        const yIsNull = (y === undefined || y === null);
 
        // null/undefined 값을 처리 (asc에 따라 맨 끝 또는 맨 앞으로)
+       // '더 좋은' 값이 위로 오는 정렬 (asc=false) 시 null은 맨 뒤로
+       // '더 나쁜' 값이 위로 오는 정렬 (asc=true) 시 null은 맨 앞으로
        if (xIsNull && yIsNull) return 0;
-       if (xIsNull) return asc ? 1 : -1; // asc=true이면 null이 뒤로; asc=false이면 null이 앞으로
-       if (yIsNull) return asc ? -1 : 1; // asc=true이면 null이 앞으로; asc=false이면 null이 뒤로
+       if (xIsNull) return asc ? -1 : 1; // asc=true(나쁜 위로)이면 null이 앞으로(-1); asc=false(좋은 위로)이면 null이 뒤로(1)
+       if (yIsNull) return asc ? 1 : -1; // asc=true(나쁜 위로)이면 null이 뒤로(1); asc=false(좋은 위로)이면 null이 앞으로(-1)
+
 
        // --- 데이터 타입별 비교 로직 ---
 
-       // 1. 티어 변화 비교 (문자열) - 이제 sortKey가 '티어 변화'일 때는 이 로직은 사용되지 않습니다.
-       /*
-       if (sortKey === '티어 변화') {
-           // ... (이전 로직) ...
+       // 1. 기본 문자열 비교 (실험체 이름)
+       if (sortKey === '실험체') {
+            // 실험체 이름은 항상 가나다순 오름차순 / 역순 내림차순
+            return asc
+               ? String(x).localeCompare(String(y)) // asc=true: 오름차순
+               : String(y).localeCompare(String(x)); // asc=false: 내림차순
        }
-       */
 
-       // 2. 티어 값 비교 (S+ -> F 순서) - 이제 sortKey는 점수이므로 이 로직은 사용되지 않습니다.
-       /*
-        if (sortKey === '티어' || sortKey === '티어 (Ver1)' || sortKey === '티어 (Ver2)') {
-           // ... (이전 로직) ...
-        }
-       */
+       // 2. 순서가 정의된 문자열 비교 (티어 변화 상태, 순위 변화값 문자열, 표본수 변화량 문자열)
+       // '신규 → ' > '-' > '→ 삭제' 순서로 정렬 (좋은 것 -> 나쁜 것)
+       const order = {'신규 → ': 2, '-': 1, '→ 삭제': 0}; // 순위 변화값 문자열 순서 (높을수록 좋음)
+       const sampleOrder = {'new': 2, 'none': 1, 'removed': 0}; // 표본수 변화량 문자열 순서 (높을수록 좋음)
+
+       let orderX, orderY;
+       let isStringOrderComparison = false;
+
+       if (sortKey === '순위 변화값' && typeof x !== 'number' && typeof y !== 'number') {
+           orderX = order[x] !== undefined ? order[x] : -1;
+           orderY = order[y] !== undefined ? order[y] : -1;
+           isStringOrderComparison = true;
+       } else if (sortKey === '표본수 변화량' && typeof x !== 'number' && typeof y !== 'number') {
+            orderX = sampleOrder[x] !== undefined ? sampleOrder[x] : -1;
+            orderY = sampleOrder[y] !== undefined ? sampleOrder[y] : -1;
+            isStringOrderComparison = true;
+       }
+       // Note: '티어 변화' sortKey는 현재 사용되지 않음 (순위 변화값으로 정렬)
+
+       if (isStringOrderComparison) {
+            // order 값이 높을수록 좋음 -> 숫자 비교와 동일하게 처리
+            const xOrder = orderX;
+            const yOrder = orderY;
+
+            // --- 수정: 정렬 방향 로직 변경 ---
+            // asc=false (좋은 것 위로): order 값이 큰 것이 위로 -> 내림차순 (yOrder - xOrder)
+            // asc=true (나쁜 것 위로): order 값이 작은 것이 위로 -> 오름차순 (xOrder - yOrder)
+            return asc ? (xOrder - yOrder) : (yOrder - xOrder);
+            // ---------------------------------
+       }
 
 
        // 3. 숫자 비교 (value 또는 delta)
@@ -249,82 +272,31 @@ function sortData(data, column, asc, mode = 'value') {
        const isBetterWhenLower = (
            sortKey === '평균 순위' || sortKey === '평균 순위 (Ver1)' || sortKey === '평균 순위 (Ver2)' || // 평균 순위 값
            sortKey === '순위 변화값' || // 순위 변화값 (음수가 좋음)
-           sortKey === '평균 순위 변화량' // 평균 순위 변화량 (음수가 좋음) - 사용자 요구사항 반영
+           sortKey === '평균 순위 변화량' // 평균 순위 변화량 (음수가 좋음)
        );
 
 
-       const xNum = parseFloat(String(x).replace(/[+%▲▼]/g, ''));
-       const yNum = parseFloat(String(y).replace(/[+%▲▼]/g, ''));
+       const xNum = typeof x === 'number' ? x : parseFloat(String(x).replace(/[+%▲▼]/g, ''))||0;
+       const yNum = typeof y === 'number' ? y : parseFloat(String(y).replace(/[+%▲▼]/g, ''))||0;
 
 
-       if (!isNaN(xNum) && !isNaN(yNum)) {
-            let comparison = xNum - yNum; // 기본 오름차순 숫자 비교
-
-            if (isBetterWhenLower) { // 값이 작을수록 좋은 경우 (순위, 순위 변화값, 평균 순위 변화량)
-                // asc=true 이면 작은 값(좋은)이 위로 -> 오름차순 그대로
-                // asc=false 이면 큰 값(나쁜)이 위로 -> 내림차순 (결과 뒤집기)
-                 return asc ? comparison : -comparison;
-            }
-            // 그 외 숫자 값 (점수 등) 또는 변화량 (점수 변화량 등) (클수록 좋음)
-            // asc=true 이면 작은 값(나쁜)이 위로 -> 오름차순 (결과 뒤집기)
-            // asc=false 이면 큰 값(좋은)이 위로 -> 내림차순 그대로
-             return asc ? -comparison : comparison;
+       // --- 수정: 정렬 방향 로직 변경 ---
+       let comparison;
+       if (isBetterWhenLower) { // 값이 작을수록 좋음 (평균 순위, 순위 변화값, 평균 순위 변화량)
+           // asc=false (좋은 것 위로): 작은 값(좋은)이 위로 -> 오름차순 (xNum - yNum)
+           // asc=true (나쁜 것 위로): 큰 값(나쁜)이 위로 -> 내림차순 (yNum - xNum)
+           comparison = asc ? (yNum - xNum) : (xNum - yNum);
+       } else { // 값이 클수록 좋음 (점수 등)
+           // asc=false (좋은 것 위로): 큰 값(좋은)이 위로 -> 내림차순 (yNum - xNum)
+           // asc=true (나쁜 것 위로): 작은 값(나쁜)이 위로 -> 오름차순 (xNum - yNum)
+           comparison = asc ? (xNum - yNum) : (yNum - xNum);
        }
-
-       // 4. 티어 변화 비교 (문자열) - sortKey가 '티어 변화'일 때 실행 (Delta 모드 '티어')
-       // 사용자 요구사항 반영: '티어 변화' 델타 정렬 시 '순위 변화값'을 기준으로 하므로 이 로직은 이제 사용되지 않습니다.
-       if (sortKey === '티어 변화') {
-            const changeStatusOrder = ['신규 →', '→', '', '삭제', '-'];
-
-            const getChangeStatusIndex = (str) => {
-                 if (String(str).includes('신규 →')) return 0;
-                 if (String(str) === '-') return 4;
-                 if (String(str).includes('→ 삭제')) return 3;
-                 if (String(str).includes('→')) {
-                      const tiers = String(str).split('→').map(t => t.trim());
-                      const tier1 = tiers[0];
-                      const tier2 = tiers[1];
-                      const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-                      const index1 = tierOrder.indexOf(tier1);
-                      const index2 = tierOrder.indexOf(tier2);
-
-                      if (index1 !== -1 && index2 !== -1) {
-                          if (index2 < index1) return 1; // 개선
-                          if (index2 > index1) return 2; // 악화
-                      }
-                      return 1.5; // 알 수 없는 변화
-                 }
-                 return 2.5; // 변화 없음 또는 티어만 표시된 경우
-            };
-
-            const statusX = getChangeStatusIndex(x);
-            const statusY = getChangeStatusIndex(y);
-
-            if (statusX !== statusY) {
-                let comparison = statusX - statusY;
-                // 요구사항 반영: 티어 변화는 오름차순 (나쁜 변화 위로), 내림차순 (좋은 변화 위로)
-                return asc ? comparison : -comparison;
-            }
-
-            // 같은 상태 내에서는 문자열 자체로 비교 (예: 'S→A' vs 'S+→B')
-             return asc
-               ? String(x).localeCompare(String(y))
-               : String(y).localeCompare(String(x));
-       }
-
-
-       // 5. 기본 문자열 비교 (실험체 이름)
-       if (sortKey === '실험체') {
-            return asc
-               ? String(x).localeCompare(String(y))
-               : String(y).localeCompare(String(x));
-       }
-
-       return 0; // 예상치 못한 경우 (동일하다고 간주)
+       return comparison;
+       // ---------------------------------
    });
 }
 
-// 9. 기간별 데이터 추출 함수
+// 9. 기간별 데이터 추출 함수 (델타 계산 로직 제거)
 function extractPeriodEntries(history, period) {
     const keys = Object.keys(history).sort();
     if (keys.length === 0) return [];
@@ -342,7 +314,7 @@ function extractPeriodEntries(history, period) {
               latestDate = new Date(Date.UTC(parts[1], parts[2]-1, parts[3], parts[4], parts[5]));
          } else {
               console.error("Unsupported date format:", latestKey);
-              return latest;
+              return latest; // Fallback to latest if date format is bad
          }
     }
     latestDate.setUTCHours(0, 0, 0, 0);
@@ -350,6 +322,7 @@ function extractPeriodEntries(history, period) {
     const cutoff = new Date(latestDate.getTime());
     cutoff.setUTCDate(cutoff.getUTCDate() - days);
 
+    // Find the latest key *before or on* the cutoff date
     const pastKey = keys.slice().reverse().find(k => {
         let kDate;
         const kParts = k.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
@@ -365,57 +338,14 @@ function extractPeriodEntries(history, period) {
     });
 
     if (!pastKey) {
-        console.warn(`No data found before cutoff date ${cutoff.toISOString()} for period '${period}'. Cannot calculate delta.`);
-        return [];
+        console.warn(`No data found before cutoff date ${cutoff.toISOString()} for period '${period}'. Returning empty array.`);
+        return []; // Return empty array if no past data found
     }
 
-    const prev = history[pastKey];
-    const currMap = Object.fromEntries(latest.map(d => [d.실험체, d]));
-    const prevMap = Object.fromEntries(prev.map(d => [d.실험체, d]));
-    const delta = [];
-
-    const allCharacters = new Set([...Object.keys(currMap), ...Object.keys(prevMap)]);
-
-    allCharacters.forEach(name => {
-        const c = currMap[name];
-        const p = prevMap[name];
-
-        if (!c || !p) return;
-
-        const diff = c['표본수'] - p['표본수'];
-
-         if (diff > 0) {
-            const rpSum_c = (c['RP 획득'] || 0) * c['표본수'];
-            const winSum_c = (c['승률'] || 0) * c['표본수'];
-            const top3Sum_c = (c['TOP 3'] || 0) * c['표본수'];
-            const rankSum_c = (c['평균 순위'] || 0) * c['표본수'];
-
-            const rpSum_p = (p['RP 획득'] || 0) * p['표본수'];
-            const winSum_p = (p['승률'] || 0) * p['표본수'];
-            const top3Sum_p = (p['TOP 3'] || 0) * p['표본수'];
-            const rankSum_p = (p['평균 순위'] || 0) * p['표본수'];
-
-            const rpDiff = rpSum_c - rpSum_p;
-            const winDiff = winSum_c - winSum_p;
-            const top3Diff = top3Sum_c - top3Sum_p;
-            const rankDiff = rankSum_c - rankSum_p;
-
-
-            delta.push({
-                '실험체': name,
-                '표본수': diff,
-                'RP 획득': diff > 0 ? rpDiff / diff : 0,
-                '승률':    diff > 0 ? winDiff / diff : 0,
-                'TOP 3':   diff > 0 ? top3Diff / diff : 0,
-                '평균 순위': diff > 0 ? rankDiff / diff : 0
-            });
-         }
-    });
-
-    return delta;
+    return history[pastKey]; // Return the data for the found past key
 }
 
-// 10. 색상 보간 헬퍼 함수
+// 10. 색상 보간 헬퍼 함수 (기존 함수 유지)
 function interpolateColor(start, end, ratio) {
     const t = Math.max(0, Math.min(1, ratio));
     const rgb = start.map((s,i) => Math.round(s + (end[i] - s) * t));
@@ -581,126 +511,181 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
     const rows = Array.from(table.querySelectorAll('tbody tr'));
     const headers = Array.from(table.querySelectorAll('thead th'));
 
-    // 픽률 컬럼의 데이터 키 매핑
-    function parsePickRate(val, which) {
-        // val 예시: "2.94% → 7.06% ▲4.12"
-        // which = 'ver1' / 'ver2' / 'delta'
-        const parts = String(val).split('→').map(s => s.trim());
-        if (which === 'ver1') {
-            return parseFloat(parts[0].replace('%', '')) || 0;
-        } else if (which === 'ver2') {
-            return parseFloat(parts[1].split('%')[0].trim()) || 0;
-        } else { // delta
-            const m = parts[1].match(/▲?([0-9.]+)%?/) || [];
-            return parseFloat(m[1]) || 0;
-        }
-    }
+    // 픽률 정보를 가져올 컬럼 인덱스를 찾습니다. (가중치로 사용)
+    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률'); // 픽률 컬럼 인덱스
 
     headers.forEach((th, i) => {
         const col = th.dataset.col;
-        const isNumeric = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'].includes(col);
-        if (!isNumeric) return;
-
-        // 값 꺼낼 키 결정
-        let valueKey;
-        if (col === '픽률') {
-            if (mode === 'value1')  valueKey = '픽률';  // 실제값은 비교 테이블에서 픽률 셀 자신의 textContent 사용
-            else if (mode === 'value2') valueKey = '픽률';
-            else valueKey = '픽률'; // delta 도 같은 셀 텍스트에서
-        } else if (mode === 'value1') {
-            valueKey = col + ' (Ver1)';
-        } else if (mode === 'value2') {
-            valueKey = col + ' (Ver2)';
-        } else {
-            valueKey = (col === '평균 순위') ? '평균 순위 변화량' : col + ' 변화량';
+        // '실험체' 컬럼은 그라디언트 적용 제외
+        if (col === '실험체') {
+             rows.forEach(tr => tr.children[i].style.backgroundColor = '');
+             return;
         }
 
-        // 평균 계산
+        // --- 티어 컬럼 색상 로직 ---
+        if (col === '티어') {
+            rows.forEach((r, idx) => {
+                const cell = r.children[i];
+                cell.style.backgroundColor = ''; // Clear any previous inline style for Tier column
+
+                if (mode === 'value1') {
+                    // Value1 mode: Apply standard tier color based on Ver1 Tier value
+                    const tierValue = data[idx]['티어 (Ver1)'];
+                    const color = TIER_COLORS_SINGLE[tierValue];
+                    if (color) {
+                        cell.style.backgroundColor = color;
+                    }
+                } else if (mode === 'value2') {
+                    // Value2 mode: Apply standard tier color based on Ver2 Tier value
+                    const tierValue = data[idx]['티어 (Ver2)'];
+                    const color = TIER_COLORS_SINGLE[tierValue];
+                    if (color) {
+                        cell.style.backgroundColor = color;
+                    }
+                } else if (mode === 'delta') {
+                    // Delta mode: Apply gradient based on numeric rank change
+                    const rankChangeValue = data[idx]['순위 변화값']; // Get rank change for this row
+
+                    // Apply gradient only if rank change is numeric
+                    if (typeof rankChangeValue === 'number' && rankChangeValue !== null && rankChangeValue !== undefined) {
+                         const valueKey = '순위 변화값';
+                         const isBetterWhenLower = true; // Lower rank change (more negative) is better
+
+                         // Collect numeric rank change values for gradient calculation across the column
+                         const valuesOnly = data.map(d => {
+                              const val = d[valueKey];
+                              return (typeof val === 'number') ? val : null;
+                         }).filter(v => v !== null);
+
+                         if (valuesOnly.length === 0) {
+                              // No numeric delta data in column, no coloring
+                              return;
+                         }
+
+                         const min = Math.min(...valuesOnly);
+                         const max = Math.max(...valuesOnly);
+                         const avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length; // Simple average for rank change
+
+                         let ratio;
+                         if (max === min) {
+                             ratio = 0.5;
+                         } else if (!isBetterWhenLower) { // Higher is better (not applicable for rank change)
+                             ratio = (rankChangeValue >= avg)
+                                 ? 0.5 + (rankChangeValue - avg) / (max - avg) * 0.5
+                                 : 0.5 - (avg - rankChangeValue) / (avg - min) * 0.5;
+                         } else { // Lower is better (rank change)
+                             ratio = (rankChangeValue <= avg)
+                                 ? 0.5 + (avg - rankChangeValue) / (avg - min) * 0.5
+                                 : 0.5 - (rankChangeValue - avg) / (max - avg) * 0.5;
+                         }
+                         ratio = Math.max(0, Math.min(1, ratio));
+
+                         // Interpolate from Blue (Worst) to White (0.5 - Avg) to Red (1 - Best)
+                         const color = (ratio >= 0.5)
+                              ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
+                              : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+
+                         cell.style.backgroundColor = color; // Apply gradient via inline style
+                    }
+                    // Non-numeric rank change (신규, 삭제, -) will have no background color
+                }
+                // If mode is value1/value2 and tierValue is null/undefined, or mode is delta and rankChangeValue is non-numeric,
+                // cell.style.backgroundColor remains '' (cleared at the start of the loop)
+            });
+            return; // Finished processing Tier column, move to next header
+        }
+
+        // --- 다른 숫자 컬럼 색상 로직 (기존 그대로) ---
+        let valueKey; // Key to get the value for gradient calculation
+        let isBetterWhenLower; // Is lower value better for coloring?
+        let useSimpleAverage = false; // Should we use simple average instead of weighted?
+
+        // Logic for other numeric stat columns (Score, Pick Rate, RP, Win Rate, Top 3, Avg Rank, Sample Size)
+         if (mode === 'value1') {
+             valueKey = col + ' (Ver1)';
+         } else if (mode === 'value2') {
+             valueKey = col + ' (Ver2)';
+         } else { // mode === 'delta'
+             valueKey = (col === '평균 순위') ? '평균 순위 변화량' : col + ' 변화량';
+         }
+
+         // Determine if lower is better based on the valueKey
+         const lowerKeysAreBetter = ['평균 순위', '평균 순위 (Ver1)', '평균 순위 (Ver2)', '순위 변화값', '평균 순위 변화량'];
+         isBetterWhenLower = lowerKeysAreBetter.includes(valueKey);
+
+         // Use simple average for Pick Rate (any mode) and any column in Delta mode
+         if (col === '픽률' || mode === 'delta') {
+             useSimpleAverage = true;
+         }
+         // Otherwise, use weighted average (default is false)
+        // Note: Tier column now handled separately above, so this weighted average logic applies only to other numeric columns
+
+        // Collect numeric values for the determined valueKey
+        const valuesOnly = data.map(d => {
+             const val = d[valueKey];
+             return (typeof val === 'number') ? val : null;
+        }).filter(v => v !== null);
+
+        if (valuesOnly.length === 0) {
+             rows.forEach(tr => tr.children[i].style.backgroundColor = '');
+             return; // Changed from continue to return
+        }
+
+        const min = Math.min(...valuesOnly);
+        const max = Math.max(...valuesOnly);
+
+        // Calculate average
         let avg;
-        if (col === '픽률') {
-            // 단순 평균
-            const vals = rows.map(r => {
-                const txt = r.children[i].textContent.trim();
-                if (mode === 'value1')  return parsePickRate(txt, 'ver1');
-                if (mode === 'value2')  return parsePickRate(txt, 'ver2');
-                return parsePickRate(txt, 'delta');
-            });
-            avg = vals.reduce((s,v)=>s+v,0) / vals.length;
-        } else if (mode === 'delta') {
-            // 변화량 단순 평균
-            const vals = data.map(d => {
-                const v = d[valueKey];
-                return (typeof v === 'number') ? v : parseFloat(String(v).replace(/[+▲▼]/g, ''))||0;
-            });
-            avg = vals.reduce((s,v)=>s+v,0) / vals.length;
+        if (useSimpleAverage) {
+             avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length;
         } else {
-            // 가중평균 (픽률 열은 제외)
+            // Weighted average
+            const pickRateKey = mode === 'value1' ? '픽률 (Ver1)' : '픽률 (Ver2)';
             const tuples = data.map(d => {
                 const v = d[valueKey];
-                let pr = 0;
-                const pr1 = d['픽률 (Ver1)'], pr2 = d['픽률 (Ver2)'];
-                if (mode === 'value1') pr = (typeof pr1==='number'?pr1/100:0);
-                else pr = (typeof pr2==='number'?pr2/100:0);
-                return (typeof v==='number' && pr>0) ? {v, pr} : null;
+                const pr = d[pickRateKey];
+                return (typeof v === 'number' && typeof pr === 'number' && pr > 0) ? {v, pr: pr/100} : null;
             }).filter(x=>x);
             const totalPr = tuples.reduce((s,x)=>s+x.pr,0);
             const wsum    = tuples.reduce((s,x)=>s+x.v*x.pr,0);
-            avg = totalPr>0 ? wsum/totalPr : 0;
+            avg = totalPr > 0 ? wsum/totalPr : 0;
         }
 
-        // 컬럼 전체 값 배열 (min/max 계산)
-        const allVals = rows.map(r => {
-            if (col === '픽률') {
-                const txt = r.children[i].textContent.trim();
-                if (mode === 'value1')  return parsePickRate(txt, 'ver1');
-                if (mode === 'value2')  return parsePickRate(txt, 'ver2');
-                return parsePickRate(txt, 'delta');
-            }
-            const raw = data[rows.indexOf(r)][valueKey];
-            return (typeof raw==='number')
-                ? raw
-                : parseFloat(String(raw).replace(/[+▲▼]/g, ''))||0;
-        });
-        const min = Math.min(...allVals), max = Math.max(...allVals);
 
-        // 좋음/나쁨 기준
-        const higherBetter = (col!=='평균 순위');
-        const lowerBetter  = (col==='평균 순위');
-
-        // 색상 입히기
+        // Apply color to each cell in the column
         rows.forEach((r, idx) => {
             const cell = r.children[i];
-            let v = allVals[idx];
-            let ratio, color;
-            if (max === min) {
-                color = 'rgba(240,240,240,0.3)';
-            } else {
-                if ((higherBetter && v>=avg) || (lowerBetter && v<=avg)) {
-                    // 중간→최고(좋음)
-                    ratio = higherBetter
-                        ? (v-avg)/(max-avg)
-                        : (avg-v)/(avg-min);
-                    ratio = Math.max(0, Math.min(1, ratio));
-                    // 흰→빨
-                    color = interpolateColor([255,255,255],[230,124,115], ratio);
-                } else {
-                    // 최악→중간
-                    ratio = higherBetter
-                        ? (avg-v)/(avg-min)
-                        : (v-avg)/(max-avg);
-                    ratio = Math.max(0, Math.min(1, ratio));
-                    // 블루→흰
-                    color = interpolateColor([255,255,255],[164,194,244], ratio);
-                }
+            const v = data[idx][valueKey]; // Get the value for this specific row
+
+            // Skip coloring if value is not numeric
+            if (typeof v !== 'number' || v === null || v === undefined) {
+                 cell.style.backgroundColor = ''; // Clear any previous inline style
+                 // CSS rules will handle non-numeric states like '신규'/'삭제'
+                 return;
             }
+
+            let ratio;
+            if (max === min) {
+                ratio = 0.5;
+            } else if (!isBetterWhenLower) { // Higher is better
+                ratio = (v >= avg)
+                    ? 0.5 + (v - avg) / (max - avg) * 0.5
+                    : 0.5 - (avg - v) / (avg - min) * 0.5;
+            } else { // Lower is better
+                ratio = (v <= avg)
+                    ? 0.5 + (avg - v) / (avg - min) * 0.5
+                    : 0.5 - (v - avg) / (max - avg) * 0.5;
+            }
+            ratio = Math.max(0, Math.min(1, ratio));
+
+            let color;
+            // Interpolate from Blue (Worst) to White (0.5 - Avg) to Red (1 - Best)
+            // The ratio calculation already maps 0=worst, 1=best based on isBetterWhenLower
+            color = (ratio >= 0.5)
+                 ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
+                 : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+
             cell.style.backgroundColor = color;
         });
     });
-}
-
-// 두 색상 간 보간 함수 (기존 그대로)
-function interpolateColor(start, end, t) {
-    const tt = Math.max(0, Math.min(1, t));
-    const rgb = start.map((s,i)=>Math.round(s + (end[i]-s)*tt));
-    return `rgb(${rgb.join(',')})`;
 }
