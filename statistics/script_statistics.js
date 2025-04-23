@@ -149,21 +149,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tierSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         periodSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         gradientCheckbox.addEventListener('change', () => {
-            updateURL(); // URL에 상태 저장
-            if (lastData && lastData.length > 0) {
-                // 현재 모드에 맞는 렌더링 함수 호출 (색상만 다시 적용)
-                if (isCompareMode) {
-                     // renderComparisonTable 함수 호출 시 체크박스 상태 전달
-                     renderComparisonTable(lastData); // renderComparisonTable 내부에서 체크박스 상태 확인
-                } else {
-                     // renderTable 함수 호출 시 체크박스 상태 전달
-                     renderTable(lastData); // renderTable 내부에서 체크박스 상태 확인
-                }
-            } else if (!gradientCheckbox.checked) {
-                 // 색상 강조 해제했는데 데이터가 없으면 (예: 로딩 실패 메시지 등)
-                 // 테이블이 있다면 배경색 초기화 (혹시 모르니 안전 장치)
-                 dataContainer.querySelectorAll('td').forEach(td => td.style.backgroundColor = '');
-            }
+            updateURL();
+            if (!isCompareMode && lastData && lastData.length > 0) renderTable(lastData);
         });
 
         if (isCompareMode) {
@@ -361,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 7) 비교 테이블 렌더링
-function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
+    function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
         if (!isCompareMode) return;
 
        // 기존 테이블 컬럼 목록
@@ -381,8 +368,7 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
            comparisonTableHtml += '<tr>';
            cols.forEach(col => {
                let displayVal = '-';
-               // 변수명 변경 시도: dataAttributes -> cellDataAttributes
-               let cellDataAttributes = ''; // data-delta, data-rankdelta 등을 저장할 문자열
+               let dataAttributes = ''; // data-delta, data-rankdelta 등을 저장할 문자열
 
                 if (col === '실험체') {
                     displayVal = row['실험체'] || '-';
@@ -416,18 +402,14 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     // 순위 변화 색상 강조를 위한 data 속성 (실험체 열에만 붙임)
                      const rankChangeNumeric = row['순위 변화값']; // number 또는 string
                      if (typeof rankChangeNumeric === 'number') {
-                         // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                         cellDataAttributes += ` data-rankdelta-numeric="${rankChangeNumeric}"`; // 숫자값 그대로 저장
+                         dataAttributes += ` data-rankdelta-numeric="${rankChangeNumeric}"`; // 숫자값 그대로 저장
                      } else { // string 값인 경우 상태 저장
                           if (rankChangeNumeric === '신규 → ') {
-                               // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                               cellDataAttributes += ` data-rankdelta-status="new"`;
+                               dataAttributes += ` data-rankdelta-status="new"`;
                           } else if (rankChangeNumeric === '→ 삭제') {
-                                // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                                cellDataAttributes += ` data-rankdelta-status="removed"`;
+                                dataAttributes += ` data-rankdelta-status="removed"`;
                           } else {
-                                // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                                cellDataAttributes += ` data-rankdelta-status="none"`; // '-' 또는 기타
+                                dataAttributes += ` data-rankdelta-status="none"`; // '-' 또는 기타
                           }
                      }
 
@@ -440,11 +422,9 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     // 티어 변화 색상 강조를 위한 data 속성 (JS에서 색칠 시 사용) (요청 사항 반영)
                      if (tierChange.includes('→')) {
                           if (tierChange.includes('신규 →')) {
-                              // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                              cellDataAttributes += ` data-tierchange="new"`;
+                              dataAttributes += ` data-tierchange="new"`;
                           } else if (tierChange.includes('→ 삭제')) {
-                               // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                               cellDataAttributes += ` data-tierchange="removed"`;
+                               dataAttributes += ` data-tierchange="removed"`;
                           } else { // S+ -> S 등 실제 티어 변화
                                const tiers = tierChange.split('→').map(t => t.trim());
                                const tier1 = tiers[0];
@@ -455,25 +435,24 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
 
                                if (index1 >= 0 && index2 >= 0) {
                                    // 인덱스 비교로 개선/악화/동일 판단
-                                   if (index2 < index1) cellDataAttributes += ` data-tierchange="up"`; // 개선
-                                   else if (index2 > index1) cellDataAttributes += ` data-tierchange="down"`; // 악화
-                                   else cellDataAttributes += ` data-tierchange="same"`; // 동일
+                                   if (index2 < index1) dataAttributes += ` data-tierchange="up"`; // 개선
+                                   else if (index2 > index1) dataAttributes += ` data-tierchange="down"`; // 악화
+                                   else dataAttributes += ` data-tierchange="same"`; // 동일
                                } else {
-                                   cellDataAttributes += ` data-tierchange="unknown"`; // 알 수 없는 티어 변화
+                                   dataAttributes += ` data-tierchange="unknown"`; // 알 수 없는 티어 변화
                                }
                            }
                       } else if (tierChange === '-') {
-                            cellDataAttributes += ` data-tierchange="none"`; // 둘 다 없음
+                            dataAttributes += ` data-tierchange="none"`; // 둘 다 없음
                       } else { // 티어 변화 없음 (S+ 등) - 단일 티어 표시
                              // 티어 등급 자체를 속성으로 저장
-                             cellDataAttributes += ` data-tier-single="${tierChange}"`;
+                             dataAttributes += ` data-tier-single="${tierChange}"`;
                       }
 
                      // 티어 컬럼의 델타 모드 색칠을 위해 순위 변화값도 data 속성에 저장 (숫자만) (요청 사항 반영)
                      const rankChangeValue = row['순위 변화값'];
                      if (typeof rankChangeValue === 'number') {
-                          // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                          cellDataAttributes += ` data-rankdelta-numeric="${rankChangeValue}"`;
+                          dataAttributes += ` data-rankdelta-numeric="${rankChangeValue}"`;
                      }
 
                 } else { // Other numeric stat columns
@@ -495,9 +474,9 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
 
                       let deltaText = '';
                       if (typeof delta === 'number') {
-                        let deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                        if (col === '평균 순위') deltaFormatted = Math.abs(delta).toFixed(2);
-                        else if (col === '표본수') deltaFormatted = Math.round(Math.abs(delta)).toLocaleString();
+                           const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
+                            if (col === '평균 순위') deltaFormatted = Math.abs(delta).toFixed(2);
+                            else if (col === '표본수') deltaFormatted = Math.round(Math.abs(delta)).toLocaleString();
 
 
                            deltaText = `${value2Text} ${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
@@ -520,25 +499,20 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
 
                      // Store delta value for color grading (요청 사항 반영)
                      if (typeof delta === 'number') {
-                          // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                          cellDataAttributes += ` data-delta-numeric="${delta}"`; // 숫자값 그대로 저장
+                          dataAttributes += ` data-delta-numeric="${delta}"`; // 숫자값 그대로 저장
                      } else {
                           // 숫자 변화량이 아닌 경우 상태 저장 ('new', 'removed', 'none')
                            if (typeof val1 !== 'number' && typeof val2 === 'number') { // 신규
-                                // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                                cellDataAttributes += ` data-delta-status="new"`;
+                                dataAttributes += ` data-delta-status="new"`;
                            } else if (typeof val1 === 'number' && typeof val2 !== 'number') { // 삭제
-                                // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                                cellDataAttributes += ` data-delta-status="removed"`;
+                                dataAttributes += ` data-delta-status="removed"`;
                            } else { // 둘 다 없음, 변화 없음 등
-                                // 변수명 변경: dataAttributes += -> cellDataAttributes +=
-                                cellDataAttributes += ` data-delta-status="none"`;
+                                dataAttributes += ` data-delta-status="none"`;
                            }
                      }
                 }
 
-                // 변수명 변경: dataAttributes 사용 -> cellDataAttributes 사용
-                comparisonTableHtml += `<td data-col="${col}"${cellDataAttributes}>${displayVal}</td>`;
+                comparisonTableHtml += `<td data-col="${col}"${dataAttributes}>${displayVal}</td>`;
            });
            comparisonTableHtml += '</tr>';
        });
@@ -549,56 +523,58 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderComparisonTable); // data-nosort 없는 th에만 부착
 
        // 색상 강조가 체크된 경우에만 색상 적용 함수 호출 (요청 사항 반영)
-       // applyGradientColorsComparison 함수는 common.js에 정의되어 있으며 gradientEnabled 인자를 받음
-       // data 대신 lastData 사용 (현재 정렬된 데이터)
-       // renderComparisonTable 함수의 data 인자는 이미 정렬된 데이터이므로 lastData 대신 data를 전달합니다.
-       applyGradientColorsComparison(dataContainer.querySelector('table'), data, currentSortMode, currentSortColumn, gradientCheckbox.checked);
-    }
+       if (gradientCheckbox.checked) {
+           // applyGradientColorsComparison 함수는 common.js에 정의되어 있으며 gradientEnabled 인자를 받음
+           // data 대신 lastData 사용 (현재 정렬된 데이터)
+           applyGradientColorsComparison(dataContainer.querySelector('table'), lastData, currentSortMode, currentSortColumn, true);
+       } else {
+           // 색상 강조 해제 시, 테이블의 모든 배경색 초기화
+            dataContainer.querySelectorAll('td').forEach(td => td.style.backgroundColor = '');
+       }
+   }
+
 
     // 8) 테이블 렌더링 (기존 로직 - 단일 데이터용)
     function renderTable(data) {
-        if (isCompareMode) return; // 비교 모드일 때는 이 함수 실행 안 함
+         if (isCompareMode) return;
 
-       const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
-       let html = '<table><thead><tr>';
-       cols.forEach(c => {
-            // 단일 모드에서는 실험체 정렬 제외, 나머지 포함 (원본 유지)
-           const sortable = c !== '실험체';
-           html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`;
-       });
-       html += '</tr></thead><tbody>';
+        let html = '<table><thead><tr>';
+        cols.forEach(c => {
+             // 단일 모드에서는 실험체 정렬 제외, 티어 정렬 포함
+            const sortable = c !== '실험체';
+            html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`;
+        });
+        html += '</tr></thead><tbody>';
 
-       data.forEach(row => {
-           html += '<tr>';
-           cols.forEach(col => {
-               let val = row[col];
-                // 원본 코드와 동일하게 undefined/null 체크
-                if (val === undefined || val === null) {
-                    val = '-';
-                } else if (col === '승률' || col === 'TOP 3' || col === '픽률') {
-                    val = typeof val === 'number' ? (val * 100).toFixed(2) + '%' : '-';
-                } else if (col === '점수' || col === 'RP 획득' || col === '평균 순위') {
-                    val = typeof val === 'number' ? parseFloat(val).toFixed(2) : '-';
-                } else { // 실험체, 티어 등 (문자열)
-                    val = val;
-                }
+        data.forEach(row => {
+            html += '<tr>';
+            cols.forEach(col => {
+                let val = row[col];
+                 if (val === undefined || val === null) {
+                     val = '-';
+                 } else if (col === '승률' || col === 'TOP 3') {
+                     val = typeof val === 'number' ? (val * 100).toFixed(2) + '%' : '-';
+                 } else if (col === '픽률') {
+                     val = typeof val === 'number' ? val.toFixed(2) + '%' : '-';
+                 } else if (col === '점수' || col === 'RP 획득' || col === '평균 순위') {
+                     val = typeof val === 'number' ? parseFloat(val).toFixed(2) : '-';
+                 } else { // 실험체, 티어 등
+                     val = val;
+                 }
 
-               html += `<td data-col="${col}">${val}</td>`;
-           });
-           html += '</tr>';
-       });
-       html += '</tbody></table>';
+                html += `<td data-col="${col}">${val}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
 
-       dataContainer.innerHTML = html;
+        dataContainer.innerHTML = html;
 
-       attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable); // data-nosort 없는 th에만 부착
-
-       // 색상 강조가 체크된 경우에만 색상 적용 함수 호출 (원본 유지)
-       // applyGradientColorsSingle 함수에 체크박스 상태를 인자로 전달하도록 수정했습니다.
-       // 이렇게 하면 applyGradientColorsSingle 함수 내부에서 색상 적용/해제 로직을 처리합니다.
-       applyGradientColorsSingle(dataContainer.querySelector('table'), gradientCheckbox.checked);
-   }
+        attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable); // data-nosort 없는 th에만 부착
+        if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
+    }
 
     // 9) 단일 모드용 정렬 이벤트 리스너 부착
     function attachSingleSortEventListeners(ths, renderFunc) {
