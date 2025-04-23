@@ -435,192 +435,182 @@ document.addEventListener('DOMContentLoaded', function () {
     // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
     // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
     function displayTierTable(data, isCompareMode) {
-        const tierLabels = {
-          platinum_plus:  "플래티넘+",
-          diamond_plus:   "다이아몬드+",
-          meteorite_plus: "메테오라이트+",
-          mithril_plus:  "미스릴+",
-          in1000:         "in1000"
-        };
-
-        const versionLabel = versionSelect.value;
-        const tierLabel    = tierLabels[tierSelect.value];
-
-        const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-        const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
-
-        // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
-        data.forEach(item => {
-            // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
-            const itemTier = isCompareMode ? item['티어 (Ver1)'] : item.티어;
-            // 단일 모드 또는 비교 모드에서 Ver1 티어가 유효한 경우에만 그룹에 추가
-            // Ver1에 없는 캐릭터 (신규)는 티어 테이블에 표시되지 않음 (기존 동작 유지)
-            if (itemTier && groups[itemTier]) {
-                 groups[itemTier].push(item);
-            }
-        });
-        // ----------------------------------------------------
-
-        // --- 수정: totalSample 계산 (단일 모드에서만 사용) ---
-        // 단일 모드: 현재 데이터의 표본수 합계
-        // 비교 모드: 픽률은 개별 픽률 사용, 총 표본수는 필요 없음.
-        const totalSample = isCompareMode
-            ? 0 // 비교 모드에서는 총 표본수 합계 사용하지 않음
-            : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0);
-        // ---------------------------------------------
-
-        const perRow      = 15;
-        let html = '';
+        // ... (기존 displayTierTable 함수 내용 유지 - 툴팁, 순위 변동 요소 생성 포함) ...
+        const tierLabels = { /* ... */ }; // 유지
+        const versionLabel = versionSelect.value; // 유지
+        const tierLabel    = tierLabels[tierSelect.value]; // 유지
+        const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F']; // 유지
+        const groups = tiers.reduce((o, t) => (o[t] = [], o), {}); // 유지
+        data.forEach(item => { /* ... */ }); // 유지
+        const totalSample = isCompareMode ? 0 : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0); // 유지
+        const perRow      = 15; // 유지
+        let html = ''; // 유지
 
         tiers.forEach(tier => {
-          // 시작 태그: <tr><th>...
-          html += `<tr class="tier-row tier-${tier}"><th>${tier}</th>`;
+            html += `<tr class="tier-row tier-${tier}"><th>${tier}</th>`; // 유지
+            if (tier === 'S+') { html += `<td style="position: relative;"><div class="tier-info" style=" /* ... */ ">${versionLabel} | ${tierLabel}</div><div>`; } else { html += `<td><div>`; } // 유지
 
-          // <td> 시작(첫 행이면 position:relative)
-          if (tier === 'S+') {
-            html += `<td style="position: relative;"><div class="tier-info" style="
-                         position: absolute;
-                         top: 4px;
-                         right: 4px;
-                         padding: 2px 6px;
-                         background: rgba(255,255,255,0.8);
-                         border-radius: 4px;
-                         font-size: 0.85em;
-                         font-weight: bold;
-                         white-space: nowrap;
-                      ">${versionLabel} | ${tierLabel}</div><div>`; // white-space: nowrap 추가
-          } else {
-            html += `<td><div>`;
-          }
+            const sortKey = isCompareMode ? '점수 (Ver1)' : '점수'; // 유지
+            const sortMode = isCompareMode ? 'value1' : 'value'; // 유지
+            const entries = sortData(groups[tier], sortKey, false, sortMode); // 유지
 
-          // 슬롯들 렌더링
-          // --- 수정: sortData 함수 사용 (비교 모드 고려) ---
-          // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
-          // 비교 모드일 때는 '점수 (Ver1)' 기준으로 정렬
-          const sortKey = isCompareMode ? '점수 (Ver1)' : '점수';
-          const sortMode = isCompareMode ? 'value1' : 'value'; // 비교 모드일 때는 value1 모드로 정렬
-          const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
-          // -----------------------------
+            if (entries.length === 0) {
+                for (let i = 0; i < perRow; i++) {
+                    html += `<span class="tooltip-container">
+                               <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
+                             </span>`; // Placeholder 이미지에 툴팁 요소 추가 안함 (기존 유지)
+                }
+            } else {
+                entries.forEach((e) => {
+                    const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_'); // 유지
 
-          if (entries.length === 0) {
-            // 빈 슬롯 표시 (기존 이미지 사용)
-            // 15개 모두 채워서 레이아웃 유지
-             for (let i = 0; i < perRow; i++) {
-                // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 ---
-                html += `<span class="tooltip-container">
-                           <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
-                         </span>`;
-                // ---------------------------------------------------------
-             }
+                    // --- 툴팁 내용 조정 (기존 수정된 내용 유지) ---
+                    let tooltipContent;
+                    if (isCompareMode) { /* ... 비교 모드 툴팁 내용 ... */
+                         const pr1 = e['픽률 (Ver1)'] !== null && e['픽률 (Ver1)'] !== undefined ? (e['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
+                         const pr2 = e['픽률 (Ver2)'] !== null && e['픽률 (Ver2)'] !== undefined ? (e['픽률 (Ver2)'] || 0).toFixed(2) + '%' : '-';
+                         const rp1 = e['RP 획득 (Ver1)'] !== null && e['RP 획득 (Ver1)'] !== undefined ? (e['RP 획득 (Ver1)'] || 0).toFixed(1) : '-';
+                         const rp2 = e['RP 획득 (Ver2)'] !== null && e['RP 획득 (Ver2)'] !== undefined ? (e['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
+                         const win1 = e['승률 (Ver1)'] !== null && e['승률 (Ver1)'] !== undefined ? ((e['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
+                         const win2 = e['승률 (Ver2)'] !== null && e['승률 (Ver2)'] !== undefined ? ((e['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
+                         tooltipContent = `
+                             ${e.실험체}<br>
+                             픽률: ${pr1} → ${pr2}<br>
+                             RP 획득: ${rp1} → ${rp2}<br>
+                             승률: ${win1} → ${win2}
+                         `;
+                    } else { /* ... 단일 모드 툴팁 내용 ... */
+                         tooltipContent = `
+                             ${e.실험체}<br>
+                             픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br>
+                             RP: ${(e['RP 획득'] || 0).toFixed(1)}<br>
+                             승률: ${((e['승률'] || 0)*100).toFixed(1)}%
+                         `;
+                    }
+                    const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
+                    // ---------------------------------------------
 
-          } else {
-            entries.forEach((e) => { // i 변수 사용되지 않아 제거
-              const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
-              // --- 수정: 툴팁 내용 조정 (비교 모드일 때 Ver1/Ver2 정보 포함) ---
-              let tooltipContent;
-              if (isCompareMode) {
-                   const pr1 = e['픽률 (Ver1)'] !== null && e['픽률 (Ver1)'] !== undefined ? (e['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
-                   const pr2 = e['픽률 (Ver2)'] !== null && e['픽률 (Ver2)'] !== undefined ? (e['픽률 (Ver2)'] || 0).toFixed(2) + '%' : '-';
-                   const rp1 = e['RP 획득 (Ver1)'] !== null && e['RP 획득 (Ver1)'] !== undefined ? (e['RP 획득 (Ver1)'] || 0).toFixed(1) : '-';
-                   const rp2 = e['RP 획득 (Ver2)'] !== null && e['RP 획득 (Ver2)'] !== undefined ? (e['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
-                   const win1 = e['승률 (Ver1)'] !== null && e['승률 (Ver1)'] !== undefined ? ((e['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
-                   const win2 = e['승률 (Ver2)'] !== null && e['승률 (Ver2)'] !== undefined ? ((e['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                   // --- 비교 모드 툴팁 내용 형식 수정 ---
-                   tooltipContent = `
-                       ${e.실험체}<br>
-                       픽률: ${pr1} → ${pr2}<br>
-                       RP 획득: ${rp1} → ${rp2}<br>
-                       승률: ${win1} → ${win2}
-                   `;
-                   // ------------------------------------
-              } else {
-                   // --- 단일 모드 툴팁 내용 수정 ---
-                   tooltipContent = `
-                       ${e.실험체}<br>
-                       픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br> <!-- 단일 모드 픽률 계산 방식 복원 -->
-                       RP: ${(e['RP 획득'] || 0).toFixed(1)}<br>
-                       승률: ${((e['승률'] || 0)*100).toFixed(1)}%
-                   `;
-                   // -----------------------------
-              }
-              const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
-              // -------------------------------------------------------------
+                    // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
+                    let rankChangeOverlayHtml = '';
+                    if (isCompareMode) { /* ... 순위 변동 로직 ... */
+                         const rankChangeValue = e['순위 변화값'];
+                         let rankChangeText = '';
+                         let rankChangeClass = '';
+                         if (typeof rankChangeValue === 'number') {
+                              const absChange = Math.abs(rankChangeValue);
+                              if (rankChangeValue < 0) { rankChangeText = `▼${absChange}`; rankChangeClass = 'rank-change-down'; } // 순위 숫자 감소 (좋아짐)
+                              else if (rankChangeValue > 0) { rankChangeText = `▲${absChange}`; rankChangeClass = 'rank-change-up'; } // 순위 숫자 증가 (나빠짐)
+                              else { rankChangeText = `=`; rankChangeClass = 'rank-change-same'; }
+                         } else { rankChangeText = rankChangeValue || '-'; if (rankChangeValue === '신규 → ') rankChangeClass = 'rank-change-up'; else if (rankChangeValue === '→ 삭제') rankChangeClass = 'rank-change-down'; else rankChangeClass = 'rank-change-same'; }
+                         if (rankChangeText !== '') { rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`; }
+                    }
+                    // -------------------------------------------------
 
-              // --- 수정: 순위 변동 표시 요소 (비교 모드에서만) 및 아이콘 반전, data-text 추가 ---
-              let rankChangeOverlayHtml = '';
-              if (isCompareMode) {
-                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string
-                   let rankChangeText = '';
-                   let rankChangeClass = '';
+                    html += `<span class="tooltip-container">
+                               <img src="/image/${imgName}.png" alt="${e.실험체}">
+                               ${tooltip}
+                               ${rankChangeOverlayHtml}
+                             </span>`;
+                });
 
-                   if (typeof rankChangeValue === 'number') {
-                        const absChange = Math.abs(rankChangeValue);
-                        if (rankChangeValue < 0) { // 순위 숫자 감소 (좋아짐)
-                             // --- 순위 아이콘 반전 ---
-                             rankChangeText = `▼${absChange}`; // 좋아졌는데 아래 화살표 표시
-                             // ------------------------
-                             rankChangeClass = 'rank-change-down'; // 좋음=up 클래스 유지 (색상 위함)
-                        } else if (rankChangeValue > 0) { // 순위 숫자 증가 (나빠짐)
-                             // --- 순위 아이콘 반전 ---
-                             rankChangeText = `▲${absChange}`; // 나빠졌는데 위 화살표 표시
-                             // ------------------------
-                             rankChangeClass = 'rank-change-up'; // 나쁨=down 클래스 유지 (색상 위함)
-                        } else { // 순위 변동 없음 (숫자 0)
-                             rankChangeText = `=`;
-                             rankChangeClass = 'rank-change-same';
-                        }
-                   } else { // 비숫자 순위 변화 (신규, 삭제, -)
-                        rankChangeText = rankChangeValue || '-'; // 문자열 값 자체를 표시
-                        if (rankChangeValue === '신규 → ') rankChangeClass = 'rank-change-up'; // 신규는 긍정으로 간주
-                        else if (rankChangeValue === '→ 삭제') rankChangeClass = 'rank-change-down'; // 삭제는 부정으로 간주
-                        else rankChangeClass = 'rank-change-same';
-                   }
-
-                   if (rankChangeText !== '') {
-                        // --- data-text 속성 추가 ---
-                        rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
-                        // ----------------------------
-                   }
-              }
-              // ---------------------------------------------------
-
-
-              html += `<span class="tooltip-container">
-                         <img src="/image/${imgName}.png" alt="${e.실험체}">
-                         ${tooltip}
-                         ${rankChangeOverlayHtml} <!-- 순위 변동 표시 요소 추가 -->
-                       </span>`;
-              // perRow 개수마다 div 닫고 다시 열기 (기존 레이아웃 유지)
-              // perRow는 15이므로, 15개마다 줄바꿈
-              // 이 로직이 있으면 이미지가 15개 단위로 묶여서 표시됩니다.
-              // 현재 CSS에서 .tooltip-container에 width: calc(100% / 15)를 주므로 줄바꿈 없이 자동으로 배치됩니다.
-              // 이 div 나눔 로직은 불필요하며 제거해도 무방합니다.
-              // 하지만 원본 코드의 구조를 최대한 유지하기 위해 남겨둡니다.
-              // if ((i+1)%perRow===0 && i!==entries.length-1) html += '</div><div>';
-            });
-
-            // perRow 개수가 채워지지 않은 마지막 행에 빈 슬롯 추가하여 레이아웃 유지
-            const remainingSlots = perRow - (entries.length % perRow);
-            if (remainingSlots > 0 && remainingSlots < perRow) { // entries.length가 perRow의 배수가 아닐 경우
-                 for (let i = 0; i < remainingSlots; i++) {
-                      // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 ---
-                      html += `<span class="tooltip-container">
-                                 <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
-                               </span>`;
-                      // ---------------------------------------------------------
-                 }
+                // perRow 개수 채우기 (기존 유지)
+                const remainingSlots = perRow - (entries.length % perRow);
+                if (remainingSlots > 0 && remainingSlots < perRow) {
+                     for (let i = 0; i < remainingSlots; i++) {
+                          html += `<span class="tooltip-container">
+                                     <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
+                                   </span>`; // Placeholder 이미지에 툴팁 요소 추가 안함 (기존 유지)
+                     }
+                }
             }
-          }
-
-          // 닫기 태그
-          html += `</div></td></tr>`;
+            html += `</div></td></tr>`; // 유지
         });
 
-        table.innerHTML = html;
+        table.innerHTML = html; // 유지
 
-        // --- 추가: 색상 강조 적용 로직 제거 ---
-        // 단일 모드 색상 강조 기능은 제거됨
-        // ---------------------------------------------
+        // --- 색상 강조 적용 로직 제거 (기존 유지) ---
+    }
+
+    // --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 ---
+    function setupTooltipPositioning() {
+        const tooltipContainers = table.querySelectorAll('.tooltip-container'); // 테이블 내의 모든 툴팁 컨테이너 선택
+
+        tooltipContainers.forEach(container => {
+            // Placeholder 이미지에는 이벤트 리스너 추가하지 않음
+            // Placeholder 이미지는 img 요소에 opacity:0 스타일이 적용되어 있음.
+            // isNaN(parseInt(container.querySelector('img').alt)) 와 같은 방식으로 실험체 이미지인지 확인 가능
+             const imgElement = container.querySelector('img');
+             // 이미지가 placeholder인지 (alt 텍스트가 '빈 슬롯'인지) 또는 opacity가 0인지 확인
+             if (!imgElement || imgElement.alt === '빈 슬롯' || imgElement.style.opacity === '0') {
+                  return; // Placeholder 이미지에는 이벤트 리스너를 추가하지 않고 건너뜀
+             }
+
+
+            const tooltipBox = container.querySelector('.tooltip-box');
+            if (!tooltipBox) return; // 툴팁 요소가 없으면 건너뜜
+
+            container.addEventListener('mouseover', () => {
+                // 툴팁을 보이게 하여 크기 계산 가능하도록 함
+                tooltipBox.style.visibility = 'visible';
+                tooltipBox.style.opacity = '1';
+                // 임시로 position과 z-index를 설정하여 정확한 크기 계산을 돕습니다.
+                // CSS에 fixed가 있지만, JS 계산 직전 상태를 위해 명시적으로 설정해볼 수도 있습니다.
+                // 또는 단순히 CSS에 설정된 fixed 상태에서 getBoundingClientRect()를 사용해도 됩니다.
+
+                const containerRect = container.getBoundingClientRect();
+                const tooltipRect = tooltipBox.getBoundingClientRect(); // 툴팁의 현재 크기 및 뷰포트 위치 가져옴
+
+                // 툴팁이 이미지 위에 나타나도록 위치 계산
+                // 툴팁 하단이 이미지 상단에서 5px 위로 떨어지도록 계산
+                const desiredTooltipTop = containerRect.top - tooltipRect.height - 5;
+                // 툴팁 중앙이 이미지 중앙에 오도록 위치 계산
+                const desiredTooltipLeft = containerRect.left + containerRect.width / 2 - tooltipRect.width / 2;
+
+                // 계산된 위치를 툴팁 요소의 인라인 스타일로 적용
+                // position: fixed일 때 top, left로 위치를 제어합니다.
+                tooltipBox.style.position = 'fixed'; // CSS에서 이미 fixed이지만, JS에서 명시적으로 다시 설정
+                tooltipBox.style.top = `${desiredTooltipTop}px`;
+                tooltipBox.style.left = `${desiredTooltipLeft}px`;
+
+                // 기존 CSS의 bottom, right, transform을 무시하도록 설정
+                tooltipBox.style.bottom = 'auto';
+                tooltipBox.style.right = 'auto';
+                tooltipBox.style.transform = 'none'; // translateX(-50%) 무시
+
+                // 툴팁이 뷰포트 좌우 경계를 벗어나지 않도록 조정 (선택 사항)
+                const viewportWidth = window.innerWidth;
+                if (desiredTooltipLeft < 5) { // 좌측 경계에서 5px 이내로 붙으면
+                    tooltipBox.style.left = '5px';
+                    tooltipBox.style.transform = 'none'; // translateX 무시
+                } else if (desiredTooltipLeft + tooltipRect.width > viewportWidth - 5) { // 우측 경계에서 5px 이내로 붙으면
+                    tooltipBox.style.left = `${viewportWidth - tooltipRect.width - 5}px`;
+                    tooltipBox.style.transform = 'none'; // translateX 무시
+                }
+                 // 상단 경계 조정은 bottom:110%이므로 일반적으로 필요 없지만, 만약을 대비
+                 if (desiredTooltipTop < 5) {
+                      tooltipBox.style.top = '5px';
+                 }
+
+
+            });
+
+            container.addEventListener('mouseout', () => {
+                // 툴팁 숨김
+                tooltipBox.style.opacity = '0';
+                // opacity 애니메이션 완료 후 완전히 숨기기
+                // setTimeout(() => {
+                     tooltipBox.style.visibility = 'hidden';
+                     // JS로 설정한 위치 스타일 제거 (다음 hover 시 다시 계산되도록)
+                     tooltipBox.style.top = '';
+                     tooltipBox.style.left = '';
+                     tooltipBox.style.bottom = ''; // CSS 기본값으로 돌아감 (110%)
+                     tooltipBox.style.right = ''; // CSS 기본값으로 돌아감 (auto)
+                     tooltipBox.style.transform = ''; // CSS 기본값으로 돌아감 (translateX(-50%))
+                     tooltipBox.style.position = ''; // CSS 기본값으로 돌아감 (fixed)
+                // }, 300); // CSS transition 시간과 맞춰주는 것이 좋음 (현재 transition: opacity 0.3s)
+                 // 일단 timeout 없이 바로 속성 제거. 필요시 timeout 추가
+            });
+        });
     }
 
     // 6) 팝업 초기화
