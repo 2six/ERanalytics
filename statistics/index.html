@@ -105,10 +105,17 @@ layout: none
         flex-wrap: wrap;
     }
 
-    /* "데이터 1 :" 레이블 숨김 */
+    /* --- 수정: "데이터 1 :" 레이블 표시 조건 변경 --- */
+    /* 기본적으로 표시 (일반 모드) */
      .dropdowns > div:first-child > span {
+         display: inline; /* 또는 inline-block 등 기본값 */
+     }
+    /* 비교 모드일 때만 숨김 */
+     body.is-compare-mode .dropdowns > div:first-child > span {
          display: none;
      }
+    /* --------------------------------------------- */
+
 
     /* 비교 모드 테이블의 셀 스타일 */
      #data-container td {
