@@ -21,11 +21,12 @@ layout: none
       overflow-x: auto;
     }
     #data-container table {
-      /* --- 수정: 테이블 너비 설정 --- */
+      /* --- 수정: 테이블 너비 설정 및 가운데 정렬 --- */
       width: 1400px;
       max-width: 95vw;
       min-width: 600px; /* 테이블이 충분히 넓어야 스크롤이 생김 */
-      /* --------------------------- */
+      margin: 0 auto; /* 테이블 자체를 가운데 정렬 */
+      /* ----------------------------------------- */
       border-collapse: collapse; /* 셀 간 간격 제거 */
     }
     /* 공통: 텍스트 넘칠 때 줄임표 */
@@ -85,14 +86,17 @@ layout: none
       color: #555; /* 화살표 색상 */
     }
 
-    /* 비교 모드 컨트롤 그룹 */
-    #comparison-controls {
-        display: none; /* 기본적으로 숨김 */
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid #eee; /* 구분선 */
+    /* --- 수정: 드롭다운 컨테이너 레이아웃 조정 --- */
+    .dropdowns {
+        display: flex; /* Flexbox 컨테이너로 설정 */
+        flex-direction: column; /* 자식 요소들을 세로로 쌓음 */
+        align-items: center; /* 자식 요소들을 가로 방향 중앙으로 정렬 */
+        gap: 10px; /* 자식 요소들 사이에 10px 간격 추가 */
+        margin-bottom: 20px; /* 드롭다운 아래에 여백 추가 */
     }
-    /* 드롭다운 그룹 레이아웃 */
+    /* ----------------------------------------- */
+
+    /* 드롭다운 그룹 레이아웃 (기존 유지 - 각 줄 내부 요소 정렬) */
     .dropdowns > div {
         display: flex;
         justify-content: center;
