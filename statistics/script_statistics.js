@@ -381,7 +381,8 @@ document.addEventListener('DOMContentLoaded', function() {
            comparisonTableHtml += '<tr>';
            cols.forEach(col => {
                let displayVal = '-';
-               let dataAttributes = ''; // data-delta, data-rankdelta 등을 저장할 문자열
+               // 변수명 변경: dataAttributes -> cellAttributes
+               let cellAttributes = ''; // data-delta, data-rankdelta 등을 저장할 문자열
 
                 if (col === '실험체') {
                     displayVal = row['실험체'] || '-';
@@ -415,14 +416,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 순위 변화 색상 강조를 위한 data 속성 (실험체 열에만 붙임)
                      const rankChangeNumeric = row['순위 변화값']; // number 또는 string
                      if (typeof rankChangeNumeric === 'number') {
-                         dataAttributes += ` data-rankdelta-numeric="${rankChangeNumeric}"`; // 숫자값 그대로 저장
+                         // 변수명 변경: dataAttributes += -> cellAttributes +=
+                         cellAttributes += ` data-rankdelta-numeric="${rankChangeNumeric}"`; // 숫자값 그대로 저장
                      } else { // string 값인 경우 상태 저장
                           if (rankChangeNumeric === '신규 → ') {
-                               dataAttributes += ` data-rankdelta-status="new"`;
+                               // 변수명 변경: dataAttributes += -> cellAttributes +=
+                               cellAttributes += ` data-rankdelta-status="new"`;
                           } else if (rankChangeNumeric === '→ 삭제') {
-                                dataAttributes += ` data-rankdelta-status="removed"`;
+                                // 변수명 변경: dataAttributes += -> cellAttributes +=
+                                cellAttributes += ` data-rankdelta-status="removed"`;
                           } else {
-                                dataAttributes += ` data-rankdelta-status="none"`; // '-' 또는 기타
+                                // 변수명 변경: dataAttributes += -> cellAttributes +=
+                                cellAttributes += ` data-rankdelta-status="none"`; // '-' 또는 기타
                           }
                      }
 
@@ -435,9 +440,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 티어 변화 색상 강조를 위한 data 속성 (JS에서 색칠 시 사용) (요청 사항 반영)
                      if (tierChange.includes('→')) {
                           if (tierChange.includes('신규 →')) {
-                              dataAttributes += ` data-tierchange="new"`;
+                              // 변수명 변경: dataAttributes += -> cellAttributes +=
+                              cellAttributes += ` data-tierchange="new"`;
                           } else if (tierChange.includes('→ 삭제')) {
-                               dataAttributes += ` data-tierchange="removed"`;
+                               // 변수명 변경: dataAttributes += -> cellAttributes +=
+                               cellAttributes += ` data-tierchange="removed"`;
                           } else { // S+ -> S 등 실제 티어 변화
                                const tiers = tierChange.split('→').map(t => t.trim());
                                const tier1 = tiers[0];
@@ -448,24 +455,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
                                if (index1 >= 0 && index2 >= 0) {
                                    // 인덱스 비교로 개선/악화/동일 판단
-                                   if (index2 < index1) dataAttributes += ` data-tierchange="up"`; // 개선
-                                   else if (index2 > index1) dataAttributes += ` data-tierchange="down"`; // 악화
-                                   else dataAttributes += ` data-tierchange="same"`; // 동일
+                                   if (index2 < index1) cellAttributes += ` data-tierchange="up"`; // 개선
+                                   else if (index2 > index1) cellAttributes += ` data-tierchange="down"`; // 악화
+                                   else cellAttributes += ` data-tierchange="same"`; // 동일
                                } else {
-                                   dataAttributes += ` data-tierchange="unknown"`; // 알 수 없는 티어 변화
+                                   cellAttributes += ` data-tierchange="unknown"`; // 알 수 없는 티어 변화
                                }
                            }
                       } else if (tierChange === '-') {
-                            dataAttributes += ` data-tierchange="none"`; // 둘 다 없음
+                            cellAttributes += ` data-tierchange="none"`; // 둘 다 없음
                       } else { // 티어 변화 없음 (S+ 등) - 단일 티어 표시
                              // 티어 등급 자체를 속성으로 저장
-                             dataAttributes += ` data-tier-single="${tierChange}"`;
+                             cellAttributes += ` data-tier-single="${tierChange}"`;
                       }
 
                      // 티어 컬럼의 델타 모드 색칠을 위해 순위 변화값도 data 속성에 저장 (숫자만) (요청 사항 반영)
                      const rankChangeValue = row['순위 변화값'];
                      if (typeof rankChangeValue === 'number') {
-                          dataAttributes += ` data-rankdelta-numeric="${rankChangeValue}"`;
+                          // 변수명 변경: dataAttributes += -> cellAttributes +=
+                          cellAttributes += ` data-rankdelta-numeric="${rankChangeValue}"`;
                      }
 
                 } else { // Other numeric stat columns
@@ -512,20 +520,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
                      // Store delta value for color grading (요청 사항 반영)
                      if (typeof delta === 'number') {
-                          dataAttributes += ` data-delta-numeric="${delta}"`; // 숫자값 그대로 저장
+                          // 변수명 변경: dataAttributes += -> cellAttributes +=
+                          cellAttributes += ` data-delta-numeric="${delta}"`; // 숫자값 그대로 저장
                      } else {
                           // 숫자 변화량이 아닌 경우 상태 저장 ('new', 'removed', 'none')
                            if (typeof val1 !== 'number' && typeof val2 === 'number') { // 신규
-                                dataAttributes += ` data-delta-status="new"`;
+                                // 변수명 변경: dataAttributes += -> cellAttributes +=
+                                cellAttributes += ` data-delta-status="new"`;
                            } else if (typeof val1 === 'number' && typeof val2 !== 'number') { // 삭제
-                                dataAttributes += ` data-delta-status="removed"`;
+                                // 변수명 변경: dataAttributes += -> cellAttributes +=
+                                cellAttributes += ` data-delta-status="removed"`;
                            } else { // 둘 다 없음, 변화 없음 등
-                                dataAttributes += ` data-delta-status="none"`;
+                                // 변수명 변경: dataAttributes += -> cellAttributes +=
+                                cellAttributes += ` data-delta-status="none"`;
                            }
                      }
                 }
 
-                comparisonTableHtml += `<td data-col="${col}"${dataAttributes}>${displayVal}</td>`;
+                // 변수명 변경: dataAttributes 사용 -> cellAttributes 사용
+                comparisonTableHtml += `<td data-col="${col}"${cellAttributes}>${displayVal}</td>`;
            });
            comparisonTableHtml += '</tr>';
        });
