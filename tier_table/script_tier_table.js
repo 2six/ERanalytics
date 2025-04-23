@@ -506,10 +506,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // 빈 슬롯 표시 (기존 이미지 사용)
             // 15개 모두 채워서 레이아웃 유지
              for (let i = 0; i < perRow; i++) {
+                // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 ---
                 html += `<span class="tooltip-container">
                            <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
-                           <div class="tooltip-box">데이터 없음</div>
                          </span>`;
+                // ---------------------------------------------------------
              }
 
           } else {
@@ -524,36 +525,23 @@ document.addEventListener('DOMContentLoaded', function () {
                    const rp2 = e['RP 획득 (Ver2)'] !== null && e['RP 획득 (Ver2)'] !== undefined ? (e['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
                    const win1 = e['승률 (Ver1)'] !== null && e['승률 (Ver1)'] !== undefined ? ((e['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
                    const win2 = e['승률 (Ver2)'] !== null && e['승률 (Ver2)'] !== undefined ? ((e['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                   const top3_1 = e['TOP 3 (Ver1)'] !== null && e['TOP 3 (Ver1)'] !== undefined ? ((e['TOP 3 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
-                   const top3_2 = e['TOP 3 (Ver2)'] !== null && e['TOP 3 (Ver2)'] !== undefined ? ((e['TOP 3 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                   const rank1 = e['평균 순위 (Ver1)'] !== null && e['평균 순위 (Ver1)'] !== undefined ? e['평균 순위 (Ver1)'].toFixed(2) + '위' : '-'; // 평균 순위 소수점 표시
-                   const rank2 = e['평균 순위 (Ver2)'] !== null && e['평균 순위 (Ver2)'] !== undefined ? e['평균 순위 (Ver2)'].toFixed(2) + '위' : '-'; // 평균 순위 소수점 표시
-                   const score1 = e['점수 (Ver1)'] !== null && e['점수 (Ver1)'] !== undefined ? e['점수 (Ver1)'].toFixed(2) : '-'; // 점수 소수점 표시
-                   const score2 = e['점수 (Ver2)'] !== null && e['점수 (Ver2)'] !== undefined ? e['점수 (Ver2)'].toFixed(2) : '-'; // 점수 소수점 표시
-                   const sample1 = e['표본수 (Ver1)'] !== null && e['표본수 (Ver1)'] !== undefined ? e['표본수 (Ver1)'].toLocaleString() : '-'; // 표본수 숫자 포맷
-                   const sample2 = e['표본수 (Ver2)'] !== null && e['표본수 (Ver2)'] !== undefined ? e['표본수 (Ver2)'].toLocaleString() : '-'; // 표본수 숫자 포맷
-
-
+                   // --- 비교 모드 툴팁 내용 형식 수정 ---
                    tooltipContent = `
                        ${e.실험체}<br>
-                       데이터 1 (${versionSelect.value}, ${tierLabels[tierSelect.value]}, ${periodSelect.options[periodSelect.selectedIndex].text}):<br>
-                       표본수 ${sample1}, 점수 ${score1}, 픽률 ${pr1}, RP ${rp1}, 승률 ${win1}, TOP 3 ${top3_1}, 순위 ${e['순위 (Ver1)'] !== null && e['순위 (Ver1)'] !== undefined ? e['순위 (Ver1)'] + '위' : '-'} (평균 ${rank1})<br>
-                       데이터 2 (${versionSelectCompare.value}, ${tierLabels[tierSelectCompare.value]}, ${periodSelectCompare.options[periodSelectCompare.selectedIndex].text}):<br>
-                       표본수 ${sample2}, 점수 ${score2}, 픽률 ${pr2}, RP ${rp2}, 승률 ${win2}, TOP 3 ${top3_2}, 순위 ${e['순위 (Ver2)'] !== null && e['순위 (Ver2)'] !== undefined ? e['순위 (Ver2)'] + '위' : '-'} (평균 ${rank2})<br>
-                       티어 변화: ${e['티어 변화'] || '-'}, 순위 변화: ${typeof e['순위 변화값'] === 'number' ? (e['순위 변화값'] < 0 ? '▲' : (e['순위 변화값'] > 0 ? '▼' : '')) + Math.abs(e['순위 변화값']) : e['순위 변화값'] || '-'}
+                       픽률: ${pr1} → ${pr2}<br>
+                       RP 획득: ${rp1} → ${rp2}<br>
+                       승률: ${win1} → ${win2}
                    `;
+                   // ------------------------------------
               } else {
-                   // 단일 모드 툴팁 내용
+                   // --- 단일 모드 툴팁 내용 수정 ---
                    tooltipContent = `
                        ${e.실험체}<br>
-                       표본수: ${(e['표본수'] || 0).toLocaleString()}<br> <!-- 표본수 숫자 포맷 -->
                        픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br> <!-- 단일 모드 픽률 계산 방식 복원 -->
                        RP: ${(e['RP 획득'] || 0).toFixed(1)}<br>
-                       승률: ${((e['승률'] || 0)*100).toFixed(1)}%<br>
-                       TOP 3: ${((e['TOP 3'] || 0)*100).toFixed(1)}%<br>
-                       평균 순위: ${e['평균 순위'] !== null && e['평균 순위'] !== undefined ? e['평균 순위'].toFixed(2) + '위' : '-'}<br> <!-- 평균 순위 소수점 표시 -->
-                       점수: ${(e['점수'] || 0).toFixed(2)}<br> <!-- 점수 소수점 표시 -->
+                       승률: ${((e['승률'] || 0)*100).toFixed(1)}%
                    `;
+                   // -----------------------------
               }
               const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
               // -------------------------------------------------------------
@@ -613,10 +601,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const remainingSlots = perRow - (entries.length % perRow);
             if (remainingSlots > 0 && remainingSlots < perRow) { // entries.length가 perRow의 배수가 아닐 경우
                  for (let i = 0; i < remainingSlots; i++) {
+                      // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 ---
                       html += `<span class="tooltip-container">
                                  <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
-                                 <div class="tooltip-box">데이터 없음</div>
                                </span>`;
+                      // ---------------------------------------------------------
                  }
             }
           }
