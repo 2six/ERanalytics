@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 6) 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
-     function mergeDataForComparison(data1, data2) {
+    function mergeDataForComparison(data1, data2) {
         const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
         const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
 
@@ -698,6 +698,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // 티어 변화 계산
              const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
              const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
+
+             // --- 추가: Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장 ---
+             result['티어 (Ver1)'] = d1 ? d1['티어'] : null;
+             result['티어 (Ver2)'] = d2 ? d2['티어'] : null;
+             // ----------------------------------------------------
+
 
              if (!d1 && d2) {
                  result['티어 변화'] = `신규 → ${tier2}`;
