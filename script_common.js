@@ -511,6 +511,10 @@ function applyGradientColorsSingle(table) {
 // data: 정렬된 비교 데이터 배열 (행 객체들의 배열)
 // mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
 // sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
+// 12. 비교 데이터용 그라디언트 색상 적용
+// data: 정렬된 비교 데이터 배열 (행 객체들의 배열)
+// mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
+// sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
 function applyGradientColorsComparison(table, data, mode, sortedCol) {
     if (!table || !data || data.length === 0) return;
     const rows = Array.from(table.querySelectorAll('tbody tr'));
@@ -531,73 +535,57 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         if (col === '티어') {
             rows.forEach((r, idx) => {
                 const cell = r.children[i];
-                let tierValue = null;
-                let color = '';
+                cell.style.backgroundColor = ''; // Clear any previous inline style for Tier column
 
-                if (mode === 'value1') {
-                    // Value1 모드: Ver1 티어 값에 따른 색상
-                    tierValue = data[idx]['티어 (Ver1)'];
-                    color = TIER_COLORS_SINGLE[tierValue];
-                } else if (mode === 'value2') {
-                    // Value2 모드: Ver2 티어 값에 따른 색상
-                    tierValue = data[idx]['티어 (Ver2)'];
-                    color = TIER_COLORS_SINGLE[tierValue];
-                } else if (mode === 'delta') {
-                    // Delta 모드: 순위 변화값에 따른 그라데이션
-                    const valueKey = '순위 변화값';
-                    const isBetterWhenLower = true; // Lower rank change (more negative) is better
-
-                    // Collect numeric rank change values for gradient calculation
-                    const valuesOnly = data.map(d => {
-                         const val = d[valueKey];
-                         return (typeof val === 'number') ? val : null;
-                    }).filter(v => v !== null);
-
-                    if (valuesOnly.length === 0) {
-                         cell.style.backgroundColor = '';
-                         return; // Skip coloring this cell if no numeric delta data in column
-                    }
-
-                    const min = Math.min(...valuesOnly);
-                    const max = Math.max(...valuesOnly);
-                    const avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length; // Simple average for rank change
-
-                    const v = data[idx][valueKey]; // Get rank change for this row
+                if (mode === 'delta') {
+                    // Delta mode: Apply gradient based on numeric rank change via JS inline style
+                    const rankChangeValue = data[idx]['순위 변화값']; // Get rank change for this row
 
                     // Apply gradient only if rank change is numeric
-                    if (typeof v === 'number' && v !== null && v !== undefined) {
-                        let ratio;
-                        if (max === min) {
-                            ratio = 0.5;
-                        } else if (!isBetterWhenLower) { // Higher is better (not applicable for rank change)
-                            ratio = (v >= avg)
-                                ? 0.5 + (v - avg) / (max - avg) * 0.5
-                                : 0.5 - (avg - v) / (avg - min) * 0.5;
-                        } else { // Lower is better (rank change)
-                            ratio = (v <= avg)
-                                ? 0.5 + (avg - v) / (avg - min) * 0.5
-                                : 0.5 - (v - avg) / (max - avg) * 0.5;
-                        }
-                        ratio = Math.max(0, Math.min(1, ratio));
+                    if (typeof rankChangeValue === 'number' && rankChangeValue !== null && rankChangeValue !== undefined) {
+                         const valueKey = '순위 변화값';
+                         const isBetterWhenLower = true; // Lower rank change (more negative) is better
 
-                        // Interpolate from Blue (Worst) to White (0.5 - Avg) to Red (1 - Best)
-                        color = (ratio >= 0.5)
-                             ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
-                             : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+                         // Collect numeric rank change values for gradient calculation across the column
+                         const valuesOnly = data.map(d => {
+                              const val = d[valueKey];
+                              return (typeof val === 'number') ? val : null;
+                         }).filter(v => v !== null);
 
-                    } else {
-                         // Non-numeric rank change (신규, 삭제, -) handled by CSS data-* rules
-                         cell.style.backgroundColor = '';
-                         return; // Skip JS coloring
+                         if (valuesOnly.length === 0) {
+                              // No numeric delta data in column, CSS rules will handle
+                              return;
+                         }
+
+                         const min = Math.min(...valuesOnly);
+                         const max = Math.max(...valuesOnly);
+                         const avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length; // Simple average for rank change
+
+                         let ratio;
+                         if (max === min) {
+                             ratio = 0.5;
+                         } else if (!isBetterWhenLower) { // Higher is better (not applicable for rank change)
+                             ratio = (rankChangeValue >= avg)
+                                 ? 0.5 + (rankChangeValue - avg) / (max - avg) * 0.5
+                                 : 0.5 - (avg - rankChangeValue) / (avg - min) * 0.5;
+                         } else { // Lower is better (rank change)
+                             ratio = (rankChangeValue <= avg)
+                                 ? 0.5 + (avg - rankChangeValue) / (avg - min) * 0.5
+                                 : 0.5 - (rankChangeValue - avg) / (max - avg) * 0.5;
+                         }
+                         ratio = Math.max(0, Math.min(1, ratio));
+
+                         // Interpolate from Blue (Worst) to White (0.5 - Avg) to Red (1 - Best)
+                         const color = (ratio >= 0.5)
+                              ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
+                              : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+
+                         cell.style.backgroundColor = color; // Apply gradient via inline style
                     }
-                }
-
-                // Apply the determined color (standard tier color or gradient color)
-                if (color) {
-                    cell.style.backgroundColor = color;
+                    // Non-numeric rank change (신규, 삭제, -) will be colored by CSS data-* rules
                 } else {
-                    // Clear background if no specific color is determined by JS
-                    // This allows CSS data-* rules (like new/removed/up/down) to take effect
+                    // Value1 or Value2 mode: Coloring handled by CSS data-tier rules
+                    // Ensure no inline style is set by JS in these modes for Tier column
                     cell.style.backgroundColor = '';
                 }
             });
@@ -627,7 +615,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
              useSimpleAverage = true;
          }
          // Otherwise, use weighted average (default is false)
-
+        // Note: Tier column now handled separately above, so this weighted average logic applies only to other numeric columns
 
         // Collect numeric values for the determined valueKey
         const valuesOnly = data.map(d => {
