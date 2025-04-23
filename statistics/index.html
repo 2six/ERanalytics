@@ -104,14 +104,13 @@ layout: none
      #data-container td:first-child {
          text-align: left; /* 실험체 이름은 좌측 정렬 유지 */
      }
-     /* 티어 컬럼은 Flexbox 적용 안 함 */
-     #data-container td[data-col="티어"] {
-         text-align: center; /* 티어 컬럼은 중앙 정렬 유지 */
-     }
+     /* 티어 컬럼은 이제 Flexbox 적용 */
+     /* #data-container td[data-col="티어"] { text-align: center; } */
 
 
-     /* 비교 모드 숫자 셀 (실험체, 티어 제외) 내부의 Wrapper Div */
-     #data-container table td:not(:first-child):not([data-col="티어"]) .cell-content-wrapper {
+     /* 비교 모드 숫자 셀 (실험체 제외) 내부의 Wrapper Div */
+     /* 티어 컬럼 포함 */
+     #data-container table td:not(:first-child) .cell-content-wrapper {
          display: flex;
          justify-content: space-between; /* 내부 요소를 양 끝으로 분산 */
          align-items: center; /* 세로 중앙 정렬 */
@@ -121,11 +120,13 @@ layout: none
 
 
      /* Ver1 → Ver2 값 스타일 (기본 좌측 정렬) */
-     #data-container table td .ver-values {
+     /* 티어 값/변화량 포함 */
+     #data-container table td .ver-values,
+     #data-container table td .tier-value-or-change {
          flex-grow: 1; /* 남은 공간 차지 */
          flex-shrink: 1; /* 공간 부족 시 줄어들도록 허용 */
          text-align: left; /* 명시적으로 좌측 정렬 */
-         padding-right: 5px; /* 델타 값과의 간격 */
+         padding-right: 5px; /* 우측 요소와의 간격 */
          overflow: hidden; /* 내용이 넘칠 경우 숨김 */
          text-overflow: ellipsis; /* 넘치는 텍스트를 ...으로 표시 */
          white-space: nowrap; /* 텍스트 줄바꿈 방지 */
@@ -133,7 +134,9 @@ layout: none
      }
 
      /* 변화량 값 스타일 (우측 정렬) */
-     #data-container table td .delta-value {
+     /* 순위 정보 포함 */
+     #data-container table td .delta-value,
+     #data-container table td .rank-info {
          flex-shrink: 0; /* 공간이 부족해도 줄어들지 않음 */
          flex-grow: 0; /* 공간을 추가로 차지하지 않음 */
          text-align: right; /* 명시적으로 우측 정렬 */
@@ -142,22 +145,14 @@ layout: none
          white-space: nowrap; /* 텍스트 줄바꿈 방지 */
      }
 
-
-     /* 변화량 텍스트에 대한 스타일 */
-     /* renderComparisonTable에서 span 태그로 감싸지 않으므로 이 스타일은 사용되지 않음 */
-     /*
-     #data-container .delta-info {
-          font-size: 0.9em;
-          margin-left: 5px;
-          font-weight: bold;
-     }
-     */
-     #data-container .rank-info {
+     /* 순위 정보는 굵기 및 색상 다르게 */
+     #data-container table td .rank-info {
           font-size: 0.8em; /* 순위 정보는 더 작게 */
           font-weight: normal; /* 순위 정보는 굵게 하지 않음 */
-          margin-left: 0; /* 실험체 이름 바로 옆에 붙도록 */
           color: #555; /* 순위 정보 색상 */
+          margin-left: 0; /* 실험체 이름 바로 옆에 붙도록 */
      }
+
 
     /* 셀 배경 색상은 JS에서 data-* 속성 기준으로 적용 */
 

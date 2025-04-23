@@ -338,31 +338,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     const rank2 = row['순위 (Ver2)'] !== null && row['순위 (Ver2)'] !== undefined ? row['순위 (Ver2)'] : '-'; // number 또는 '-'
                     const rankChangeValue = row['순위 변화값']; // number or string
 
-                    let rankInfo = '';
+                    let rankInfoText = '';
                      if (typeof rank1 === 'number' && typeof rank2 === 'number') {
                           const rankChangeFormatted = Math.abs(rankChangeValue);
                           // 순위 숫자가 작아지면 개선 (▲), 커지면 악화 (▼)
-                           rankInfo = `${rank1}위 → ${rank2}위 ${rankChangeValue < 0 ? `▲${rankChangeFormatted}` : (rankChangeValue > 0 ? `▼${rankChangeFormatted}` : '')}`;
+                           rankInfoText = `${rank1}위 → ${rank2}위 ${rankChangeValue < 0 ? `▲${rankChangeFormatted}` : (rankChangeValue > 0 ? `▼${rankChangeFormatted}` : '')}`;
                      } else if (rankChangeValue === '신규 → ') {
-                          rankInfo = `(신규)`;
+                          rankInfoText = `(신규)`;
                      } else if (rankChangeValue === '→ 삭제') {
-                          rankInfo = `(삭제)`;
+                          rankInfoText = `(삭제)`;
                      } else if (rank1 !== '-') { // Ver1에만 데이터 있고 Ver2에 없는 경우
-                          rankInfo = `${rank1}위 → -`;
+                          rankInfoText = `${rank1}위 → -`;
                      } else if (rank2 !== '-') { // Ver2에만 데이터 있고 Ver1에 없는 경우
-                          rankInfo = `- → ${rank2}위`;
+                          rankInfoText = `- → ${rank2}위`;
                      } else {
-                           rankInfo = '-';
+                           rankInfoText = '-';
                      }
 
 
-                    // 표시될 내용 조합: 티어 변화 + 순위 변화 정보 (함께 표시)
-                    if (tierChange === '-') {
-                         if (rankInfo === '-') displayVal = '-';
-                         else displayVal = rankInfo; // 티어 정보는 없지만 순위 정보는 있는 경우
+                    // Construct the final cell HTML with spans wrapped in a div
+                    let innerContentHtml = '';
+                    if (tierChange !== '-') {
+                         innerContentHtml += `<span class="tier-value-or-change">${tierChange}</span>`;
+                    } else {
+                         // 티어 변화 정보가 없으면 빈 스팬 또는 '-' 표시 스팬 추가 (레이아웃 유지를 위해)
+                         innerContentHtml += `<span class="tier-value-or-change">-</span>`;
                     }
-                    else {
-                         displayVal = `${tierChange} ${rankInfo && rankInfo !== '-' ? `<span class="rank-info">(${rankInfo})</span>` : ''}`;
+
+                    if (rankInfoText !== '-') { // Only add rank info span if there's rank info
+                         innerContentHtml += `<span class="rank-info">${rankInfoText}</span>`;
+                    }
+
+                    // Wrap the content in a div, but only if there's actual content
+                    if (tierChange === '-' && rankInfoText === '-') {
+                         displayVal = '-'; // No content at all
+                    } else {
+                         displayVal = `<div class="cell-content-wrapper">${innerContentHtml}</div>`;
                     }
 
 
