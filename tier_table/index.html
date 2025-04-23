@@ -218,23 +218,6 @@ layout: none
     .tier-row:nth-child(5) th:first-child { background-color: rgb(191,255,127); }
     .tier-row:nth-child(6) th:first-child { background-color: rgb(127,255,127); }
     .tier-row:nth-child(7) th:first-child { background-color: rgb(127,255,255); }
-
-    /* 티어별 배경색 (<td>) - 기존 nth-child 선택자 유지 */
-    /* displayTierTable 함수에서 td에 직접 배경색을 설정하지 않으므로, CSS로 설정 */
-    /* --- 복원: td 티어별 배경색 (기존 rgba 대신 단색) --- */
-    /* 사용자님께서 제공하신 코드에는 td에 티어별 배경색이 없었으므로, 이 부분은 복원하지 않습니다. */
-    /* 대신 .tier-table td에 #1a1a17 배경색이 적용됩니다. */
-    /*
-    .tier-row:first-child td { background-color: rgba(255,127,127, 0.3); }
-    .tier-row:nth-child(2) td { background-color: rgba(255,191,127, 0.3); }
-    .tier-row:nth-child(3) td { background-color: rgba(255,223,127, 0.3); }
-    .tier-row:nth-child(4) td { background-color: rgba(255,255,127, 0.3); }
-    .tier-row:nth-child(5) td { background-color: rgba(191,255,127, 0.3); }
-    .tier-row:nth-child(6) td { background-color: rgba(127,255,127, 0.3); }
-    .tier-row:nth-child(7) td { background-color: rgba(127,255,255, 0.3); }
-    */
-
-
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
