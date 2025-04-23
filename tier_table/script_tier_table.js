@@ -257,6 +257,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(([json1, json2]) => {
                 if (!json1 && !json2) {
                      table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출하지 않음 ---
+                     // setupTooltipPositioning(); // 데이터가 없으므로 호출하지 않음
+                     // -------------------------------------------------
                      return;
                 }
 
@@ -270,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const entries2 = commonExtractPeriodEntries(history2, period2); // common.js의 함수 사용
 
                 // 데이터가 하나라도 없으면 비교 불가 (혹은 해당 기간 데이터가 없으면)
-                // entries1.length === 0 || entries2.length === 0 조건 대신
                 // mergeDataForComparison 결과가 비어있는지로 판단합니다.
                 // mergeDataForComparison는 한쪽에만 데이터가 있어도 결과를 반환하므로,
                 // 최소한 한쪽 데이터는 있어야 테이블을 그릴 수 있습니다.
@@ -291,6 +293,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 병합 결과가 없으면 표시할 데이터가 없는 것임
                 if (comparisonData.length === 0) {
                     table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
+                    // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출하지 않음 ---
+                    // setupTooltipPositioning(); // 데이터가 없으므로 호출하지 않음
+                    // -------------------------------------------------
                     return;
                 }
 
@@ -298,11 +303,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
                 displayTierTable(comparisonData, isCompareMode);
                 setupTablePopup();
+                // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
+                setupTooltipPositioning(comparisonData, isCompareMode);
+                // --------------------------------------------------
 
             })
             .catch(err => {
                 console.error('비교 데이터 처리 실패:', err);
                 table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
+                // --- 수정: 에러 발생 시 툴팁 위치 설정 호출하지 않음 ---
+                // setupTooltipPositioning(); // 에러 발생 시 호출하지 않음
+                // -------------------------------------------------
             });
 
         } else {
@@ -321,30 +332,38 @@ document.addEventListener('DOMContentLoaded', function () {
                     // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
                     const entries = extractPeriodEntries(history, period);
 
-                    if (entries.length === 0 && period !== 'latest') {
+                    if (entries.length === 0) { // 데이터가 없으면
                          table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
-                         return;
-                    } else if (entries.length === 0 && period === 'latest') {
-                         table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
+                         // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출하지 않음 ---
+                         // setupTooltipPositioning(); // 데이터가 없으므로 호출하지 않음
+                         // -------------------------------------------------
                          return;
                     }
-
 
                     const avgScore = calculateAverageScore(entries);
                     const stddev   = calculateStandardDeviation(entries, avgScore);
                     const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+
                     // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
                     displayTierTable(scored, isCompareMode);
                     setupTablePopup();
+                    // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
+                    setupTooltipPositioning(scored, isCompareMode);
+                    // --------------------------------------------------
                 })
                 .catch(err => {
                     console.error('데이터 로드 실패:', err);
                     table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                     // --- 수정: 에러 발생 시 툴팁 위치 설정 호출하지 않음 ---
+                    // setupTooltipPositioning(); // 에러 발생 시 호출하지 않음
+                    // -------------------------------------------------
                 });
             // --------------------------
         }
         // ---------------------------------
     }
+// -------------------------------------------------------------
+
 
     // 4) 기간별 데이터 추출 (티어 테이블 페이지 전용 - 변화량 계산 포함)
     function extractPeriodEntries(history, period) {
@@ -414,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const rpDiff = ((c['RP 획득'] || 0) * (c['표본수'] || 0)) - ((p['RP 획득'] || 0) * (p['표본수'] || 0));
             const winDiff = ((c['승률'] || 0) * (c['표본수'] || 0)) - ((p['승률'] || 0) * (p['표본수'] || 0));
             const top3Diff = ((c['TOP 3'] || 0) * (c['표본수'] || 0)) - ((p['TOP 3'] || 0) * (p['표본수'] || 0));
-            const rankDiff = ((c['평균 순위'] || 0) * (c['표본수'] || 0)) - ((p['평균 순위'] || 0) * (p['표본수'] || 0));
+            const rankDiff = ((c['평균 순위'] || 0) * (c['표본수'] || 0)) - ((p['평균 순위'] || 0) * (p['평균 순위'] || 0));
 
 
             delta.push({
@@ -432,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // -----------------------------------------------------------------
 
 
-    // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
+    // 5) 티어별 테이블 렌더링 (기존 함수 유지하되 툴팁 생성 로직 제거)
     // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
     function displayTierTable(data, isCompareMode) {
         const tierLabels = {
@@ -506,17 +525,18 @@ document.addEventListener('DOMContentLoaded', function () {
             // 빈 슬롯 표시 (기존 이미지 사용)
             // 15개 모두 채워서 레이아웃 유지
              for (let i = 0; i < perRow; i++) {
-                // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 ---
+                // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 (기존 유지) ---
                 html += `<span class="tooltip-container">
                            <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
                          </span>`;
-                // ---------------------------------------------------------
+                // ---------------------------------------------------------------------
              }
 
           } else {
             entries.forEach((e) => { // i 변수 사용되지 않아 제거
               const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
-              // --- 수정: 툴팁 내용 조정 (비교 모드일 때 Ver1/Ver2 정보 포함) ---
+              // --- 수정: 툴팁 내용 조정 (기존 수정된 내용 유지) ---
+              // 툴팁 내용을 문자열로 미리 만들어둡니다.
               let tooltipContent;
               if (isCompareMode) {
                    const pr1 = e['픽률 (Ver1)'] !== null && e['픽률 (Ver1)'] !== undefined ? (e['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
@@ -525,116 +545,178 @@ document.addEventListener('DOMContentLoaded', function () {
                    const rp2 = e['RP 획득 (Ver2)'] !== null && e['RP 획득 (Ver2)'] !== undefined ? (e['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
                    const win1 = e['승률 (Ver1)'] !== null && e['승률 (Ver1)'] !== undefined ? ((e['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
                    const win2 = e['승률 (Ver2)'] !== null && e['승률 (Ver2)'] !== undefined ? ((e['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                   // --- 비교 모드 툴팁 내용 형식 수정 ---
+                   // --- 비교 모드 툴팁 내용 형식 (기존 수정된 내용 유지) ---
                    tooltipContent = `
                        ${e.실험체}<br>
-                       픽률: ${pr2} → ${pr1}<br>
-                       RP 획득: ${rp2} → ${rp1}<br>
-                       승률: ${win2} → ${win1}
+                       픽률: ${pr1} → ${pr2}<br>
+                       RP 획득: ${rp1} → ${rp2}<br>
+                       승률: ${win1} → ${win2}
                    `;
-                   // ------------------------------------
+                   // ----------------------------------------------------
               } else {
-                   // --- 단일 모드 툴팁 내용 수정 ---
+                   // --- 단일 모드 툴팁 내용 (기존 수정된 내용 유지) ---
                    tooltipContent = `
                        ${e.실험체}<br>
                        픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br> <!-- 단일 모드 픽률 계산 방식 복원 -->
                        RP: ${(e['RP 획득'] || 0).toFixed(1)}<br>
                        승률: ${((e['승률'] || 0)*100).toFixed(1)}%
                    `;
-                   // -----------------------------
+                   // ---------------------------------------------
               }
-              const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
-              // -------------------------------------------------------------
+              // --- 수정: 툴팁 박스 div 생성 코드 제거. 툴팁 내용은 data 속성에 저장 ---
+              // const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`; // 이 줄 제거
+              // -------------------------------------------------------------------
 
-              // --- 수정: 순위 변동 표시 요소 (비교 모드에서만) 및 아이콘 반전, data-text 추가 ---
+              // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
               let rankChangeOverlayHtml = '';
-              if (isCompareMode) {
-                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string
+              if (isCompareMode) { /* ... 순위 변동 로직 ... */
+                   const rankChangeValue = e['순위 변화값'];
                    let rankChangeText = '';
                    let rankChangeClass = '';
-
                    if (typeof rankChangeValue === 'number') {
                         const absChange = Math.abs(rankChangeValue);
-                        if (rankChangeValue < 0) { // 순위 숫자 감소 (좋아짐)
-                             // --- 순위 아이콘 반전 ---
-                             rankChangeText = `▼${absChange}`; // 좋아졌는데 아래 화살표 표시
-                             // ------------------------
-                             rankChangeClass = 'rank-change-down'; // 좋음=up 클래스 유지 (색상 위함)
-                        } else if (rankChangeValue > 0) { // 순위 숫자 증가 (나빠짐)
-                             // --- 순위 아이콘 반전 ---
-                             rankChangeText = `▲${absChange}`; // 나빠졌는데 위 화살표 표시
-                             // ------------------------
-                             rankChangeClass = 'rank-change-up'; // 나쁨=down 클래스 유지 (색상 위함)
-                        } else { // 순위 변동 없음 (숫자 0)
-                             rankChangeText = `=`;
-                             rankChangeClass = 'rank-change-same';
-                        }
-                   } else { // 비숫자 순위 변화 (신규, 삭제, -)
-                        rankChangeText = rankChangeValue || '-'; // 문자열 값 자체를 표시
-                        if (rankChangeValue === '신규 → ') rankChangeClass = 'rank-change-up'; // 신규는 긍정으로 간주
-                        else if (rankChangeValue === '→ 삭제') rankChangeClass = 'rank-change-down'; // 삭제는 부정으로 간주
-                        else rankChangeClass = 'rank-change-same';
-                   }
-
-                   if (rankChangeText !== '') {
-                        // --- data-text 속성 추가 ---
-                        rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
-                        // ----------------------------
-                   }
+                        if (rankChangeValue < 0) { rankChangeText = `▼${absChange}`; rankChangeClass = 'rank-change-down'; } // 순위 숫자 감소 (좋아짐)
+                        else if (rankChangeValue > 0) { rankChangeText = `▲${absChange}`; rankChangeClass = 'rank-change-up'; } // 순위 숫자 증가 (나빠짐)
+                        else { rankChangeText = `=`; rankChangeClass = 'rank-change-same'; }
+                   } else { rankChangeText = rankChangeValue || '-'; if (rankChangeValue === '신규 → ') rankChangeClass = 'rank-change-up'; else if (rankChangeValue === '→ 삭제') rankChangeClass = 'rank-change-down'; else rankChangeClass = 'rank-change-same'; }
+                   if (rankChangeText !== '') { rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`; }
               }
-              // ---------------------------------------------------
+              // -------------------------------------------------
 
+              // --- 수정: 툴팁 컨테이너에 data 속성 추가 (툴팁 내용 저장) ---
+              // 툴팁 내용은 HTML 엔티티로 인코딩하여 저장
+              const encodedTooltipContent = tooltipContent
+                  .replace(/&/g, '&')
+                  .replace(/</g, '<')
+                  .replace(/>/g, '>')
+                  .replace(/"/g, '"')
+                  .replace(/'/g, '&#039;');
 
-              html += `<span class="tooltip-container">
+              html += `<span class="tooltip-container" data-tooltip="${encodedTooltipContent}">
                          <img src="/image/${imgName}.png" alt="${e.실험체}">
-                         ${tooltip}
-                         ${rankChangeOverlayHtml} <!-- 순위 변동 표시 요소 추가 -->
+                         ${rankChangeOverlayHtml}
                        </span>`;
-              // perRow 개수마다 div 닫고 다시 열기 (기존 레이아웃 유지)
-              // perRow는 15이므로, 15개마다 줄바꿈
-              // 이 로직이 있으면 이미지가 15개 단위로 묶여서 표시됩니다.
-              // 현재 CSS에서 .tooltip-container에 width: calc(100% / 15)를 주므로 줄바꿈 없이 자동으로 배치됩니다.
-              // 이 div 나눔 로직은 불필요하며 제거해도 무방합니다.
-              // 하지만 원본 코드의 구조를 최대한 유지하기 위해 남겨둡니다.
-              // if ((i+1)%perRow===0 && i!==entries.length-1) html += '</div><div>';
+              // -----------------------------------------------------------
             });
 
-            // perRow 개수가 채워지지 않은 마지막 행에 빈 슬롯 추가하여 레이아웃 유지
+            // perRow 개수 채우기 (기존 유지)
             const remainingSlots = perRow - (entries.length % perRow);
-            if (remainingSlots > 0 && remainingSlots < perRow) { // entries.length가 perRow의 배수가 아닐 경우
+            if (remainingSlots > 0 && remainingSlots < perRow) {
                  for (let i = 0; i < remainingSlots; i++) {
-                      // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 ---
+                      // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 (기존 유지) ---
                       html += `<span class="tooltip-container">
                                  <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
                                </span>`;
-                      // ---------------------------------------------------------
+                      // ---------------------------------------------------------------------
                  }
             }
           }
 
-          // 닫기 태그
-          html += `</div></td></tr>`;
+          html += `</div></td></tr>`; // 유지
         });
 
-        table.innerHTML = html;
+        table.innerHTML = html; // 유지
 
-        // --- 추가: 색상 강조 적용 로직 제거 ---
-        // 단일 모드 색상 강조 기능은 제거됨
-        // ---------------------------------------------
+        // --- 색상 강조 적용 로직 제거 (기존 유지) ---
     }
 
-    // 6) 팝업 초기화
-    function setupTablePopup() {
+    // --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 ---
+    // 이 함수는 테이블이 렌더링된 후에 호출됩니다.
+    function setupTooltipPositioning(allCharacterData, isCompareMode) {
+        // 단 하나의 툴팁 요소를 관리합니다.
+        let tooltipBox = document.getElementById('global-tooltip-box');
+        if (!tooltipBox) {
+            tooltipBox = document.createElement('div');
+            tooltipBox.id = 'global-tooltip-box';
+            tooltipBox.className = 'tooltip-box'; // 기존 CSS 스타일 재활용
+            document.body.appendChild(tooltipBox);
+        }
+
+        const tooltipContainers = table.querySelectorAll('.tooltip-container[data-tooltip]'); // data-tooltip 속성이 있는 컨테이너만 선택 (placeholder 제외)
+
+        tooltipContainers.forEach(container => {
+            // 이벤트 리스너를 추가합니다.
+            container.addEventListener('mouseover', () => {
+                // 툴팁 내용 설정 (data 속성에서 가져옴)
+                const tooltipContent = container.dataset.tooltip;
+                tooltipBox.innerHTML = tooltipContent; // HTML 엔티티 디코딩은 브라우저가 자동으로 처리
+
+                // 툴팁을 잠시 보이게 하여 정확한 크기 계산 가능하도록 함
+                tooltipBox.style.visibility = 'visible';
+                tooltipBox.style.opacity = '1';
+                // position: fixed; z-index: 9999; 는 CSS에 정의되어 있습니다.
+
+                const containerRect = container.getBoundingClientRect();
+                const tooltipRect = tooltipBox.getBoundingClientRect(); // 툴팁의 현재 크기 및 뷰포트 위치 가져옴
+
+                // 툴팁이 이미지 위에 나타나도록 위치 계산
+                // 툴팁 하단이 컨테이너 상단에서 5px 위로 떨어지도록 계산
+                const desiredTooltipTop = containerRect.top - tooltipRect.height - 5;
+                // 툴팁 중앙이 컨테이너 중앙에 오도록 위치 계산
+                const desiredTooltipLeft = containerRect.left + containerRect.width / 2 - tooltipRect.width / 2;
+
+                // 계산된 위치를 툴팁 요소의 인라인 스타일로 적용 (position: fixed 기준)
+                tooltipBox.style.top = `${desiredTooltipTop}px`;
+                tooltipBox.style.left = `${desiredTooltipLeft}px`;
+
+                // 기존 CSS에서 bottom, right, transform은 제거했으므로 여기서 설정하지 않아도 됩니다.
+                // 만약 CSS에 남아있다면 여기서 'auto' 또는 'none'으로 설정하여 무시하도록 할 수 있습니다.
+                tooltipBox.style.bottom = 'auto';
+                tooltipBox.style.right = 'auto';
+                tooltipBox.style.transform = 'none';
+
+                // 툴팁이 뷰포트 좌우 경계를 벗어나지 않도록 조정 (선택 사항)
+                const viewportWidth = window.innerWidth;
+                // 좌측 경계 조정
+                if (parseFloat(tooltipBox.style.left) < 5) {
+                    tooltipBox.style.left = '5px';
+                     tooltipBox.style.transform = 'none'; // 재계산 시 transform 해제
+                }
+                // 우측 경계 조정
+                if (parseFloat(tooltipBox.style.left) + tooltipRect.width > viewportWidth - 5) {
+                    tooltipBox.style.left = `${viewportWidth - tooltipRect.width - 5}px`;
+                     tooltipBox.style.transform = 'none'; // 재계산 시 transform 해제
+                }
+                 // 상단 경계 조정 (툴팁이 뷰포트 맨 위에 붙는 경우 방지)
+                 if (parseFloat(tooltipBox.style.top) < 5) {
+                      tooltipBox.style.top = '5px';
+                 }
+
+            });
+
+            container.addEventListener('mouseout', () => {
+                // 툴팁 숨김
+                tooltipBox.style.opacity = '0';
+                // CSS transition 시간(0.3s) 후에 완전히 숨기도록 visibility를 변경합니다.
+                tooltipBox.addEventListener('transitionend', function handler() {
+                     if (tooltipBox.style.opacity === '0') {
+                          tooltipBox.style.visibility = 'hidden';
+                          // 이벤트 리스너 제거 (중복 호출 방지)
+                          tooltipBox.removeEventListener('transitionend', handler);
+                     }
+                });
+
+                 // 마우스 아웃 시 위치 스타일을 제거하여 다음 마우스 오버 시 정확히 다시 계산되도록 합니다.
+                 tooltipBox.style.top = '';
+                 tooltipBox.style.left = '';
+                 tooltipBox.style.bottom = '';
+                 tooltipBox.style.right = '';
+                 tooltipBox.style.transform = ''; // transform: none 또는 translateX(-50%) 등으로 돌아감
+            });
+        });
+    }
+    // -----------------------------------------------------
+
+
+    // 6) 팝업 초기화 (기존 함수 유지)
+    function setupTablePopup() { /* ... 기존 함수 내용 유지 ... */
         const popup = document.getElementById('image-popup');
         const popupImg = document.getElementById('popup-image');
-        // --- 수정: 버튼 선택자 변경 ---
         const popupTableButton = document.getElementById('popup-table-button');
-        if (popupTableButton) { // 요소가 존재하는지 확인
+        if (popupTableButton) {
              popupTableButton.onclick = () => {
-                // --- 수정: html2canvas 대상 클래스 변경 ---
-                // document.getElementById('tier-table') 유지
-                html2canvas(document.getElementById('tier-table'), { // Use getElementById for clarity
-                     backgroundColor: null // 배경 투명하게 캡처 (필요시)
+                html2canvas(document.getElementById('tier-table'), {
+                     backgroundColor: null
                 })
                   .then(canvas => {
                     popup.style.display = 'block';
@@ -642,16 +724,14 @@ document.addEventListener('DOMContentLoaded', function () {
                   });
               };
         } else {
-             console.error("Popup table button not found."); // 디버그용
+             console.error("Popup table button not found.");
         }
-        // -----------------------------
-
         document.querySelector('.image-popup-close')
           .onclick = () => { popup.style.display = 'none'; };
     }
 
-    // 7) 페이지 특화 헬퍼: 이름→이미지 변환
-    function convertExperimentNameToImageName(name) {
+    // 7) 페이지 특화 헬퍼: 이름→이미지 변환 (기존 함수 유지)
+    function convertExperimentNameToImageName(name) { /* ... 기존 함수 내용 유지 ... */
         if (name==="글러브 리 다이린") return "리다이린-글러브";
         if (name==="쌍절곤 리 다이린") return "리다이린-쌍절곤";
         if (name.startsWith("리 다이린 ")) {
@@ -669,9 +749,63 @@ document.addEventListener('DOMContentLoaded', function () {
         return name;
     }
 
-    // --- 추가: common.js의 extractPeriodEntries 함수를 로컬 변수로 저장 ---
-    // 티어 테이블의 단일 모드에서는 로컬 extractPeriodEntries (변화량 계산) 사용
-    // 티어 테이블의 비교 모드에서는 common.js의 extractPeriodEntries (스냅샷 추출) 사용
+    // --- 추가: common.js의 extractPeriodEntries 함수를 로컬 변수로 저장 (기존 유지) ---
     const commonExtractPeriodEntries = window.extractPeriodEntries;
     // -------------------------------------------------------------------
-});
+
+// --- 수정: loadAndRender 함수 끝에 setupTooltipPositioning 호출 추가 ---
+    function loadAndRender() {
+        // --- 기존 loadAndRender 로직 유지 (데이터 로드 및 displayTierTable 호출) ---
+        // ... (데이터 로드 및 displayTierTable 호출 로직) ...
+        if (isCompareMode) {
+             // ... 비교 모드 데이터 로드 및 처리 ...
+             Promise.all([ /* ... */ ])
+             .then(([json1, json2]) => {
+                 // ... 데이터 가공 및 mergeDataForComparison 호출 ...
+                 const comparisonData = mergeDataForComparison(/*...*/);
+                 if (comparisonData.length > 0) {
+                      displayTierTable(comparisonData, isCompareMode);
+                      setupTablePopup();
+                      // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
+                      setupTooltipPositioning(comparisonData, isCompareMode); // 데이터와 모드를 인자로 전달
+                      // --------------------------------------------------
+                 } else { /* ... 데이터 없음 처리 ... */ table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; }
+             })
+             .catch(err => {
+                console.error('비교 데이터 처리 실패:', err);
+                table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`;
+             });
+        } else {
+             // ... 단일 모드 데이터 로드 및 처리 ...
+             fetch(/*...*/)
+             .then(res => { /* ... */ return res.json(); })
+             .then(json => {
+                 // ... 데이터 가공 및 calculateTiers 호출 ...
+                 const history = json['통계'];
+                 const entries = extractPeriodEntries(history, periodSelect.value); // periodSelect.value 사용
+
+                 if (entries.length === 0) {
+                      table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족하거나 없습니다.</td></tr>';
+                      return;
+                 }
+
+                 const avgScore = calculateAverageScore(entries);
+                 const stddev   = calculateStandardDeviation(entries, avgScore);
+                 const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+
+                 displayTierTable(scored, isCompareMode);
+                 setupTablePopup();
+                 // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
+                 setupTooltipPositioning(scored, isCompareMode); // 데이터와 모드를 인자로 전달
+                 // --------------------------------------------------
+             })
+             .catch(err => {
+                console.error('데이터 로드 실패:', err);
+                table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>';
+             });
+        }
+        // ---------------------------------------------------------------
+    }
+// -------------------------------------------------------------
+
+}); // DOMContentLoaded 끝
