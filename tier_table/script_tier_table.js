@@ -92,7 +92,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(res => res.json())
             .then(json => {
                 const history = json['통계'];
+                // --- 수정: 로컬 extractPeriodEntries 함수 호출 ---
                 const entries = extractPeriodEntries(history, period);
+                // ---------------------------------------------
                 const avgScore = calculateAverageScore(entries);
                 const stddev   = calculateStandardDeviation(entries, avgScore);
                 const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
@@ -105,46 +107,92 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // 4) 기간별 데이터 추출
+    // --- 추가: 티어 테이블 페이지 전용 extractPeriodEntries 함수 ---
+    // 4) 기간별 데이터 추출 (티어 테이블 페이지 전용 - 변화량 계산 포함)
     function extractPeriodEntries(history, period) {
         const keys = Object.keys(history).sort();
-        const latestData = history[keys[keys.length - 1]];
+        if (keys.length === 0) return []; // Add check for empty history
+
+        const latestKey = keys[keys.length - 1];
+        const latestData = history[latestKey];
         if (period === 'latest') return latestData;
 
         const days = period === '3day' ? 3 : 7;
-        const latestDate = new Date(
-          keys[keys.length - 1].replace(/_/g, ':').replace(/-/g, '/')
-        );
-        const cutoff = new Date(latestDate);
-        cutoff.setDate(cutoff.getDate() - days);
+        // Use robust date parsing similar to common.js
+        let latestDate = new Date(latestKey.replace('_', 'T'));
+        if (isNaN(latestDate.getTime())) {
+             const parts = latestKey.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
+             if (parts) {
+                  latestDate = new Date(Date.UTC(parts[1], parts[2]-1, parts[3], parts[4], parts[5]));
+             } else {
+                  console.error("Unsupported date format in tier_table:", latestKey);
+                  return latestData; // Fallback to latest if date format is bad
+             }
+        }
+        latestDate.setUTCHours(0, 0, 0, 0); // Normalize to start of day UTC
 
+        const cutoff = new Date(latestDate.getTime());
+        cutoff.setUTCDate(cutoff.getUTCDate() - days);
+
+        // Find the latest key *before or on* the cutoff date
         const pastKey = keys.slice().reverse().find(k => {
-            const d = new Date(k.replace(/_/g, ':').replace(/-/g, '/'));
-            return d <= cutoff;
+            let kDate;
+            const kParts = k.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
+             if (kParts) {
+                  kDate = new Date(Date.UTC(kParts[1], kParts[2]-1, kParts[3], kParts[4], kParts[5]));
+             } else {
+                  kDate = new Date(k.replace('_', 'T'));
+             }
+            if (isNaN(kDate.getTime())) return false;
+
+            kDate.setUTCHours(0,0,0,0); // Normalize to start of day UTC
+            return kDate <= cutoff;
         });
-        if (!pastKey) return latestData;
+
+        if (!pastKey) {
+            console.warn(`No data found before cutoff date ${cutoff.toISOString()} for period '${period}' in tier_table. Returning latest data.`);
+            return latestData; // Return latest data if no past data found
+        }
 
         const prevData = history[pastKey];
         const currMap = Object.fromEntries(latestData.map(d => [d.실험체, d]));
         const prevMap = Object.fromEntries(prevData.map(d => [d.실험체, d]));
         const delta = [];
 
+        // Iterate through characters present in the latest data
         for (const name in currMap) {
-            const c = currMap[name], p = prevMap[name];
+            const c = currMap[name];
+            const p = prevMap[name];
+
+            // Only calculate delta for characters present in both periods
             if (!p) continue;
-            const diff = c['표본수'] - p['표본수'];
+
+            const diff = (c['표본수'] || 0) - (p['표본수'] || 0); // Handle potential null/undefined sample size
+            // Only include entries with increased sample size in the delta calculation
             if (diff <= 0) continue;
+
+            // Calculate weighted average of stats for the *new* sample (diff)
+            // (Total stat sum in current data - Total stat sum in previous data) / difference in sample size
+            const rpDiff = ((c['RP 획득'] || 0) * (c['표본수'] || 0)) - ((p['RP 획득'] || 0) * (p['표본수'] || 0));
+            const winDiff = ((c['승률'] || 0) * (c['표본수'] || 0)) - ((p['승률'] || 0) * (p['표본수'] || 0));
+            const top3Diff = ((c['TOP 3'] || 0) * (c['표본수'] || 0)) - ((p['TOP 3'] || 0) * (p['표본수'] || 0));
+            const rankDiff = ((c['평균 순위'] || 0) * (c['표본수'] || 0)) - ((p['평균 순위'] || 0) * (p['표본수'] || 0));
+
+
             delta.push({
                 '실험체': name,
-                '표본수': diff,
-                'RP 획득': (c['RP 획득']*c['표본수'] - p['RP 획득']*p['표본수']) / diff,
-                '승률':    (c['승률']   *c['표본수'] - p['승률']   *p['표본수']) / diff,
-                'TOP 3':   (c['TOP 3']  *c['표본수'] - p['TOP 3']  *p['표본수']) / diff,
-                '평균 순위': (c['평균 순위']*c['표본수'] - p['평균 순위']*p['표본수']) / diff
+                '표본수': diff, // Sample size is the *difference*
+                'RP 획득': rpDiff / diff,
+                '승률':    winDiff / diff,
+                'TOP 3':   top3Diff / diff,
+                '평균 순위': rankDiff / diff // Average rank for the new sample
+                // Note: '점수' and '티어' will be calculated later by calculateTiers based on these delta stats
             });
         }
         return delta;
     }
+    // -----------------------------------------------------------------
+
 
     // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
     function displayTierTable(data) {
@@ -152,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
           platinum_plus:  "플래티넘+",
           diamond_plus:   "다이아몬드+",
           meteorite_plus: "메테오라이트+",
-          mithril_plus:   "미스릴+",
+          mithril_plus:  "미스릴+",
           in1000:         "in1000"
         };
       
@@ -161,9 +209,17 @@ document.addEventListener('DOMContentLoaded', function () {
       
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
         const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
-        data.forEach(item => groups[item.티어].push(item));
+        // --- 수정: data[item.티어] 대신 groups[item.티어] 사용 ---
+        data.forEach(item => {
+            if (groups[item.티어]) { // Check if tier exists in groups
+                 groups[item.티어].push(item);
+            } else {
+                 console.warn(`Unknown tier '${item.티어}' for character '${item.실험체}'. Skipping.`);
+            }
+        });
+        // ----------------------------------------------------
       
-        const totalSample = data.reduce((sum, i) => sum + i['표본수'], 0);
+        const totalSample = data.reduce((sum, i) => sum + (i['표본수'] || 0), 0); // Handle potential null/undefined sample size
         const perRow      = 15;
         let html = '';
       
@@ -188,7 +244,12 @@ document.addEventListener('DOMContentLoaded', function () {
           }
       
           // 슬롯들 렌더링
-          const entries = groups[tier].sort((a, b) => b.점수 - a.점수);
+          // --- 수정: sortData 함수 사용 ---
+          // 기존: entries.sort((a, b) => b.점수 - a.점수);
+          // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
+          const entries = sortData(groups[tier], '점수', false, 'value'); // mode='value'는 단일 모드 정렬
+          // -----------------------------
+
           if (entries.length === 0) {
             html += `<span class="tooltip-container">
                        <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
@@ -223,7 +284,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const popupImg = document.getElementById('popup-image');
         document.getElementById('popup-table-button')
           .onclick = () => {
-            html2canvas(document.querySelector('.tier-table'))
+            // --- 수정: html2canvas 대상 클래스 변경 ---
+            // 기존: document.querySelector('.tier-table')
+            // 변경: document.getElementById('tier-table-container') 또는 특정 영역
+            // tier-table-container는 section 태그이므로, table 자체를 캡처하는 것이 더 정확할 수 있습니다.
+            // 여기서는 id로 직접 선택하도록 유지합니다.
+            html2canvas(document.getElementById('tier-table')) // Use getElementById for clarity
               .then(canvas => {
                 popup.style.display = 'block';
                 popupImg.src = canvas.toDataURL();
