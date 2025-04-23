@@ -29,6 +29,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams(location.search);
     const isCompareMode = params.get('compare') === '1';
 
+    // --- 추가: 현재 모드에 따라 body 클래스 추가/제거 ---
+    if (isCompareMode) {
+        document.body.classList.add('is-compare-mode');
+    } else {
+        document.body.classList.remove('is-compare-mode');
+    }
+    // -------------------------------------------------
+
+
     // 1) URL 파라미터 → 컨트롤에 반영
     // 이 함수는 versionList가 로드된 후에 호출되어야 합니다.
     function applyParamsToControls() {
@@ -377,7 +386,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
 
-                    // 티어 변화 색상 강조를 위한 data 속성
+                    // 티어 변화 색상 강조를 위한 data 속성 (CSS에서 사용하지 않더라도 JS에서 필요할 수 있음)
+                    // 이 속성들은 이전 상태 그대로 유지합니다.
                      if (tierChange.includes('→')) {
                           const tiers = tierChange.split('→').map(t => t.trim());
                           const tier1 = tiers[0];
@@ -551,6 +561,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const isBetterWhenLower = (col === '평균 순위');
                     currentSortAsc = isBetterWhenLower ? true : false; // 평균 순위는 오름차순(작은 값 위로), 나머지는 내림차순(큰 값 위로)
 
+                    // --- 확인: 티어 컬럼의 기본 정렬 방향 ---
+                    // 티어 컬럼은 점수 기준으로 정렬되며, 점수는 클수록 좋으므로 기본 내림차순(false)이 맞습니다.
+                    if (col === '티어') currentSortAsc = false;
+                    // ------------------------------------
+
                     currentSortMode = 'value'; // 단일 모드는 value 고정
                 }
                 //console.log(`Single Sort: column=${currentSortColumn}, asc=${currentSortAsc}, mode=${currentSortMode}`); // 디버그
@@ -602,7 +617,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 클릭 이벤트 리스너 추가
             th.onclick = () => {
-                // 정렬 순환: Value1 ▼ -> Value1 ▲ -> Value2 ▼ -> Value2 ▲ -> Delta ▼ -> Delta ▲ -> Value1 ▼ ...
+                // --- 정렬 순환: Value1 ▼ -> Value1 ▲ -> Value2 ▼ -> Value2 ▲ -> Delta ▼ -> Delta ▲ -> Value1 ▼ ... ---
+                // 사용자 요청: 내림차순 -> 오름차순 순환
+                // 현재 코드의 modes와 directions 배열은 이미 내림차순(false) -> 오름차순(true) 순환을 구현하고 있습니다.
+                // modes = ['value1', 'value1', 'value2', 'value2', 'delta', 'delta'];
+                // directions = [false, true, false, true, false, true]; // false: 내림차순, true: 오름차순
+                // 따라서 코드 변경 없이 기존 로직을 유지합니다.
                 const modes = ['value1', 'value1', 'value2', 'value2', 'delta', 'delta']; // 6단계 순환 모드
                 const directions = [false, true, false, true, false, true]; // 각 단계의 오름차순 여부 (false: 내림차순, true: 오름차순)
 
@@ -631,6 +651,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 기본 정렬 방향 설정 (평균 순위는 오름차순, 나머지는 내림차순)
                     const isBetterWhenLower = (col === '평균 순위');
                     nextAsc = isBetterWhenLower ? true : false; // 평균 순위는 오름차순(작은 값 위로), 나머지는 내림차순(큰 값 위로)
+
+                    // 예외 처리: 티어는 Value1 내림차순 시작 (S+ 위로)
+                    // common.js sortData에서 '티어' Value1/Value2 정렬 시 '점수 (VerX)' 키를 사용하고, 점수는 클수록 좋음으로 처리합니다.
+                    // 따라서 '점수 (VerX)' 기준 내림차순 (asc=false)일 때 S+가 위로 옵니다.
+                    // 그래서 '티어' 컬럼 클릭 시 Value1 내림차순으로 시작하는 것이 맞습니다.
+                    if (col === '티어') nextAsc = false;
                 }
 
                 currentSortMode = nextMode; // 현재 정렬 모드 업데이트

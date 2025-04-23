@@ -21,7 +21,11 @@ layout: none
       overflow-x: auto;
     }
     #data-container table {
+      /* --- 수정: 테이블 너비 설정 --- */
+      width: 1400px;
+      max-width: 95vw;
       min-width: 600px; /* 테이블이 충분히 넓어야 스크롤이 생김 */
+      /* --------------------------- */
       border-collapse: collapse; /* 셀 간 간격 제거 */
     }
     /* 공통: 텍스트 넘칠 때 줄임표 */
@@ -40,11 +44,19 @@ layout: none
       text-align: left; /* 실험체 이름은 좌측 정렬 */
     }
     /* 티어 컬럼 너비 조정 */
+     /* --- 수정: 기본 너비를 좁게 설정 --- */
      #data-container th[data-col="티어"],
      #data-container td[data-col="티어"] {
-         min-width: 150px; /* 티어 변화 + 순위 변화 정보 */
+         min-width: 80px; /* 일반 모드에 적합한 좁은 너비 */
+         max-width: 80px;
+     }
+     /* --- 추가: 비교 모드일 때 티어 컬럼 너비를 넓게 재정의 --- */
+     body.is-compare-mode #data-container th[data-col="티어"],
+     body.is-compare-mode #data-container td[data-col="티어"] {
+         min-width: 150px; /* 비교 모드에 적합한 넓은 너비 */
          max-width: 150px;
      }
+     /* ------------------------------------------------- */
 
 
     /* 모든 테이블 헤더를 상대위치로 잡아서 가상요소를 절대위치로 표시 */
