@@ -158,6 +158,7 @@ layout: none
 
     /* --- 비교 모드 특정 셀 색상 (CSS) --- */
     /* JS에서 인라인 스타일을 적용하지 않는 경우에만 CSS가 적용됨 */
+    /* 티어 컬럼의 모든 배경색은 이제 JS에서 인라인 스타일로 직접 적용하므로, 아래 티어 관련 CSS 규칙은 모두 제거 */
 
     /* 실험체 컬럼 (순위 변화) */
     td[data-col="실험체"][data-rankdelta="new"] { background-color: rgba(144, 238, 144, 0.5); /* 연한 초록 */ } /* 신규 */
@@ -165,25 +166,6 @@ layout: none
     /* JS에서 data-rankdelta에 숫자를 넣었을 때 CSS로 범위 색칠하는 것은 제한적입니다. */
     /* JS에서 data-rankdelta-category="great-up", "up", "down", "great-down" 등으로 카테고리를 추가하는 것이 더 현실적입니다. */
     /* 현재는 신규/삭제만 CSS로 처리하고, 숫자 변화량 색칠은 JS의 applyGradientColorsComparison에서 처리합니다. */
-
-
-    /* 티어 컬럼 (티어 변화) */
-    /* JS에서 인라인 스타일을 적용하지 않는 경우 (Value1/Value2 모드, Delta 모드 비숫자 변화)에만 CSS가 적용됨 */
-    td[data-col="티어"][data-tierchange="new"] { background-color: rgba(144, 238, 144, 0.5); /* 연한 초록 */ } /* 신규 */
-    td[data-col="티어"][data-tierchange="removed"] { background-color: rgba(255, 182, 193, 0.5); /* 연한 빨강 */ } /* 삭제 */
-    td[data-col="티어"][data-tierchange="same"] { background-color: rgba(240, 240, 240, 0.3); /* 연한 회색 (동일) */ }
-    td[data-col="티어"][data-tierchange="up"] { background-color: rgba(255, 192, 203, 0.5); /* 연한 분홍 (개선) */ }
-    td[data-col="티어"][data-tierchange="down"] { background-color: rgba(173, 216, 230, 0.5); /* 연한 파랑 (악화) */ }
-    /* Value1/Value2 모드에서 사용될 표준 티어 색상 규칙 */
-    td[data-col="티어"][data-tier="S+"] { background-color: rgba(255,127,127, 1); }
-    td[data-col="티어"][data-tier="S"] { background-color: rgba(255,191,127, 1); }
-    td[data-col="티어"][data-tier="A"] { background-color: rgba(255,223,127, 1); }
-    td[data-col="티어"][data-tier="B"] { background-color: rgba(255,255,127, 1); }
-    td[data-col="티어"][data-tier="C"] { background-color: rgba(191,255,127, 1); }
-    td[data-col="티어"][data-tier="D"] { background-color: rgba(127,255,127, 1); }
-    td[data-col="티어"][data-tier="F"] { background-color: rgba(127,255,255, 1); }
-
-
   </style>
 </head>
 <body>

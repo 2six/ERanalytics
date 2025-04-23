@@ -511,10 +511,6 @@ function applyGradientColorsSingle(table) {
 // data: 정렬된 비교 데이터 배열 (행 객체들의 배열)
 // mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
 // sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
-// 12. 비교 데이터용 그라디언트 색상 적용
-// data: 정렬된 비교 데이터 배열 (행 객체들의 배열)
-// mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
-// sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
 function applyGradientColorsComparison(table, data, mode, sortedCol) {
     if (!table || !data || data.length === 0) return;
     const rows = Array.from(table.querySelectorAll('tbody tr'));
@@ -537,8 +533,22 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
                 const cell = r.children[i];
                 cell.style.backgroundColor = ''; // Clear any previous inline style for Tier column
 
-                if (mode === 'delta') {
-                    // Delta mode: Apply gradient based on numeric rank change via JS inline style
+                if (mode === 'value1') {
+                    // Value1 mode: Apply standard tier color based on Ver1 Tier value
+                    const tierValue = data[idx]['티어 (Ver1)'];
+                    const color = TIER_COLORS_SINGLE[tierValue];
+                    if (color) {
+                        cell.style.backgroundColor = color;
+                    }
+                } else if (mode === 'value2') {
+                    // Value2 mode: Apply standard tier color based on Ver2 Tier value
+                    const tierValue = data[idx]['티어 (Ver2)'];
+                    const color = TIER_COLORS_SINGLE[tierValue];
+                    if (color) {
+                        cell.style.backgroundColor = color;
+                    }
+                } else if (mode === 'delta') {
+                    // Delta mode: Apply gradient based on numeric rank change
                     const rankChangeValue = data[idx]['순위 변화값']; // Get rank change for this row
 
                     // Apply gradient only if rank change is numeric
@@ -553,7 +563,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
                          }).filter(v => v !== null);
 
                          if (valuesOnly.length === 0) {
-                              // No numeric delta data in column, CSS rules will handle
+                              // No numeric delta data in column, no coloring
                               return;
                          }
 
@@ -582,12 +592,10 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 
                          cell.style.backgroundColor = color; // Apply gradient via inline style
                     }
-                    // Non-numeric rank change (신규, 삭제, -) will be colored by CSS data-* rules
-                } else {
-                    // Value1 or Value2 mode: Coloring handled by CSS data-tier rules
-                    // Ensure no inline style is set by JS in these modes for Tier column
-                    cell.style.backgroundColor = '';
+                    // Non-numeric rank change (신규, 삭제, -) will have no background color
                 }
+                // If mode is value1/value2 and tierValue is null/undefined, or mode is delta and rankChangeValue is non-numeric,
+                // cell.style.backgroundColor remains '' (cleared at the start of the loop)
             });
             return; // Finished processing Tier column, move to next header
         }
