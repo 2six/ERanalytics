@@ -209,7 +209,10 @@ layout: none
         padding: 6px 10px;
         position: absolute;
         z-index: 100;
-        bottom: 110%;
+        /* --- 수정: 툴팁 위치를 이미지 아래로 변경 --- */
+        /* bottom: 110%; */
+        top: 110%; /* 이미지 아래에 표시 */
+        /* --------------------------------------- */
         left: 50%;
         transform: translateX(-50%);
         white-space: nowrap;
@@ -237,21 +240,40 @@ layout: none
          z-index: 5; /* 이미지나 툴팁 아래에 오도록 */
     }
 
-    /* --- 추가: 순위 변동 표시 스타일 --- */
+    /* --- 수정: 순위 변동 표시 스타일 (그림자 방식 변경) --- */
     .rank-change-overlay {
         position: absolute;
         bottom: 0; /* 이미지 좌하단 */
         left: 0; /* 이미지 좌하단 */
         padding: 2px 4px;
-        font-size: 1em; /* 글자 크기 조정 (기존 0.7em에서 0.8em으로 키움) */
+        font-size: 1em; /* 글자 크기 조정 */
         font-weight: bold;
         white-space: nowrap;
-        text-shadow:
+        /* --- 기존 text-shadow 제거 --- */
+        /* text-shadow:
           -1px -1px 0 #fff, 1px -1px 0 #fff,
-          -1px  1px 0 #fff, 1px  1px 0 #fff; /* 흰색 글자 테두리 */
+          -1px  1px 0 #fff, 1px  1px 0 #fff; */
+        /* ---------------------------- */
         z-index: 6; /* 이미지 위에, 툴팁 아래 */
-        /* 배경색은 필요시 추가 */
+        color: transparent; /* 기본 텍스트 색상 투명 (::before 사용 위함) */
     }
+
+    /* --- ::before를 사용한 그림자 구현 --- */
+    .rank-change-overlay::before {
+        position: absolute;
+        z-index: -1; /* 뒤로 보내기 */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        text-align: center; /* 중앙 정렬 (필요시) */
+        line-height: 1.5; /* 세로 중앙 정렬 (필요시) */
+        content: attr(data-text); /* data-text 속성 값 사용 */
+        -webkit-text-stroke: 2px #fff; /* 흰색 테두리 */
+        color: inherit; /* 부모의 color 속성 상속 (색상) */
+    }
+    /* ----------------------------------- */
+
 
     .rank-change-up { color: red; } /* 순위 상승 (숫자 감소) */
     .rank-change-down { color: blue; } /* 순위 하락 (숫자 증가) */

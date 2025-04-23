@@ -546,8 +546,7 @@ document.addEventListener('DOMContentLoaded', function () {
               const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
               // -------------------------------------------------------------
 
-              // --- 수정: 순위 변동 표시 요소 (비교 모드에서만) ---
-              // 텍스트 표시 논리는 이미 올바르게 구현되어 있음. CSS 폰트 크기만 조정
+              // --- 수정: 순위 변동 표시 요소 (비교 모드에서만) 및 아이콘 반전, data-text 추가 ---
               let rankChangeOverlayHtml = '';
               if (isCompareMode) {
                    const rankChangeValue = e['순위 변화값']; // 숫자 또는 string
@@ -557,19 +556,20 @@ document.addEventListener('DOMContentLoaded', function () {
                    if (typeof rankChangeValue === 'number') {
                         const absChange = Math.abs(rankChangeValue);
                         if (rankChangeValue < 0) { // 순위 숫자 감소 (좋아짐)
-                             rankChangeText = `▲${absChange}`;
-                             rankChangeClass = 'rank-change-up';
+                             // --- 순위 아이콘 반전 ---
+                             rankChangeText = `▼${absChange}`; // 좋아졌는데 아래 화살표 표시
+                             // ------------------------
+                             rankChangeClass = 'rank-change-up'; // 좋음=up 클래스 유지 (색상 위함)
                         } else if (rankChangeValue > 0) { // 순위 숫자 증가 (나빠짐)
-                             rankChangeText = `▼${absChange}`;
-                             rankChangeClass = 'rank-change-down';
+                             // --- 순위 아이콘 반전 ---
+                             rankChangeText = `▲${absChange}`; // 나빠졌는데 위 화살표 표시
+                             // ------------------------
+                             rankChangeClass = 'rank-change-down'; // 나쁨=down 클래스 유지 (색상 위함)
                         } else { // 순위 변동 없음 (숫자 0)
                              rankChangeText = `-`;
                              rankChangeClass = 'rank-change-same';
                         }
                    } else { // 비숫자 순위 변화 (신규, 삭제, -)
-                        // 티어 테이블에서는 신규/삭제/없는 캐릭터는 해당 티어에 표시되지 않음 (Ver1 기준 그룹화)
-                        // 따라서 이 경우는 발생하지 않아야 하지만, 혹시 모를 경우를 대비하여 '-' 표시
-                        // 혹은 rankChangeValue 자체가 '신규 → ', '→ 삭제', '-' 문자열일 경우 직접 표시
                         rankChangeText = rankChangeValue || '-'; // 문자열 값 자체를 표시
                         if (rankChangeValue === '신규 → ') rankChangeClass = 'rank-change-up'; // 신규는 긍정으로 간주
                         else if (rankChangeValue === '→ 삭제') rankChangeClass = 'rank-change-down'; // 삭제는 부정으로 간주
@@ -577,7 +577,9 @@ document.addEventListener('DOMContentLoaded', function () {
                    }
 
                    if (rankChangeText !== '') {
-                        rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}">${rankChangeText}</div>`;
+                        // --- data-text 속성 추가 ---
+                        rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
+                        // ----------------------------
                    }
               }
               // ---------------------------------------------------
