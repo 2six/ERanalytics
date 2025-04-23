@@ -157,6 +157,7 @@ layout: none
     /* 셀 배경 색상은 JS에서 data-* 속성 기준으로 적용 */
 
     /* --- 비교 모드 특정 셀 색상 (CSS) --- */
+    /* JS에서 인라인 스타일을 적용하지 않는 경우에만 CSS가 적용됨 */
 
     /* 실험체 컬럼 (순위 변화) */
     td[data-col="실험체"][data-rankdelta="new"] { background-color: rgba(144, 238, 144, 0.5); /* 연한 초록 */ } /* 신규 */
@@ -167,19 +168,22 @@ layout: none
 
 
     /* 티어 컬럼 (티어 변화) */
+    /* JS에서 인라인 스타일을 적용하지 않는 경우 (신규, 삭제, 변화 없음)에만 CSS가 적용됨 */
     td[data-col="티어"][data-tierchange="new"] { background-color: rgba(144, 238, 144, 0.5); /* 연한 초록 */ } /* 신규 */
     td[data-col="티어"][data-tierchange="removed"] { background-color: rgba(255, 182, 193, 0.5); /* 연한 빨강 */ } /* 삭제 */
-    td[data-col="티어"][data-tierchange="up"] { background-color: rgba(255, 192, 203, 0.5); /* 연한 분홍 (개선) */ }
-    td[data-col="티어"][data-tierchange="down"] { background-color: rgba(173, 216, 230, 0.5); /* 연한 파랑 (악화) */ }
     td[data-col="티어"][data-tierchange="same"] { background-color: rgba(240, 240, 240, 0.3); /* 연한 회색 (동일) */ }
-     /* 단일 모드 티어 색상 (비교 모드에서는 data-tierchange="same"일 때만 적용될 수 있음) */
-     td[data-col="티어"][data-tier="S+"] { background-color: rgba(255,127,127, 1); }
-     td[data-col="티어"][data-tier="S"] { background-color: rgba(255,191,127, 1); }
-     td[data-col="티어"][data-tier="A"] { background-color: rgba(255,223,127, 1); }
-     td[data-col="티어"][data-tier="B"] { background-color: rgba(255,255,127, 1); }
-     td[data-col="티어"][data-col="C"] { background-color: rgba(191,255,127, 1); }
-     td[data-col="티어"][data-col="D"] { background-color: rgba(127,255,127, 1); }
-     td[data-col="티어"][data-col="F"] { background-color: rgba(127,255,255, 1); }
+    /* 아래 규칙들은 JS 인라인 스타일에 의해 무시되므로 제거 */
+    /*
+    td[data-col="티어"][data-tierchange="up"] { background-color: rgba(255, 192, 203, 0.5); }
+    td[data-col="티어"][data-tierchange="down"] { background-color: rgba(173, 216, 230, 0.5); }
+    td[data-col="티어"][data-tier="S+"] { background-color: rgba(255,127,127, 1); }
+    td[data-col="티어"][data-tier="S"] { background-color: rgba(255,191,127, 1); }
+    td[data-col="티어"][data-tier="A"] { background-color: rgba(255,223,127, 1); }
+    td[data-col="티어"][data-tier="B"] { background-color: rgba(255,255,127, 1); }
+    td[data-col="티어"][data-col="C"] { background-color: rgba(191,255,127, 1); }
+    td[data-col="티어"][data-col="D"] { background-color: rgba(127,255,127, 1); }
+    td[data-col="티어"][data-col="F"] { background-color: rgba(127,255,255, 1); }
+    */
 
 
   </style>
