@@ -566,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function () {
                              // ------------------------
                              rankChangeClass = 'rank-change-up'; // 나쁨=down 클래스 유지 (색상 위함)
                         } else { // 순위 변동 없음 (숫자 0)
-                             rankChangeText = `─`;
+                             rankChangeText = `=`;
                              rankChangeClass = 'rank-change-same';
                         }
                    } else { // 비숫자 순위 변화 (신규, 삭제, -)
