@@ -107,7 +107,7 @@ layout: none
 
     /* --- 수정: "데이터 1 :" 레이블 표시 조건 변경 --- */
     /* 기본적으로 숨김 (일반 모드) */
-     .dropdowns > div:first-child > span {
+    .dropdowns > div:first-child > span {
          display: none;
      }
     /* 비교 모드일 때만 표시 */
@@ -115,6 +115,14 @@ layout: none
          display: inline; /* 또는 inline-block 등 원하는 표시 방식 */
      }
     /* --------------------------------------------- */
+    /* 기본적으로 숨김 (일반 모드) */
+     #comparison-controls {
+         display: none;
+     }
+    /* 비교 모드일 때만 표시 */
+     body.is-compare-mode #comparison-controls {
+         display: inline; /* 또는 inline-block 등 원하는 표시 방식 */
+     }
 
 
     /* 비교 모드 테이블의 셀 스타일 */
