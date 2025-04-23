@@ -258,8 +258,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 const history2 = json2 ? json2['통계'] : {};
 
                 // common.js의 extractPeriodEntries 사용 (기간별 스냅샷 추출)
-                const entries1 = extractPeriodEntries(history1, period1);
-                const entries2 = extractPeriodEntries(history2, period2);
+                // 티어 테이블 비교 모드에서는 기간별 변화량이 아닌, 각 기간의 스냅샷 데이터가 필요함
+                const entries1 = commonExtractPeriodEntries(history1, period1); // common.js의 함수 사용
+                const entries2 = commonExtractPeriodEntries(history2, period2); // common.js의 함수 사용
 
                 // 데이터가 하나라도 없으면 비교 불가
                 if (entries1.length === 0 || entries2.length === 0) {
@@ -407,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
-    // --- 수정: isCompareMode 인자 추가 ---
+    // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
     function displayTierTable(data, isCompareMode) {
         const tierLabels = {
           platinum_plus:  "플래티넘+",
@@ -422,11 +423,13 @@ document.addEventListener('DOMContentLoaded', function () {
       
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
         const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
-        // --- 수정: data[item.티어] 대신 groups[item.티어] 사용 ---
+
+        // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
         data.forEach(item => {
             // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
             const itemTier = isCompareMode ? item['티어 (Ver1)'] : item.티어;
-            if (itemTier && groups[itemTier]) { // Check if tier exists in groups
+            // 단일 모드 또는 비교 모드에서 Ver1 티어가 유효한 경우에만 그룹에 추가
+            if (itemTier && groups[itemTier]) {
                  groups[itemTier].push(item);
             } else if (itemTier) {
                  // 데이터 1에만 있고 데이터 2에는 없는 경우 (티어 삭제)는 그룹화하지 않음
@@ -437,7 +440,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         // ----------------------------------------------------
       
-        const totalSample = data.reduce((sum, i) => sum + (i['표본수'] || 0), 0); // Handle potential null/undefined sample size
+        // --- 수정: totalSample 계산 (비교 모드 고려) ---
+        // 단일 모드: 현재 데이터의 표본수 합계
+        // 비교 모드: Ver1 데이터의 표본수 합계 (표본수 변화량은 사용하지 않음)
+        const totalSample = isCompareMode
+            ? data.reduce((sum, i) => sum + (i['표본수 (Ver1)'] || 0), 0)
+            : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0);
+        // ---------------------------------------------
+
         const perRow      = 15;
         let html = '';
       
@@ -462,12 +472,12 @@ document.addEventListener('DOMContentLoaded', function () {
           }
       
           // 슬롯들 렌더링
-          // --- 수정: sortData 함수 사용 ---
-          // 기존: entries.sort((a, b) => b.점수 - a.점수);
+          // --- 수정: sortData 함수 사용 (비교 모드 고려) ---
           // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
           // 비교 모드일 때는 '점수 (Ver1)' 기준으로 정렬
           const sortKey = isCompareMode ? '점수 (Ver1)' : '점수';
-          const entries = sortData(groups[tier], sortKey, false, isCompareMode ? 'value1' : 'value'); // mode='value'는 단일 모드 정렬
+          const sortMode = isCompareMode ? 'value1' : 'value';
+          const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
           // -----------------------------
 
           if (entries.length === 0) {
@@ -480,14 +490,14 @@ document.addEventListener('DOMContentLoaded', function () {
               // --- 수정: 툴팁 내용 조정 (비교 모드일 때 Ver1/Ver2 정보 포함) ---
               let tooltipContent;
               if (isCompareMode) {
-                   const pr1 = e['픽률 (Ver1)'] !== null && e['픽률 (Ver1)'] !== undefined ? e['픽률 (Ver1)'].toFixed(2) + '%' : '-';
-                   const pr2 = e['픽률 (Ver2)'] !== null && e['픽률 (Ver2)'] !== undefined ? e['픽률 (Ver2)'].toFixed(2) + '%' : '-';
-                   const rp1 = e['RP 획득 (Ver1)'] !== null && e['RP 획득 (Ver1)'] !== undefined ? e['RP 획득 (Ver1)'].toFixed(1) : '-';
-                   const rp2 = e['RP 획득 (Ver2)'] !== null && e['RP 획득 (Ver2)'] !== undefined ? e['RP 획득 (Ver2)'].toFixed(1) : '-';
-                   const win1 = e['승률 (Ver1)'] !== null && e['승률 (Ver1)'] !== undefined ? (e['승률 (Ver1)'] * 100).toFixed(1) + '%' : '-';
-                   const win2 = e['승률 (Ver2)'] !== null && e['승률 (Ver2)'] !== undefined ? (e['승률 (Ver2)'] * 100).toFixed(1) + '%' : '-';
-                   const top3_1 = e['TOP 3 (Ver1)'] !== null && e['TOP 3 (Ver1)'] !== undefined ? (e['TOP 3 (Ver1)'] * 100).toFixed(1) + '%' : '-';
-                   const top3_2 = e['TOP 3 (Ver2)'] !== null && e['TOP 3 (Ver2)'] !== undefined ? (e['TOP 3 (Ver2)'] * 100).toFixed(1) + '%' : '-';
+                   const pr1 = e['픽률 (Ver1)'] !== null && e['픽률 (Ver1)'] !== undefined ? (e['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
+                   const pr2 = e['픽률 (Ver2)'] !== null && e['픽률 (Ver2)'] !== undefined ? (e['픽률 (Ver2)'] || 0).toFixed(2) + '%' : '-';
+                   const rp1 = e['RP 획득 (Ver1)'] !== null && e['RP 획득 (Ver1)'] !== undefined ? (e['RP 획득 (Ver1)'] || 0).toFixed(1) : '-';
+                   const rp2 = e['RP 획득 (Ver2)'] !== null && e['RP 획득 (Ver2)'] !== undefined ? (e['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
+                   const win1 = e['승률 (Ver1)'] !== null && e['승률 (Ver1)'] !== undefined ? ((e['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
+                   const win2 = e['승률 (Ver2)'] !== null && e['승률 (Ver2)'] !== undefined ? ((e['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
+                   const top3_1 = e['TOP 3 (Ver1)'] !== null && e['TOP 3 (Ver1)'] !== undefined ? ((e['TOP 3 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
+                   const top3_2 = e['TOP 3 (Ver2)'] !== null && e['TOP 3 (Ver2)'] !== undefined ? ((e['TOP 3 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
                    const rank1 = e['순위 (Ver1)'] !== null && e['순위 (Ver1)'] !== undefined ? e['순위 (Ver1)'] + '위' : '-';
                    const rank2 = e['순위 (Ver2)'] !== null && e['순위 (Ver2)'] !== undefined ? e['순위 (Ver2)'] + '위' : '-';
 
@@ -501,15 +511,15 @@ document.addEventListener('DOMContentLoaded', function () {
                    // 단일 모드 툴팁 내용
                    tooltipContent = `
                        ${e.실험체}<br>
-                       픽률: ${(e['표본수']/totalSample*100).toFixed(2)}%<br>
-                       RP: ${e['RP 획득'].toFixed(1)}<br>
-                       승률: ${(e['승률']*100).toFixed(1)}%
+                       픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br> <!-- 단일 모드 픽률 계산 방식 복원 -->
+                       RP: ${(e['RP 획득'] || 0).toFixed(1)}<br>
+                       승률: ${((e['승률'] || 0)*100).toFixed(1)}%
                    `;
               }
               const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
               // -------------------------------------------------------------
 
-              // --- 추가: 순위 변동 표시 요소 ---
+              // --- 추가: 순위 변동 표시 요소 (비교 모드에서만) ---
               let rankChangeOverlayHtml = '';
               if (isCompareMode) {
                    const rankChangeValue = e['순위 변화값']; // 숫자 또는 string
@@ -529,8 +539,8 @@ document.addEventListener('DOMContentLoaded', function () {
                              rankChangeClass = 'rank-change-same';
                         }
                    } else { // 비숫자 순위 변화 (신규, 삭제, -)
-                        // 티어 테이블에서는 신규/삭제/없는 캐릭터는 해당 티어에 표시되지 않으므로 이 경우는 발생하지 않음
-                        // 하지만 혹시 모를 경우를 대비하여 처리
+                        // 티어 테이블에서는 신규/삭제/없는 캐릭터는 해당 티어에 표시되지 않음 (Ver1 기준 그룹화)
+                        // 따라서 이 경우는 발생하지 않아야 하지만, 혹시 모를 경우를 대비하여 '-' 표시
                         rankChangeText = `-`;
                         rankChangeClass = 'rank-change-same';
                    }
@@ -539,7 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}">${rankChangeText}</div>`;
                    }
               }
-              // -----------------------------------
+              // ---------------------------------------------------
 
 
               html += `<span class="tooltip-container">
@@ -558,12 +568,10 @@ document.addEventListener('DOMContentLoaded', function () {
         table.innerHTML = html;
 
         // --- 추가: 색상 강조 적용 (단일 모드에서만) ---
-        if (!isCompareMode && gradientCheckbox.checked) {
-             // 단일 모드 색상 강조 로직 (common.js 함수 사용)
-             // displayTierTable은 common.js의 applyGradientColorsSingle/Comparison을 사용하지 않음
-             // 티어별 배경색은 CSS로 처리되고 있으므로, 여기서는 추가적인 색상 강조 로직이 필요 없음
-             // 만약 이미지 자체에 어떤 색상 효과를 주고 싶다면 여기에 로직 추가
-        }
+        // 티어 테이블 페이지는 티어별 배경색을 CSS로 처리하고 있으므로,
+        // 단일 모드 색상 강조 체크박스는 현재 기능이 없습니다.
+        // 만약 이미지 자체에 어떤 색상 효과를 주고 싶다면 여기에 로직 추가
+        // if (!isCompareMode && gradientCheckbox.checked) { ... }
         // ---------------------------------------------
     }      
 
@@ -571,21 +579,28 @@ document.addEventListener('DOMContentLoaded', function () {
     function setupTablePopup() {
         const popup = document.getElementById('image-popup');
         const popupImg = document.getElementById('popup-image');
-        document.getElementById('popup-table-button')
-          .onclick = () => {
-            // --- 수정: html2canvas 대상 클래스 변경 ---
-            // 기존: document.querySelector('.tier-table')
-            // 변경: document.getElementById('tier-table-container') 또는 특정 영역
-            // tier-table-container는 section 태그이므로, table 자체를 캡처하는 것이 더 정확할 수 있습니다.
-            // 여기서는 id로 직접 선택하도록 유지합니다.
-            html2canvas(document.getElementById('tier-table'), { // Use getElementById for clarity
-                 backgroundColor: null // 배경 투명하게 캡처 (필요시)
-            })
-              .then(canvas => {
-                popup.style.display = 'block';
-                popupImg.src = canvas.toDataURL();
-              });
-          };
+        // --- 수정: 버튼 선택자 변경 ---
+        const popupTableButton = document.getElementById('popup-table-button');
+        if (popupTableButton) { // 요소가 존재하는지 확인
+             popupTableButton.onclick = () => {
+                // --- 수정: html2canvas 대상 클래스 변경 ---
+                // 기존: document.querySelector('.tier-table')
+                // 변경: document.getElementById('tier-table-container') 또는 특정 영역
+                // tier-table-container는 section 태그이므로, table 자체를 캡처하는 것이 더 정확할 수 있습니다.
+                // 여기서는 id로 직접 선택하도록 유지합니다.
+                html2canvas(document.getElementById('tier-table'), { // Use getElementById for clarity
+                     backgroundColor: null // 배경 투명하게 캡처 (필요시)
+                })
+                  .then(canvas => {
+                    popup.style.display = 'block';
+                    popupImg.src = canvas.toDataURL();
+                  });
+              };
+        } else {
+             console.error("Popup table button not found."); // 디버그용
+        }
+        // -----------------------------
+
         document.querySelector('.image-popup-close')
           .onclick = () => { popup.style.display = 'none'; };
     }
@@ -608,4 +623,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return name;
     }
+
+    // --- 추가: common.js의 extractPeriodEntries 함수를 로컬 변수로 저장 ---
+    // 티어 테이블의 단일 모드에서는 로컬 extractPeriodEntries (변화량 계산) 사용
+    // 티어 테이블의 비교 모드에서는 common.js의 extractPeriodEntries (스냅샷 추출) 사용
+    const commonExtractPeriodEntries = window.extractPeriodEntries;
+    // -------------------------------------------------------------------
 });
