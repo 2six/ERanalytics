@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
           } else {
             entries.forEach((e) => { // i 변수 사용되지 않아 제거
               const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
-              // --- 수정: 툴팁 내용 조정 (비교 모드일 때 Ver1/Ver2 정보 포함) ---
+              // --- 수정: 툴팁 내용 조정 (단일 모드 원래대로 복원) ---
               let tooltipContent;
               if (isCompareMode) {
                    const pr1 = e['픽률 (Ver1)'] !== null && e['픽률 (Ver1)'] !== undefined ? (e['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function () {
                    const top3_1 = e['TOP 3 (Ver1)'] !== null && e['TOP 3 (Ver1)'] !== undefined ? ((e['TOP 3 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
                    const top3_2 = e['TOP 3 (Ver2)'] !== null && e['TOP 3 (Ver2)'] !== undefined ? ((e['TOP 3 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
                    const rank1 = e['평균 순위 (Ver1)'] !== null && e['평균 순위 (Ver1)'] !== undefined ? e['평균 순위 (Ver1)'].toFixed(2) + '위' : '-'; // 평균 순위 소수점 표시
-                   const rank2 = e['평균 순위 (Ver2)'] !== null && e['평균 순위 (Ver2)'] !== undefined ? e['평균 순위 (Ver2)'].toFixed(2) + '위' : '-'; // 평균 순위 소수점 표시
+                   const rank2 = e['평균 순위 (Ver2)'] !== null && e['평균 순위 (Ver2)'] !== undefined ? e['평위 순위 (Ver2)'].toFixed(2) + '위' : '-'; // 평균 순위 소수점 표시 // 오타 수정: 평위 -> 평균
                    const score1 = e['점수 (Ver1)'] !== null && e['점수 (Ver1)'] !== undefined ? e['점수 (Ver1)'].toFixed(2) : '-'; // 점수 소수점 표시
                    const score2 = e['점수 (Ver2)'] !== null && e['점수 (Ver2)'] !== undefined ? e['점수 (Ver2)'].toFixed(2) : '-'; // 점수 소수점 표시
                    const sample1 = e['표본수 (Ver1)'] !== null && e['표본수 (Ver1)'] !== undefined ? e['표본수 (Ver1)'].toLocaleString() : '-'; // 표본수 숫자 포맷
@@ -543,16 +543,12 @@ document.addEventListener('DOMContentLoaded', function () {
                        티어 변화: ${e['티어 변화'] || '-'}, 순위 변화: ${typeof e['순위 변화값'] === 'number' ? (e['순위 변화값'] < 0 ? '▲' : (e['순위 변화값'] > 0 ? '▼' : '')) + Math.abs(e['순위 변화값']) : e['순위 변화값'] || '-'}
                    `;
               } else {
-                   // 단일 모드 툴팁 내용
+                   // 단일 모드 툴팁 내용 (원래 상태로 복원)
                    tooltipContent = `
                        ${e.실험체}<br>
-                       표본수: ${(e['표본수'] || 0).toLocaleString()}<br> <!-- 표본수 숫자 포맷 -->
-                       픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br> <!-- 단일 모드 픽률 계산 방식 복원 -->
+                       픽률: ${totalSample > 0 ? ((e['표본수'] || 0)/totalSample*100).toFixed(2) : (e['픽률'] || 0).toFixed(2)}%<br>
                        RP: ${(e['RP 획득'] || 0).toFixed(1)}<br>
-                       승률: ${((e['승률'] || 0)*100).toFixed(1)}%<br>
-                       TOP 3: ${((e['TOP 3'] || 0)*100).toFixed(1)}%<br>
-                       평균 순위: ${e['평균 순위'] !== null && e['평균 순위'] !== undefined ? e['평균 순위'].toFixed(2) + '위' : '-'}<br> <!-- 평균 순위 소수점 표시 -->
-                       점수: ${(e['점수'] || 0).toFixed(2)}<br> <!-- 점수 소수점 표시 -->
+                       승률: ${((e['승률'] || 0)*100).toFixed(1)}%
                    `;
               }
               const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`;
