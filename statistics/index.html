@@ -99,7 +99,8 @@ layout: none
     /* 드롭다운 그룹 레이아웃 (기존 유지 - 각 줄 내부 요소 정렬) */
     .dropdowns > div {
         display: flex;
-        justify-content: center;
+        /* justify-content: center; /* 중앙 정렬 대신 시작점 정렬 */
+        align-items: center; /* 세로 중앙 정렬 */
         gap: 10px;
         /* 모바일에서 세로로 쌓이도록 조정 */
         flex-wrap: wrap;
@@ -107,7 +108,7 @@ layout: none
 
     /* --- 수정: "데이터 1 :" 및 "데이터 2 :" 레이블 스타일 조정 --- */
     /* 기본적으로 숨김 (일반 모드) */
-     .dropdowns > div > span { /* 모든 레이블 span에 적용 */
+     .dropdowns .dropdown-label { /* 클래스 선택자 사용 */
          display: none; /* 기본 숨김 */
          /* --- 추가: 레이블 너비 및 정렬 --- */
          min-width: 80px; /* 레이블 최소 너비 (텍스트 길이에 따라 조정 필요) */
@@ -115,10 +116,18 @@ layout: none
          /* ----------------------------- */
      }
     /* 비교 모드일 때만 표시 */
-     body.is-compare-mode .dropdowns > div > span { /* 비교 모드일 때 모든 레이블 span 표시 */
-         display: inline; /* 또는 inline-block 등 원하는 표시 방식 */
+     body.is-compare-mode .dropdowns .dropdown-label { /* 비교 모드일 때 모든 레이블 span 표시 */
+         display: inline-block; /* inline-block으로 설정하여 너비 적용 */
      }
     /* --------------------------------------------- */
+
+    /* --- 추가: 드롭다운 세트 컨테이너 스타일 --- */
+    .dropdowns .dropdown-set {
+        display: flex; /* 내부 드롭다운들을 Flexbox로 배치 */
+        gap: 10px; /* 드롭다운들 사이에 간격 추가 */
+        align-items: center; /* 드롭다운들 세로 중앙 정렬 */
+    }
+    /* --------------------------------------- */
 
 
     /* 비교 모드 테이블의 셀 스타일 */
@@ -206,9 +215,9 @@ layout: none
     td[data-col="티어"][data-tier="S"] { background-color: rgba(255,191,127, 1); }
     td[data-col="티어"][data-tier="A"] { background-color: rgba(255,223,127, 1); }
     td[data-col="티어"][data-tier="B"] { background-color: rgba(255,255,127, 1); }
-    td[data-col="티어"][data-col="C"] { background-color: rgba(191,255,127, 1); }
-    td[data-col="티어"][data-col="D"] { background-color: rgba(127,255,127, 1); }
-    td[data-col="티어"][data-col="F"] { background-color: rgba(127,255,255, 1); }
+    td[data-col="티어"][col="C"] { background-color: rgba(191,255,127, 1); }
+    td[data-col="티어"][col="D"] { background-color: rgba(127,255,127, 1); }
+    td[data-col="티어"][col="F"] { background-color: rgba(127,255,255, 1); }
     */
 
 
@@ -224,10 +233,12 @@ layout: none
     <div class="dropdowns">
       <!-- 데이터 1 선택 -->
       <div>
-          <span>데이터 1 :</span>
-          <select id="version-select"></select>
-          <select id="tier-select"></select>
-          <select id="period-select"></select>
+          <span class="dropdown-label">데이터 1 :</span> <!-- 레이블에 클래스 추가 -->
+          <div class="dropdown-set"> <!-- 드롭다운들을 감싸는 div 추가 -->
+              <select id="version-select"></select>
+              <select id="tier-select"></select>
+              <select id="period-select"></select>
+          </div>
           <label>
             <input type="checkbox" id="gradient-checkbox"> 색상 강조
           </label>
@@ -235,10 +246,12 @@ layout: none
 
       <!-- 비교 모드 데이터 2 선택 (기본 숨김) -->
       <div id="comparison-controls">
-          <span>데이터 2 :</span>
-          <select id="version-select-compare"></select>
-          <select id="tier-select-compare"></select>
-          <select id="period-select-compare"></select>
+          <span class="dropdown-label">데이터 2 :</span> <!-- 레이블에 클래스 추가 -->
+          <div class="dropdown-set"> <!-- 드롭다운들을 감싸는 div 추가 -->
+              <select id="version-select-compare"></select>
+              <select id="tier-select-compare"></select>
+              <select id="period-select-compare"></select>
+          </div>
       </div>
     </div>
 
