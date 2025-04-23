@@ -577,7 +577,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 
         if (valuesOnly.length === 0) {
              rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-             continue; // Move to the next column
+             return; // Changed from continue to return
         }
 
         const min = Math.min(...valuesOnly);
