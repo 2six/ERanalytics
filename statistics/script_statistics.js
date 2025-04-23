@@ -149,8 +149,21 @@ document.addEventListener('DOMContentLoaded', function() {
         tierSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         periodSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         gradientCheckbox.addEventListener('change', () => {
-            updateURL();
-            if (!isCompareMode && lastData && lastData.length > 0) renderTable(lastData);
+            updateURL(); // URL에 상태 저장
+            if (lastData && lastData.length > 0) {
+                // 현재 모드에 맞는 렌더링 함수 호출 (색상만 다시 적용)
+                if (isCompareMode) {
+                     // renderComparisonTable 함수 호출 시 체크박스 상태 전달
+                     renderComparisonTable(lastData); // renderComparisonTable 내부에서 체크박스 상태 확인
+                } else {
+                     // renderTable 함수 호출 시 체크박스 상태 전달
+                     renderTable(lastData); // renderTable 내부에서 체크박스 상태 확인
+                }
+            } else if (!gradientCheckbox.checked) {
+                 // 색상 강조 해제했는데 데이터가 없으면 (예: 로딩 실패 메시지 등)
+                 // 테이블이 있다면 배경색 초기화 (혹시 모르니 안전 장치)
+                 dataContainer.querySelectorAll('td').forEach(td => td.style.backgroundColor = '');
+            }
         });
 
         if (isCompareMode) {
@@ -523,58 +536,56 @@ document.addEventListener('DOMContentLoaded', function() {
        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderComparisonTable); // data-nosort 없는 th에만 부착
 
        // 색상 강조가 체크된 경우에만 색상 적용 함수 호출 (요청 사항 반영)
-       if (gradientCheckbox.checked) {
-           // applyGradientColorsComparison 함수는 common.js에 정의되어 있으며 gradientEnabled 인자를 받음
-           // data 대신 lastData 사용 (현재 정렬된 데이터)
-           applyGradientColorsComparison(dataContainer.querySelector('table'), lastData, currentSortMode, currentSortColumn, true);
-       } else {
-           // 색상 강조 해제 시, 테이블의 모든 배경색 초기화
-            dataContainer.querySelectorAll('td').forEach(td => td.style.backgroundColor = '');
-       }
-   }
-
+       // applyGradientColorsComparison 함수는 common.js에 정의되어 있으며 gradientEnabled 인자를 받음
+       // data 대신 lastData 사용 (현재 정렬된 데이터)
+       // renderComparisonTable 함수의 data 인자는 이미 정렬된 데이터이므로 lastData 대신 data를 전달합니다.
+       applyGradientColorsComparison(dataContainer.querySelector('table'), data, currentSortMode, currentSortColumn, gradientCheckbox.checked);
+    }
 
     // 8) 테이블 렌더링 (기존 로직 - 단일 데이터용)
     function renderTable(data) {
-         if (isCompareMode) return;
+        if (isCompareMode) return; // 비교 모드일 때는 이 함수 실행 안 함
 
-        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+       const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
-        let html = '<table><thead><tr>';
-        cols.forEach(c => {
-             // 단일 모드에서는 실험체 정렬 제외, 티어 정렬 포함
-            const sortable = c !== '실험체';
-            html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`;
-        });
-        html += '</tr></thead><tbody>';
+       let html = '<table><thead><tr>';
+       cols.forEach(c => {
+            // 단일 모드에서는 실험체 정렬 제외, 나머지 포함 (원본 유지)
+           const sortable = c !== '실험체';
+           html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`;
+       });
+       html += '</tr></thead><tbody>';
 
-        data.forEach(row => {
-            html += '<tr>';
-            cols.forEach(col => {
-                let val = row[col];
-                 if (val === undefined || val === null) {
-                     val = '-';
-                 } else if (col === '승률' || col === 'TOP 3') {
-                     val = typeof val === 'number' ? (val * 100).toFixed(2) + '%' : '-';
-                 } else if (col === '픽률') {
-                     val = typeof val === 'number' ? val.toFixed(2) + '%' : '-';
-                 } else if (col === '점수' || col === 'RP 획득' || col === '평균 순위') {
-                     val = typeof val === 'number' ? parseFloat(val).toFixed(2) : '-';
-                 } else { // 실험체, 티어 등
-                     val = val;
-                 }
+       data.forEach(row => {
+           html += '<tr>';
+           cols.forEach(col => {
+               let val = row[col];
+                // 원본 코드와 동일하게 undefined/null 체크
+                if (val === undefined || val === null) {
+                    val = '-';
+                } else if (col === '승률' || col === 'TOP 3' || col === '픽률') {
+                    val = typeof val === 'number' ? (val * 100).toFixed(2) + '%' : '-';
+                } else if (col === '점수' || col === 'RP 획득' || col === '평균 순위') {
+                    val = typeof val === 'number' ? parseFloat(val).toFixed(2) : '-';
+                } else { // 실험체, 티어 등 (문자열)
+                    val = val;
+                }
 
-                html += `<td data-col="${col}">${val}</td>`;
-            });
-            html += '</tr>';
-        });
-        html += '</tbody></table>';
+               html += `<td data-col="${col}">${val}</td>`;
+           });
+           html += '</tr>';
+       });
+       html += '</tbody></table>';
 
-        dataContainer.innerHTML = html;
+       dataContainer.innerHTML = html;
 
-        attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable); // data-nosort 없는 th에만 부착
-        if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
-    }
+       attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable); // data-nosort 없는 th에만 부착
+
+       // 색상 강조가 체크된 경우에만 색상 적용 함수 호출 (원본 유지)
+       // applyGradientColorsSingle 함수에 체크박스 상태를 인자로 전달하도록 수정했습니다.
+       // 이렇게 하면 applyGradientColorsSingle 함수 내부에서 색상 적용/해제 로직을 처리합니다.
+       applyGradientColorsSingle(dataContainer.querySelector('table'), gradientCheckbox.checked);
+   }
 
     // 9) 단일 모드용 정렬 이벤트 리스너 부착
     function attachSingleSortEventListeners(ths, renderFunc) {
