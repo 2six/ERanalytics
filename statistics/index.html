@@ -97,10 +97,42 @@ layout: none
     /* 비교 모드 테이블의 셀 스타일 */
      #data-container td {
          font-size: 0.9em; /* 글자 크기 약간 줄임 */
-         text-align: center; /* 숫자 셀 중앙 정렬 */
+         /* text-align: center; /* 숫자 셀 중앙 정렬 - 이제 flexbox로 대체 */
+         padding: 4px 6px; /* 패딩 유지 */
      }
      #data-container td:first-child {
          text-align: left; /* 실험체 이름은 좌측 정렬 유지 */
+     }
+
+     /* 비교 모드 숫자 셀 (실험체, 티어 제외)에 Flexbox 적용 */
+     #data-container table td:not(:first-child):not([data-col="티어"]) {
+         display: flex;
+         justify-content: space-between; /* 내부 요소를 양 끝으로 분산 */
+         align-items: center; /* 세로 중앙 정렬 */
+         /* 부모로부터 상속받거나 기본 적용되는 text-align: center; 재정의 */
+         text-align: initial; /* 또는 left */
+     }
+
+     /* Ver1 → Ver2 값 스타일 (기본 좌측 정렬) */
+     #data-container table td .ver-values {
+         flex-grow: 1; /* 남은 공간 차지 */
+         flex-shrink: 1; /* 공간 부족 시 줄어들도록 허용 */
+         text-align: left; /* 명시적으로 좌측 정렬 */
+         padding-right: 5px; /* 델타 값과의 간격 */
+         overflow: hidden; /* 내용이 넘칠 경우 숨김 */
+         text-overflow: ellipsis; /* 넘치는 텍스트를 ...으로 표시 */
+         white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+         min-width: 0; /* flex-grow/shrink가 제대로 작동하도록 설정 */
+     }
+
+     /* 변화량 값 스타일 (우측 정렬) */
+     #data-container table td .delta-value {
+         flex-shrink: 0; /* 공간이 부족해도 줄어들지 않음 */
+         flex-grow: 0; /* 공간을 추가로 차지하지 않음 */
+         text-align: right; /* 명시적으로 우측 정렬 */
+         font-weight: bold; /* 변화량 강조 */
+         color: #333; /* 변화량 색상 */
+         white-space: nowrap; /* 텍스트 줄바꿈 방지 */
      }
 
 
