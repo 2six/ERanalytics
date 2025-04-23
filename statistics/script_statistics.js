@@ -474,9 +474,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                       let deltaText = '';
                       if (typeof delta === 'number') {
-                           const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                            if (col === '평균 순위') deltaFormatted = Math.abs(delta).toFixed(2);
-                            else if (col === '표본수') deltaFormatted = Math.round(Math.abs(delta)).toLocaleString();
+                        let deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
+                        if (col === '평균 순위') deltaFormatted = Math.abs(delta).toFixed(2);
+                        else if (col === '표본수') deltaFormatted = Math.round(Math.abs(delta)).toLocaleString();
 
 
                            deltaText = `${value2Text} ${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
