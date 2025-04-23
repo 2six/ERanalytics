@@ -1,307 +1,319 @@
+// script_tier_table.js
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
-    const tierSelect = document.getElementById('tier-select');
-    const periodSelect = document.getElementById('period-select');
+    const tierSelect    = document.getElementById('tier-select');
+    const periodSelect  = document.getElementById('period-select');
+    const table         = document.getElementById('tier-table');
+    const container     = document.getElementById('tier-table-container');
+
+    // URL 파라미터 헬퍼
+    const params = new URLSearchParams(window.location.search);
+    function getParam(key, def) {
+      return params.has(key) ? params.get(key) : def;
+    }
+    function setParam(key, val) {
+      params.set(key, val);
+      history.replaceState(null, '', '?' + params.toString());
+    }
 
     let tierConfigGlobal = null;
 
+    // 1) 설정 로드 & 드롭다운 초기화
     Promise.all([
         fetch('/config.ini').then(r => r.text()),
         fetch('/versions.json').then(r => r.json())
     ]).then(([iniString, versionList]) => {
         const config = parseINI(iniString);
         tierConfigGlobal = config.tiers;
+
         initDropdowns(versionList);
-        triggerLoad(tierConfigGlobal);
-    });
+        loadAndRender();
+    }).catch(err => console.error('설정 로드 실패:', err));
 
-    function parseINI(iniString) {
-        const config = {};
-        let currentSection = null;
-        const lines = iniString.split('\n');
-        for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine || trimmedLine.startsWith(';') || trimmedLine.startsWith('#')) continue;
-            const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
-            if (sectionMatch) {
-                currentSection = sectionMatch[1];
-                config[currentSection] = {};
-                continue;
-            }
-            const keyValueMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
-            if (keyValueMatch) {
-                const key = keyValueMatch[1].trim();
-                const value = keyValueMatch[2].trim();
-                if (currentSection) config[currentSection][key] = value;
-            }
-        }
-        return config;
-    }
-
+    // 2) 드롭다운 초기화
     function initDropdowns(versionList) {
+        // 버전
+        versionSelect.innerHTML = '';
         versionList.sort().reverse().forEach(v => {
-            versionSelect.innerHTML += `<option value="${v}">${v}</option>`;
+            versionSelect.insertAdjacentHTML(
+              'beforeend',
+              `<option value="${v}">${v}</option>`
+            );
         });
-
+        // 티어
         const tierMap = {
-            "platinum_plus": "플래티넘+",
-            "diamond_plus": "다이아몬드+",
-            "meteorite_plus": "메테오라이트+",
-            "mithril_plus": "미스릴+",
-            "in1000": "in1000"
+            platinum_plus: "플래티넘+",
+            diamond_plus:  "다이아몬드+",
+            meteorite_plus:"메테오라이트+",
+            mithril_plus:  "미스릴+",
+            in1000:        "in1000"
         };
-
-        Object.entries(tierMap).forEach(([key, val]) => {
-            tierSelect.innerHTML += `<option value="${key}">${val}</option>`;
+        tierSelect.innerHTML = '';
+        Object.entries(tierMap).forEach(([key,name]) => {
+            tierSelect.insertAdjacentHTML(
+              'beforeend',
+              `<option value="${key}">${name}</option>`
+            );
         });
-
+        // 구간
         periodSelect.innerHTML = `
-            <option value="latest">전체</option>
-            <option value="3day">최근 3일</option>
-            <option value="7day">최근 7일</option>
+          <option value="latest">전체</option>
+          <option value="3day">최근 3일</option>
+          <option value="7day">최근 7일</option>
         `;
 
-        versionSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));
-        tierSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));
-        periodSelect.addEventListener('change', () => triggerLoad(tierConfigGlobal));
+        // URL → 드롭다운 값 복원
+        versionSelect.value = getParam('version', versionList[0]);
+        tierSelect.value    = getParam('tier',    'diamond_plus');
+        periodSelect.value  = getParam('period',  'latest');
+
+        // 변경 시 URL 갱신 + 재렌더
+        versionSelect.addEventListener('change', () => {
+            setParam('version', versionSelect.value);
+            loadAndRender();
+        });
+        tierSelect.addEventListener('change', () => {
+            setParam('tier', tierSelect.value);
+            loadAndRender();
+        });
+        periodSelect.addEventListener('change', () => {
+            setParam('period', periodSelect.value);
+            loadAndRender();
+        });
     }
 
-    function triggerLoad(tierConfig) {
+    // 3) 데이터 로드 & 렌더
+    function loadAndRender() {
         const version = versionSelect.value;
-        const tier = tierSelect.value;
-        const period = periodSelect.value;
+        const tier    = tierSelect.value;
+        const period  = periodSelect.value;
 
         fetch(`/data/${version}/${tier}.json`)
             .then(res => res.json())
             .then(json => {
-                const history = json["통계"];
-                const timestamps = Object.keys(history).sort();
-                const latestKey = timestamps[timestamps.length - 1];
-                const latestData = history[latestKey];
-
-                let dataToUse = latestData;
-
-                if (period !== 'latest') {
-                    const days = period === '3day' ? 3 : 7;
-                    const latestDate = new Date(latestKey);
-                    const pastDate = new Date(latestDate);
-                    pastDate.setDate(pastDate.getDate() - days);
-
-                    const pastKey = timestamps.reverse().find(ts => new Date(ts) <= pastDate);
-
-                    if (pastKey && history[pastKey]) {
-                        const currMap = Object.fromEntries(latestData.map(d => [d.실험체, d]));
-                        const prevMap = Object.fromEntries(history[pastKey].map(d => [d.실험체, d]));
-
-                        const delta = [];
-                        for (const name in currMap) {
-                            const curr = currMap[name];
-                            const prev = prevMap[name];
-                            if (!prev) continue;
-                            const diffSample = curr["표본수"] - prev["표본수"];
-                            if (diffSample <= 0) continue;
-
-                            delta.push({
-                                "실험체": name,
-                                "표본수": diffSample,
-                                "RP 획득": (curr["RP 획득"] * curr["표본수"] - prev["RP 획득"] * prev["표본수"]) / diffSample,
-                                "승률": (curr["승률"] * curr["표본수"] - prev["승률"] * prev["표본수"]) / diffSample,
-                                "TOP 3": (curr["TOP 3"] * curr["표본수"] - prev["TOP 3"] * prev["표본수"]) / diffSample,
-                                "평균 순위": (curr["평균 순위"] * curr["표본수"] - prev["평균 순위"] * prev["표본수"]) / diffSample
-                            });
-                        }
-
-                        dataToUse = delta;
-                    }
-                }
-
-                const averageScore = calculateAverageScore(dataToUse);
-                const stddev = calculateStandardDeviation(dataToUse, averageScore);
-                const scoredData = calculateTiers(dataToUse, averageScore, stddev, tierConfig);
-                displayTierTable(scoredData);
+                const history = json['통계'];
+                // --- 수정: 로컬 extractPeriodEntries 함수 호출 ---
+                const entries = extractPeriodEntries(history, period);
+                // ---------------------------------------------
+                const avgScore = calculateAverageScore(entries);
+                const stddev   = calculateStandardDeviation(entries, avgScore);
+                const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                displayTierTable(scored);
                 setupTablePopup();
+            })
+            .catch(err => {
+                console.error('데이터 로드 실패:', err);
+                table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>';
             });
     }
 
-    function getRPScore(rp) {
-        return rp >= 0 ? Math.log(rp + 1) * 3 : -Math.log(-rp + 1) * 2;
-    }
+    // --- 추가: 티어 테이블 페이지 전용 extractPeriodEntries 함수 ---
+    // 4) 기간별 데이터 추출 (티어 테이블 페이지 전용 - 변화량 계산 포함)
+    function extractPeriodEntries(history, period) {
+        const keys = Object.keys(history).sort();
+        if (keys.length === 0) return []; // Add check for empty history
 
-    function calculateAverageScore(data) {
-        const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
-        let weightedSumRP = 0;
-        let weightedSumWinRate = 0;
-        let weightedSumTop3 = 0;
-        data.forEach(item => {
-            const weight = item["표본수"] / totalSampleCount;
-            weightedSumRP += item["RP 획득"] * weight;
-            weightedSumWinRate += item["승률"] * weight;
-            weightedSumTop3 += item["TOP 3"] * weight;
-        });
-        return getRPScore(weightedSumRP) + weightedSumWinRate * 9 + weightedSumTop3 * 3;
-    }
+        const latestKey = keys[keys.length - 1];
+        const latestData = history[latestKey];
+        if (period === 'latest') return latestData;
 
-    function calculateStandardDeviation(data, avg) {
-        const totalSample = data.reduce((sum, item) => sum + item["표본수"], 0);
-        return Math.sqrt(data.reduce((sum, item) => {
-            const score = getRPScore(item["RP 획득"]) + item["승률"] * 9 + item["TOP 3"] * 3;
-            return sum + Math.pow(score - avg, 2) * (item["표본수"] / totalSample);
-        }, 0));
-    }
+        const days = period === '3day' ? 3 : 7;
+        // Use robust date parsing similar to common.js
+        let latestDate = new Date(latestKey.replace('_', 'T'));
+        if (isNaN(latestDate.getTime())) {
+             const parts = latestKey.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
+             if (parts) {
+                  latestDate = new Date(Date.UTC(parts[1], parts[2]-1, parts[3], parts[4], parts[5]));
+             } else {
+                  console.error("Unsupported date format in tier_table:", latestKey);
+                  return latestData; // Fallback to latest if date format is bad
+             }
+        }
+        latestDate.setUTCHours(0, 0, 0, 0); // Normalize to start of day UTC
 
-    function calculateTiers(data, averageScore, stddev, config) {
-        const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const averagePickRate = totalSampleCount > 0
-            ? (data.reduce((sum, item) => sum + item["표본수"] / totalSampleCount, 0) / data.length)
-            : 0;
-        const k = 1.5;
+        const cutoff = new Date(latestDate.getTime());
+        cutoff.setUTCDate(cutoff.getUTCDate() - days);
 
-        return data.map(item => {
-            const pickRate = (item["표본수"] / totalSampleCount);
-            const r = pickRate / averagePickRate;
+        // Find the latest key *before or on* the cutoff date
+        const pastKey = keys.slice().reverse().find(k => {
+            let kDate;
+            const kParts = k.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
+             if (kParts) {
+                  kDate = new Date(Date.UTC(kParts[1], kParts[2]-1, kParts[3], kParts[4], kParts[5]));
+             } else {
+                  kDate = new Date(k.replace('_', 'T'));
+             }
+            if (isNaN(kDate.getTime())) return false;
 
-            const 원점반영 = r <= 1 / 3
-                ? (0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)))
-                : (0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1 / 3))) / (1 - Math.exp(-k)));
-            const 평균반영 = 1 - 원점반영;
-
-            let 픽률보정계수 = 0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k));
-            if (r > 5) {
-                픽률보정계수 += 0.05 * (1 - Math.min((r - 5) / 5, 1));
-            }
-
-            const rpScore = getRPScore(item["RP 획득"]);
-            let 보정점수;
-
-            if (item["표본수"] < totalSampleCount * averagePickRate) {
-                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) *
-                    (원점반영 + 평균반영 * Math.min(1, pickRate / averagePickRate)) +
-                    averageScore * 평균반영 * (1 - Math.min(1, pickRate / averagePickRate));
-                보정점수 *= 픽률보정계수;
-            } else {
-                보정점수 = (rpScore + (item["승률"] * 9) + (item["TOP 3"] * 3)) * 픽률보정계수;
-            }
-
-            const tier = calculateTier(보정점수, averageScore, stddev, config);
-            return { ...item, "티어": tier, "점수": 보정점수 };
-        });
-    }
-
-    function calculateTier(score, avg, std, config) {
-        const diff = score - avg;
-        if (diff > std * parseFloat(config["S+"])) return "S+";
-        if (diff > std * parseFloat(config["S"])) return "S";
-        if (diff > std * parseFloat(config["A"])) return "A";
-        if (diff > std * parseFloat(config["B"])) return "B";
-        if (diff > std * parseFloat(config["C"])) return "C";
-        if (diff > std * parseFloat(config["D"])) return "D";
-        return "F";
-    }
-
-    function displayTierTable(data) {
-        const tiers = ["S+", "S", "A", "B", "C", "D", "F"];
-        const tierGroups = {};
-        tiers.forEach(t => tierGroups[t] = []);
-
-        data.forEach(entry => {
-            const tier = entry.티어;
-            tierGroups[tier].push(entry);
+            kDate.setUTCHours(0,0,0,0); // Normalize to start of day UTC
+            return kDate <= cutoff;
         });
 
-        const table = document.getElementById('tier-table');
-        let html = '';
+        if (!pastKey) {
+            console.warn(`No data found before cutoff date ${cutoff.toISOString()} for period '${period}' in tier_table. Returning latest data.`);
+            return latestData; // Return latest data if no past data found
+        }
 
-        const totalSampleCount = data.reduce((sum, item) => sum + item["표본수"], 0);
-        const imagesPerRow = 15;
+        const prevData = history[pastKey];
+        const currMap = Object.fromEntries(latestData.map(d => [d.실험체, d]));
+        const prevMap = Object.fromEntries(prevData.map(d => [d.실험체, d]));
+        const delta = [];
 
-        tiers.forEach(tier => {
-            html += `<tr class="tier-row tier-${tier}"><th>${tier}</th><td><div>`;
+        // Iterate through characters present in the latest data
+        for (const name in currMap) {
+            const c = currMap[name];
+            const p = prevMap[name];
 
-            const entries = tierGroups[tier].sort((a, b) => b.점수 - a.점수);
+            // Only calculate delta for characters present in both periods
+            if (!p) continue;
 
-            if (entries.length === 0) {
-                html += `
-                    <span class="tooltip-container">
-                        <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity: 0;">
-                    </span>
-                `;
-            } else {
-                entries.forEach((entry, i) => {
-                    const imgName = convertExperimentNameToImageName(entry.실험체).replace(/ /g, '_');
-                    const tooltipHTML = `
-                        <div class="tooltip-box">
-                            ${entry.실험체}<br>
-                            픽률: ${(entry["표본수"] / totalSampleCount * 100).toFixed(2)}%<br>
-                            RP: ${entry["RP 획득"].toFixed(1)}<br>
-                            승률: ${(entry["승률"] * 100).toFixed(1)}%
-                        </div>
-                    `;
-                    html += `
-                        <span class="tooltip-container">
-                            <img src="/image/${imgName}.png" alt="${entry.실험체}">
-                            ${tooltipHTML}
-                        </span>
-                    `;
-                    if ((i + 1) % imagesPerRow === 0 && i !== entries.length - 1) html += '</div><div>';
-                });
-            }
+            const diff = (c['표본수'] || 0) - (p['표본수'] || 0); // Handle potential null/undefined sample size
+            // Only include entries with increased sample size in the delta calculation
+            if (diff <= 0) continue;
 
-            html += '</div></td></tr>';
-        });
+            // Calculate weighted average of stats for the *new* sample (diff)
+            // (Total stat sum in current data - Total stat sum in previous data) / difference in sample size
+            const rpDiff = ((c['RP 획득'] || 0) * (c['표본수'] || 0)) - ((p['RP 획득'] || 0) * (p['표본수'] || 0));
+            const winDiff = ((c['승률'] || 0) * (c['표본수'] || 0)) - ((p['승률'] || 0) * (p['표본수'] || 0));
+            const top3Diff = ((c['TOP 3'] || 0) * (c['표본수'] || 0)) - ((p['TOP 3'] || 0) * (p['표본수'] || 0));
+            const rankDiff = ((c['평균 순위'] || 0) * (c['표본수'] || 0)) - ((p['평균 순위'] || 0) * (p['표본수'] || 0));
 
-        table.innerHTML = html;
-    }
 
-    function setupTablePopup() {
-        const popup = document.getElementById('image-popup');
-        const popupImage = document.getElementById('popup-image');
-        const closeButton = document.querySelector('.image-popup-close');
-        const tableContainer = document.getElementById('tier-table-container');
-        const popupTableButton = document.getElementById('popup-table-button');
-        const tierTable = tableContainer.querySelector('.tier-table');
-
-        if (popupTableButton && tierTable && popup && popupImage && closeButton) {
-            popupTableButton.addEventListener('click', function () {
-                html2canvas(tierTable, {
-                    width: tierTable.offsetWidth,
-                    scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: tierTable.offsetWidth,
-                    windowHeight: tierTable.offsetHeight
-                }).then(canvas => {
-                    const version = document.getElementById('version-select').value;
-                    const tier = document.getElementById('tier-select').value;
-                    const period = document.getElementById('period-select').value;
-                    const now = new Date();
-                    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-                    const filename = `${version}_${tier}_${period}_${timestamp}.png`;
-
-                    popup.style.display = 'block';
-                    popupImage.src = canvas.toDataURL();
-                    popupImage.alt = filename;
-                });
-            });
-
-            closeButton.addEventListener('click', function () {
-                popup.style.display = 'none';
-            });
-
-            window.addEventListener('click', function (event) {
-                if (event.target === popup) {
-                    popup.style.display = 'none';
-                }
+            delta.push({
+                '실험체': name,
+                '표본수': diff, // Sample size is the *difference*
+                'RP 획득': rpDiff / diff,
+                '승률':    winDiff / diff,
+                'TOP 3':   top3Diff / diff,
+                '평균 순위': rankDiff / diff // Average rank for the new sample
+                // Note: '점수' and '티어' will be calculated later by calculateTiers based on these delta stats
             });
         }
+        return delta;
+    }
+    // -----------------------------------------------------------------
+
+
+    // 5) 티어별 테이블 렌더링 (+우측 상단 버전·티어 표시)
+    function displayTierTable(data) {
+        const tierLabels = {
+          platinum_plus:  "플래티넘+",
+          diamond_plus:   "다이아몬드+",
+          meteorite_plus: "메테오라이트+",
+          mithril_plus:  "미스릴+",
+          in1000:         "in1000"
+        };
+      
+        const versionLabel = versionSelect.value;
+        const tierLabel    = tierLabels[tierSelect.value];
+      
+        const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
+        const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
+        // --- 수정: data[item.티어] 대신 groups[item.티어] 사용 ---
+        data.forEach(item => {
+            if (groups[item.티어]) { // Check if tier exists in groups
+                 groups[item.티어].push(item);
+            } else {
+                 console.warn(`Unknown tier '${item.티어}' for character '${item.실험체}'. Skipping.`);
+            }
+        });
+        // ----------------------------------------------------
+      
+        const totalSample = data.reduce((sum, i) => sum + (i['표본수'] || 0), 0); // Handle potential null/undefined sample size
+        const perRow      = 15;
+        let html = '';
+      
+        tiers.forEach(tier => {
+          // 시작 태그: <tr><th>...
+          html += `<tr class="tier-row tier-${tier}"><th>${tier}</th>`;
+      
+          // <td> 시작(첫 행이면 position:relative)
+          if (tier === 'S+') {
+            html += `<td style="position: relative;"><div class="tier-info" style="
+                         position: absolute;
+                         top: 4px;
+                         right: 4px;
+                         padding: 2px 6px;
+                         background: rgba(255,255,255,0.8);
+                         border-radius: 4px;
+                         font-size: 0.85em;
+                         font-weight: bold;
+                      ">${versionLabel} | ${tierLabel}</div><div>`;
+          } else {
+            html += `<td><div>`;
+          }
+      
+          // 슬롯들 렌더링
+          // --- 수정: sortData 함수 사용 ---
+          // 기존: entries.sort((a, b) => b.점수 - a.점수);
+          // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
+          const entries = sortData(groups[tier], '점수', false, 'value'); // mode='value'는 단일 모드 정렬
+          // -----------------------------
+
+          if (entries.length === 0) {
+            html += `<span class="tooltip-container">
+                       <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0">
+                     </span>`;
+          } else {
+            entries.forEach((e, i) => {
+              const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
+              const tooltip = `<div class="tooltip-box">
+                                 ${e.실험체}<br>
+                                 픽률: ${(e['표본수']/totalSample*100).toFixed(2)}%<br>
+                                 RP: ${e['RP 획득'].toFixed(1)}<br>
+                                 승률: ${(e['승률']*100).toFixed(1)}%
+                               </div>`;
+              html += `<span class="tooltip-container">
+                         <img src="/image/${imgName}.png" alt="${e.실험체}">
+                         ${tooltip}
+                       </span>`;
+              if ((i+1)%perRow===0 && i!==entries.length-1) html += '</div><div>';
+            });
+          }
+      
+          // 닫기 태그
+          html += `</div></td></tr>`;
+        });
+      
+        table.innerHTML = html;
+    }      
+
+    // 6) 팝업 초기화
+    function setupTablePopup() {
+        const popup = document.getElementById('image-popup');
+        const popupImg = document.getElementById('popup-image');
+        document.getElementById('popup-table-button')
+          .onclick = () => {
+            // --- 수정: html2canvas 대상 클래스 변경 ---
+            // 기존: document.querySelector('.tier-table')
+            // 변경: document.getElementById('tier-table-container') 또는 특정 영역
+            // tier-table-container는 section 태그이므로, table 자체를 캡처하는 것이 더 정확할 수 있습니다.
+            // 여기서는 id로 직접 선택하도록 유지합니다.
+            html2canvas(document.getElementById('tier-table')) // Use getElementById for clarity
+              .then(canvas => {
+                popup.style.display = 'block';
+                popupImg.src = canvas.toDataURL();
+              });
+          };
+        document.querySelector('.image-popup-close')
+          .onclick = () => { popup.style.display = 'none'; };
     }
 
+    // 7) 페이지 특화 헬퍼: 이름→이미지 변환
     function convertExperimentNameToImageName(name) {
-        if (name === "글러브 리 다이린") return "리다이린-글러브";
-        if (name === "쌍절곤 리 다이린") return "리다이린-쌍절곤";
-        if (name.startsWith("리 다이린 ")) return `리다이린-${name.substring("리 다이린 ".length).replace(/ /g, "-")}`;
-        if (name.startsWith("돌격 소총 ")) return `${name.substring("돌격 소총 ".length).replace(/ /g, "-")}-돌격소총`;
+        if (name==="글러브 리 다이린") return "리다이린-글러브";
+        if (name==="쌍절곤 리 다이린") return "리다이린-쌍절곤";
+        if (name.startsWith("리 다이린 ")) {
+            const parts = name.slice(7).split(" ");
+            return `리다이린-${parts.join("-")}`;
+        }
+        if (name.startsWith("돌격 소총 ")) {
+            const parts = name.slice(6).split(" ");
+            return `${parts.join("-")}-돌격소총`;
+        }
         if (name.includes(" ")) {
             const parts = name.split(" ");
-            if (parts.length >= 2) return `${parts[1]}-${parts[0]}`;
+            if (parts.length>=2) return `${parts[1]}-${parts[0]}`;
         }
         return name;
     }
