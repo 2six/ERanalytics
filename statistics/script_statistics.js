@@ -396,35 +396,38 @@ document.addEventListener('DOMContentLoaded', function() {
                      const delta = row[`${col} 변화량`]; // Numeric delta value
 
                      // Display Ver1 value → Ver2 value Delta format
-                     let valueText = (typeof val1 === 'number') ? val1.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
-                     if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val1 === 'number') valueText += '%';
+                     let valueText1 = (typeof val1 === 'number') ? val1.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
+                     if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val1 === 'number') valueText1 += '%';
 
-                      let deltaText = '';
-                      if (typeof val2 === 'number') {
-                           let val2Text = val2.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                            if (['픽률', '승률', 'TOP 3'].includes(col)) val2Text += '%';
+                      let valueText2 = (typeof val2 === 'number') ? val2.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
+                      if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val2 === 'number') valueText2 += '%';
 
-                          if (typeof delta === 'number') {
-                               const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                                deltaText = `${val2Text} ${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
-                          } else {
-                               deltaText = `${val2Text}`; // Just display Ver2 value if delta is not numeric
-                          }
-                          displayVal = `${valueText} → ${deltaText}`;
 
-                      } else if (val1 !== null && val1 !== undefined && (val2 === null || val2 === undefined)) { // Only Ver1 data exists (removed)
-                           displayVal = `${valueText} → 삭제`;
-                      } else if ((val1 === null || val1 === undefined) && (val2 !== null && val2 !== undefined)) { // Only Ver2 data exists (new)
-                           let val2Text = val2.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                           if (['픽률', '승률', 'TOP 3'].includes(col)) val2Text += '%';
-                           displayVal = `신규 → ${val2Text}`;
+                      let verValuesHtml;
+                      let deltaHtml = '';
+
+                      if (typeof val1 === 'number' && typeof val2 === 'number') {
+                           verValuesHtml = `${valueText1} → ${valueText2}`;
+                           if (typeof delta === 'number') {
+                                const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
+                                deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
+                           }
+                      } else if (typeof val1 === 'number' && (val2 === null || val2 === undefined)) { // Only Ver1 data exists (removed)
+                           verValuesHtml = `${valueText1} → 삭제`;
+                      } else if ((val1 === null || val1 === undefined) && typeof val2 === 'number') { // Only Ver2 data exists (new)
+                           verValuesHtml = `신규 → ${valueText2}`;
+                      } else { // Neither has data
+                           verValuesHtml = '-';
                       }
-                       else if ((val1 === null || val1 === undefined) && (val2 === null || val2 === undefined)) { // Neither has data
-                           displayVal = '-';
-                       }
-                       else { // Should not be reached or other cases
-                           displayVal = `${valueText}`;
-                       }
+
+
+                    // Construct the final cell HTML with spans wrapped in a div
+                    let innerContentHtml = `<span class="ver-values">${verValuesHtml}</span>`;
+                    if (deltaHtml) { // Only add delta span if there's a numeric delta
+                         innerContentHtml += `<span class="delta-value">${deltaHtml}</span>`;
+                    }
+                    // Wrap the content in a div
+                    displayVal = `<div class="cell-content-wrapper">${innerContentHtml}</div>`;
 
 
                      // Store delta value for color grading (numeric delta or status string)
