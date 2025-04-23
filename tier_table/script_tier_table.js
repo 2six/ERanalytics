@@ -559,12 +559,12 @@ document.addEventListener('DOMContentLoaded', function () {
                              // --- 순위 아이콘 반전 ---
                              rankChangeText = `▼${absChange}`; // 좋아졌는데 아래 화살표 표시
                              // ------------------------
-                             rankChangeClass = 'rank-change-up'; // 좋음=up 클래스 유지 (색상 위함)
+                             rankChangeClass = 'rank-change-down'; // 좋음=up 클래스 유지 (색상 위함)
                         } else if (rankChangeValue > 0) { // 순위 숫자 증가 (나빠짐)
                              // --- 순위 아이콘 반전 ---
                              rankChangeText = `▲${absChange}`; // 나빠졌는데 위 화살표 표시
                              // ------------------------
-                             rankChangeClass = 'rank-change-down'; // 나쁨=down 클래스 유지 (색상 위함)
+                             rankChangeClass = 'rank-change-up'; // 나쁨=down 클래스 유지 (색상 위함)
                         } else { // 순위 변동 없음 (숫자 0)
                              rankChangeText = `-`;
                              rankChangeClass = 'rank-change-same';
