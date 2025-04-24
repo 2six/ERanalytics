@@ -641,7 +641,7 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     const val2 = row[`${col} (Ver2)`];
                     const delta = row[`${col} 변화량`]; // Numeric delta value
 
-                    // --- 수정: 승률과 TOP 3는 100을 곱하여 %로 표시 ---
+                    // Display Ver1 value → Ver2 value Delta format
                     let valueText1;
                     if (typeof val1 === 'number') {
                         if (col === '승률' || col === 'TOP 3') {
@@ -671,7 +671,6 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     } else {
                         valueText2 = '-';
                     }
-                    // ----------------------------------------------------
 
 
                     let verValuesHtml;
@@ -680,9 +679,14 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     if (typeof val1 === 'number' && typeof val2 === 'number') {
                         verValuesHtml = `${valueText1} → ${valueText2}`;
                         if (typeof delta === 'number') {
-                            // 델타 값은 raw difference를 toFixed(2)로 표시 (요청 변경 없음)
-                            const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
-                            deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
+                            // --- 수정: 승률과 TOP 3 변화량은 100을 곱하고 %는 붙이지 않음 ---
+                            let deltaValueForFormatting = delta;
+                            if (col === '승률' || col === 'TOP 3') {
+                                deltaValueForFormatting = delta * 100; // 100 곱함
+                            }
+                            const deltaFormatted = Math.abs(deltaValueForFormatting).toFixed(2); // 소수점 둘째 자리까지 표시
+                            deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`; // % 기호는 붙이지 않음
+                            // ----------------------------------------------------------
                         }
                     } else if (typeof val1 === 'number' && (val2 === null || val2 === undefined)) { // Only Ver1 data exists (removed)
                         verValuesHtml = `${valueText1} → 삭제`;
