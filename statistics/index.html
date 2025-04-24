@@ -239,26 +239,8 @@ layout: none
     /* JS에서 data-rankdelta에 숫자를 넣었을 때 CSS로 범위 색칠하는 것은 제한적입니다. */
     /* JS에서 data-rankdelta-category="great-up", "up", "down", "great-down" 등으로 카테고리를 추가하는 것이 더 현실적입니다. */
     /* 현재는 신규/삭제만 CSS로 처리하고, 숫자 변화량 색칠은 JS의 applyGradientColorsComparison에서 처리합니다. */
-
-
-    /* 티어 컬럼 (티어 변화) - 모든 CSS 배경색 규칙 제거 */
-    /*
-    td[data-col="티어"][data-tierchange="new"] { background-color: rgba(144, 238, 144, 0.5); }
-    td[data-col="티어"][data-tierchange="removed"] { background-color: rgba(255, 182, 193, 0.5); }
-    td[data-col="티어"][data-tierchange="same"] { background-color: rgba(240, 240, 240, 0.3); }
-    td[data-col="티어"][data-tierchange="up"] { background-color: rgba(255, 192, 203, 0.5); }
-    td[data-col="티어"][data-tierchange="down"] { background-color: rgba(173, 216, 230, 0.5); }
-    td[data-col="티어"][data-tier="S+"] { background-color: rgba(255,127,127, 1); }
-    td[data-col="티어"][data-tier="S"] { background-color: rgba(255,191,127, 1); }
-    td[data-col="티어"][data-tier="A"] { background-color: rgba(255,223,127, 1); }
-    td[data-col="티어"][data-tier="B"] { background-color: rgba(255,255,127, 1); }
-    td[data-col="티어"][col="C"] { background-color: rgba(191,255,127, 1); }
-    td[data-col="티어"][col="D"] { background-color: rgba(127,255,127, 1); }
-    td[data-col="티어"][col="F"] { background-color: rgba(127,255,255, 1); }
-    */
-
-
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
   <header>
@@ -300,6 +282,12 @@ layout: none
     <section>
       <div id="data-container"></div>
     </section>
+    
+    <div id="image-popup" class="image-popup">
+      <span class="image-popup-close">×</span>
+      <img class="image-popup-content" id="popup-image">
+    </div>
+    <button id="popup-table-button">표 이미지 팝업</button>
   </main>
 
   {% include footer.html %}
