@@ -179,15 +179,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 첫 로드
         reloadData();
 
-        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 (초기 로드 시) ---
-        setupTablePopup(); // 팝업 기능 설정 함수 호출
+        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 (초기 로드 시 - Success Path) ---
+        // setupTablePopup(); // 이 위치는 .then() 블록이 끝난 후 호출되므로, reloadData() 내부 호출로 충분합니다.
         // -----------------------------------------------------
 
     }).catch(err => {
         console.error('초기화 실패:', err);
         dataContainer.innerHTML = '초기 설정 로드에 실패했습니다.';
-        // --- 추가: 팝업 기능도 설정하여 에러 메시지 캡처 가능하도록 함 ---
-        setupTablePopup(); // 에러 메시지 캡처를 위해 에러 시에도 호출
+        // --- 수정: 에러 발생 시 팝업 기능 설정 함수 호출 제거 ---
+        // setupTablePopup(); // 에러 발생 시 테이블이 없으므로 팝업 설정 호출 제거
         // ------------------------------------------------------
     });
 
