@@ -101,14 +101,17 @@ layout: none
      }
 
     /* 드롭다운 세트 컨테이너 스타일 */
+    /* --- 수정: .dropdowns .dropdown-set 스타일 --- */
     .dropdowns .dropdown-set {
         display: flex; /* 내부 드롭다운들을 Flexbox로 배치 */
         gap: 10px; /* 드롭다운들 사이에 간격 추가 */
-        align-items: center; /* 드롭다운들 세로 중앙 정렬 */
+        align-items: center; /* 세로 중앙 정렬 */
         flex-wrap: wrap; /* 공간 부족 시 줄바꿈 허용 */
-        /* flex-grow: 1; */ /* 필요 시 드롭다운 세트가 남은 공간을 채우도록 설정 */
+        /* --- 추가: flex-shrink: 0 추가 --- */
+        flex-shrink: 0; /* 공간 부족해도 줄어들지 않도록 함 */
+        /* --------------------------------------- */
     }
-
+    
     /* --- 수정: 티어 테이블 페이지 스타일 (메인 표) --- */
     /* tier-table 클래스를 가진 테이블에 적용 */
     .tier-table {
