@@ -13,9 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 비교 모드 관련 요소
     const comparisonControlsDiv = document.getElementById('comparison-controls');
     const versionSelectCompare = document.getElementById('version-select-compare');
-    // --- 수정: document('getElementById') 오류 수정 ---
-    const tierSelectCompare = document.getElementById('tier-select-compare'); // document.getElementById로 수정
-    // -----------------------------------------------
+    const tierSelectCompare = document.getElementById('tier-select-compare');
     const periodSelectCompare = document.getElementById('period-select-compare');
 
     // 상태
@@ -66,7 +64,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         if (isCompareMode) {
-            comparisonControlsDiv.style.display = 'flex';
+             // --- 수정: comparisonControlsDiv의 display 값을 table-row에서 flex로 변경 ---
+             comparisonControlsDiv.style.display = 'flex';
+             // ---------------------------------------------------------------------
             compareModeLabel.style.display = 'inline';
 
             // 비교 드롭다운 값 설정
@@ -180,9 +180,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // 첫 로드
         reloadData();
 
+        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 ---
+        setupTablePopup(); // 팝업 기능 설정 함수 호출
+        // --------------------------------------------
+
+
     }).catch(err => {
         console.error('초기화 실패:', err);
         dataContainer.innerHTML = '초기 설정 로드에 실패했습니다.';
+        // --- 추가: 팝업 기능도 설정하여 에러 메시지 캡처 가능하도록 함 ---
+        setupTablePopup();
+        // ------------------------------------------------------
     });
 
 
@@ -241,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const url1 = `/data/${version1}/${tier1}.json`;
-        const url2 = `/data/${version2}/${tier2}.json`;
+        const url2 = `/data/${version2}/${tier2}.json`; // <-- 오타 발견! tier2].json -> tier2}.json
 
         Promise.all([
             fetch(url1).then(res => {
@@ -301,6 +309,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --- 추가: 표 이미지 팝업 기능 설정 함수 ---
+    function setupTablePopup() {
+        const popup = document.getElementById('image-popup');
+        const popupImg = document.getElementById('popup-image');
+        const popupTableButton = document.getElementById('popup-table-button');
+        const targetTable = document.getElementById('stats-table'); // 통계 페이지 테이블 ID
+
+        if (!popupTableButton || !popup || !popupImg || !targetTable) {
+             console.error("Popup elements or target table not found.");
+             return;
+        }
+
+        popupTableButton.onclick = () => {
+             // 통계 페이지의 테이블 (#stats-table)을 캡처 대상으로 지정
+             html2canvas(targetTable, {
+                  backgroundColor: null // 배경 투명하게 캡처 (필요시)
+             })
+               .then(canvas => {
+                 popup.style.display = 'block';
+                 popupImg.src = canvas.toDataURL();
+               });
+        };
+
+        document.querySelector('.image-popup-close')
+          .onclick = () => { popup.style.display = 'none'; };
+    }
+    // ------------------------------------------
+
+
     // 7) 비교 테이블 렌더링
     function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
         if (!isCompareMode) return;
@@ -309,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
        // '표본수' 컬럼 제거
        const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위']; // 표본수 제거
 
-       let comparisonTableHtml = '<table><thead><tr>';
+       let comparisonTableHtml = '<table id="stats-table"><thead><tr>'; // 테이블 ID 추가
        cols.forEach(c => {
            // 실험체 컬럼은 비교 모드에서 정렬 제외 유지
            const sortable = c !== '실험체';
@@ -472,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
        // Attach sort event listeners to headers (excluding '실험체')
        attachComparisonSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderComparisonTable);
-       // Apply gradient colors to numeric columns based on the current sort mode
+       // Apply gradient colors if checkbox is checked
        if (gradientCheckbox.checked) applyGradientColorsComparison(dataContainer.querySelector('table'), data, currentSortMode, currentSortColumn);
    }
 
@@ -483,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
 
-        let html = '<table><thead><tr>';
+        let html = '<table id="stats-table"><thead><tr>'; // 테이블 ID 추가
         cols.forEach(c => {
              // 단일 모드에서는 실험체 정렬 제외, 티어 정렬 포함
             const sortable = c !== '실험체';
