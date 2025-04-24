@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const versionSelectCompare = document.getElementById('version-select-compare');
     const tierSelectCompare = document.getElementById('tier-select-compare');
     const periodSelectCompare = document.getElementById('period-select-compare');
+    const compareCheckbox = document.getElementById('compare-checkbox');
 
     // 상태
     let currentSortColumn = '점수';
