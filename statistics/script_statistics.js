@@ -343,6 +343,59 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- 추가: 팝업 기능도 설정하여 에러 메시지 캡처 가능하도록 함 ---
         setupTablePopup(); // 에러 메시지 캡처를 위해 에러 시에도 호출
         // ------------------------------------------------------
+        compareCheckbox.addEventListener('change', function() {
+            isCompareMode = this.checked; // isCompareMode 변수 업데이트
+    
+            // 비교 모드 UI 표시/숨김
+            comparisonControlsDiv.style.display = isCompareMode ? 'flex' : 'none';
+            compareModeLabel.style.display = isCompareMode ? 'inline' : 'none';
+    
+            // body 클래스 추가/제거 (CSS 제어용)
+            if (isCompareMode) {
+                document.body.classList.add('is-compare-mode');
+            } else {
+                document.body.classList.remove('is-compare-mode');
+            }
+    
+            // 색상 강조 체크박스 상태 제어
+            if (isCompareMode) {
+                gradientCheckbox.checked = true; // 비교 모드는 항상 색상 강조 켜짐
+                gradientCheckbox.disabled = true;
+                gradientCheckbox.parentElement.style.opacity = '0.5';
+            } else {
+                // 단일 모드로 돌아갈 때, URL 파라미터 또는 기본값으로 복원
+                const params = new URLSearchParams(location.search);
+                if (params.has('gradient')) {
+                     gradientCheckbox.checked = params.get('gradient') === '1';
+                } else {
+                     // 단일 모드 기본값: 색상 강조 켜짐 (applyParamsToControls와 일관성 유지)
+                     gradientCheckbox.checked = true;
+                }
+                gradientCheckbox.disabled = false;
+                gradientCheckbox.parentElement.style.opacity = '1';
+            }
+    
+            // 정렬 상태 초기화 (모드에 따른 기본 정렬)
+            if (isCompareMode) {
+                 // 비교 모드 기본 정렬: 점수 (Ver1) 내림차순
+                 currentSortColumn = '점수';
+                 currentSortAsc = false;
+                 currentSortMode = 'value1';
+            } else {
+                 // 단일 모드 기본 정렬: 점수 내림차순
+                 currentSortColumn = '점수';
+                 currentSortAsc = false;
+                 currentSortMode = 'value';
+            }
+    
+            // URL 갱신 (reloadData 전에 호출하여 정확한 상태 반영)
+            updateURL();
+    
+            // 모드에 따라 적절한 데이터 로드/표시 함수 호출
+            const funcToLoad = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle;
+            funcToLoad(); // 사용자 요청: reloadData 변수 자체를 수정하지 않음.
+    
+        });
     });
 
 
