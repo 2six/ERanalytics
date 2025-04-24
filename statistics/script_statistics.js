@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // applyParamsToControls() 호출 후 reloadData()를 호출하도록 수정합니다.
         // applyParamsToControls(); // 이미 위에서 호출됨
         // const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle; // 이미 위에서 정의됨
-        // reloadData(); // 이 위치에서 호출하면 초기화 로직이 두 번 실행될 수 있습니다.
+        reloadData(); // 이 위치에서 호출하면 초기화 로직이 두 번 실행될 수 있습니다.
                        // applyParamsToControls() 호출 후에 reloadData()를 호출하는 것이 더 적절합니다.
                        // 현재 코드 구조에서는 applyParamsToControls() 호출 후에 reloadData()가 호출되지 않고 있습니다.
                        // 초기 로드 시 applyParamsToControls() 호출 후 reloadData()를 호출하도록 수정해야 합니다.
