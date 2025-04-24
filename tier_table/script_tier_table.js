@@ -257,9 +257,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(([json1, json2]) => {
                 if (!json1 && !json2) {
                      table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출하지 않음 ---
-                     // setupTooltipPositioning(); // 데이터가 없으므로 호출하지 않음
-                     // -------------------------------------------------
                      return;
                 }
 
@@ -273,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const entries2 = commonExtractPeriodEntries(history2, period2); // common.js의 함수 사용
 
                 // 데이터가 하나라도 없으면 비교 불가 (혹은 해당 기간 데이터가 없으면)
+                // entries1.length === 0 || entries2.length === 0 조건 대신
                 // mergeDataForComparison 결과가 비어있는지로 판단합니다.
                 // mergeDataForComparison는 한쪽에만 데이터가 있어도 결과를 반환하므로,
                 // 최소한 한쪽 데이터는 있어야 테이블을 그릴 수 있습니다.
@@ -293,9 +291,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 병합 결과가 없으면 표시할 데이터가 없는 것임
                 if (comparisonData.length === 0) {
                     table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                    // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출하지 않음 ---
-                    // setupTooltipPositioning(); // 데이터가 없으므로 호출하지 않음
-                    // -------------------------------------------------
                     return;
                 }
 
@@ -303,17 +298,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
                 displayTierTable(comparisonData, isCompareMode);
                 setupTablePopup();
-                // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
-                setupTooltipPositioning(comparisonData, isCompareMode);
-                // --------------------------------------------------
 
             })
             .catch(err => {
                 console.error('비교 데이터 처리 실패:', err);
                 table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
-                // --- 수정: 에러 발생 시 툴팁 위치 설정 호출하지 않음 ---
-                // setupTooltipPositioning(); // 에러 발생 시 호출하지 않음
-                // -------------------------------------------------
             });
 
         } else {
@@ -332,31 +321,25 @@ document.addEventListener('DOMContentLoaded', function () {
                     // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
                     const entries = extractPeriodEntries(history, period);
 
-                    if (entries.length === 0) { // 데이터가 없으면
+                    if (entries.length === 0 && period !== 'latest') {
                          table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
-                         // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출하지 않음 ---
-                         // setupTooltipPositioning(); // 데이터가 없으므로 호출하지 않음
-                         // -------------------------------------------------
+                         return;
+                    } else if (entries.length === 0 && period === 'latest') {
+                         table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
                          return;
                     }
+
 
                     const avgScore = calculateAverageScore(entries);
                     const stddev   = calculateStandardDeviation(entries, avgScore);
                     const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
-
                     // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
                     displayTierTable(scored, isCompareMode);
                     setupTablePopup();
-                    // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
-                    setupTooltipPositioning(scored, isCompareMode);
-                    // --------------------------------------------------
                 })
                 .catch(err => {
                     console.error('데이터 로드 실패:', err);
                     table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                     // --- 수정: 에러 발생 시 툴팁 위치 설정 호출하지 않음 ---
-                    // setupTooltipPositioning(); // 에러 발생 시 호출하지 않음
-                    // -------------------------------------------------
                 });
             // --------------------------
         }
