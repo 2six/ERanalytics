@@ -214,15 +214,43 @@ document.addEventListener('DOMContentLoaded', function () {
           scales:{
             x:{
               title:{display:true,text:xKey},
-              min: xKey==='픽률'?0:undefined,
-              max: xKey==='픽률'?Math.ceil(Math.max(...xValues)*500)/500:undefined,
-              ticks:{callback:v=>xKey==='픽률'?`${(v*100).toFixed(1)}%`:v, stepSize:xKey==='픽률'?0.002:undefined}
+              // --- 수정: RP 획득 축의 단계와 픽률/승률 축의 콜백 형식 변경 ---
+              min: xKey==='픽률'?0:undefined, // 픽률은 최소값 0 유지
+              max: xKey==='픽률'?Math.ceil(Math.max(...xValues)*500)/500:undefined, // 픽률 최대값 유지
+              ticks:{
+                callback: v => {
+                  if (xKey === '픽률' || xKey === '승률') {
+                    return `${(v*100).toFixed(1)}%`; // 픽률과 승률은 백분율로 표시, 소수점 첫째 자리까지
+                  }
+                  if (xKey === 'RP 획득') {
+                      // RP 획득은 소수점 첫째 자리까지 표시
+                      return v.toFixed(1);
+                  }
+                  return v; // 그 외는 기본값
+                },
+                stepSize: xKey === 'RP 획득' ? 1 : (xKey === '픽률' ? 0.002 : undefined) // RP 획득 단계 1, 픽률 단계 0.002 유지
+              }
+              // ---------------------------------------------------------
             },
             y:{
               title:{display:true,text:yKey},
-              min: yKey==='픽률'?0:undefined,
-              max: yKey==='픽률'?Math.ceil(Math.max(...yValues)*500)/500:undefined,
-              ticks:{callback:v=>yKey==='픽률'?`${(v*100).toFixed(1)}%`:v, stepSize:yKey==='픽률'?0.002:undefined}
+               // --- 수정: RP 획득 축의 단계와 픽률/승률 축의 콜백 형식 변경 ---
+              min: yKey==='픽률'?0:undefined, // 픽률은 최소값 0 유지
+              max: yKey==='픽률'?Math.ceil(Math.max(...yValues)*500)/500:undefined, // 픽률 최대값 유지
+              ticks:{
+                callback: v => {
+                   if (yKey === '픽률' || yKey === '승률') {
+                    return `${(v*100).toFixed(1)}%`; // 픽률과 승률은 백분율로 표시, 소수점 첫째 자리까지
+                   }
+                   if (yKey === 'RP 획득') {
+                       // RP 획득은 소수점 첫째 자리까지 표시
+                       return v.toFixed(1);
+                   }
+                   return v; // 그 외는 기본값
+                 },
+                 stepSize: yKey === 'RP 획득' ? 1 : (yKey === '픽률' ? 0.002 : undefined) // RP 획득 단계 1, 픽률 단계 0.002 유지
+              }
+              // ---------------------------------------------------------
             }
           }
         }
