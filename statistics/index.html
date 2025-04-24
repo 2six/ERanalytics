@@ -7,12 +7,7 @@ layout: none
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>실험체 통계</title>
-  <link rel="stylesheet" href="/style.css" />
-  <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
-  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
-  <link rel="shortcut icon" href="/favicon/favicon.ico" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-  <link rel="manifest" href="/favicon/site.webmanifest" />
+  {% include head.html %}
   <style>
     /* 통계 페이지 테이블 압축 & 반응형 컬럼 숨김 */
     #data-container {
@@ -241,7 +236,6 @@ layout: none
     /* 현재는 신규/삭제만 CSS로 처리하고, 숫자 변화량 색칠은 JS의 applyGradientColorsComparison에서 처리합니다. */
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  {% include head.html %}
 </head>
 <body>
   <header>
