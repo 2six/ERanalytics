@@ -311,12 +311,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // URL 파라미터로부터 컨트롤 상태 복원 (versionList 로드 후 호출)
         applyParamsToControls();
 
-        // 변경 시 URL 갱신 + 데이터 갱신
-        const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle;
+        // --- 수정: 드롭다운 변경 시 현재 모드에 따라 데이터 갱신 ---
+        // reloadData 변수 사용 대신, isCompareMode에 따라 직접 함수 호출
+        versionSelect.addEventListener('change', () => { updateURL(); isCompareMode ? loadAndDisplayComparison() : loadAndDisplaySingle(); });
+        tierSelect.addEventListener('change', () => { updateURL(); isCompareMode ? loadAndDisplayComparison() : loadAndDisplaySingle(); });
+        periodSelect.addEventListener('change', () => { updateURL(); isCompareMode ? loadAndDisplayComparison() : loadAndDisplaySingle(); });
 
-        versionSelect.addEventListener('change', () => { updateURL(); reloadData(); });
-        tierSelect.addEventListener('change', () => { updateURL(); reloadData(); });
-        periodSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         gradientCheckbox.addEventListener('change', () => {
             updateURL();
             // 단일 모드에서만 색상 강조 적용/해제
@@ -324,18 +324,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // 비교 모드는 renderComparisonTable에서 항상 색상 적용하므로 여기서는 단일 모드만 처리
         });
 
+        // 비교 모드 드롭다운 이벤트 리스너 (비교 모드일 때만 실제 데이터 로드 함수 호출)
+        versionSelectCompare.addEventListener('change', () => { updateURL(); loadAndDisplayComparison(); });
+        tierSelectCompare.addEventListener('change', () => { updateURL(); loadAndDisplayComparison(); });
+        periodSelectCompare.addEventListener('change', () => { updateURL(); loadAndDisplayComparison(); });
+        // ------------------------------------------------------
+
+
+        // 첫 로드 (초기 isCompareMode 값에 따라 호출)
         if (isCompareMode) {
-            versionSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
-            tierSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
-            periodSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
+             loadAndDisplayComparison();
+        } else {
+             loadAndDisplaySingle();
         }
 
-        // 첫 로드
-        reloadData();
-
-        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 (초기 로드 시) ---
-        // setupTablePopup(); // 테이블 로드 완료 후 호출되므로 여기서 호출할 필요 없음.
-        // -----------------------------------------------------
+        // setupTablePopup은 render 함수들 안에서 호출되므로 여기서 호출할 필요 없음.
 
     }).catch(err => {
         console.error('초기화 실패:', err);
@@ -343,60 +346,67 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- 추가: 팝업 기능도 설정하여 에러 메시지 캡처 가능하도록 함 ---
         setupTablePopup(); // 에러 메시지 캡처를 위해 에러 시에도 호출
         // ------------------------------------------------------
-        compareCheckbox.addEventListener('change', function() {
-            isCompareMode = this.checked; // isCompareMode 변수 업데이트
-    
-            // 비교 모드 UI 표시/숨김
-            comparisonControlsDiv.style.display = isCompareMode ? 'flex' : 'none';
-            compareModeLabel.style.display = isCompareMode ? 'inline' : 'none';
-    
-            // body 클래스 추가/제거 (CSS 제어용)
-            if (isCompareMode) {
-                document.body.classList.add('is-compare-mode');
+        // --- 수정: compareCheckbox 이벤트 리스너를 이 catch 블록 밖으로 이동 ---
+    }); // Promise.all 체인의 끝
+
+
+    // --- 추가: 비교 모드 체크박스 이벤트 리스너 (Promise.all 체인 밖으로 이동) ---
+    compareCheckbox.addEventListener('change', function() {
+        isCompareMode = this.checked; // isCompareMode 변수 업데이트
+
+        // 비교 모드 UI 표시/숨김
+        comparisonControlsDiv.style.display = isCompareMode ? 'flex' : 'none';
+        compareModeLabel.style.display = isCompareMode ? 'inline' : 'none';
+
+        // body 클래스 추가/제거 (CSS 제어용)
+        if (isCompareMode) {
+            document.body.classList.add('is-compare-mode');
+        } else {
+            document.body.classList.remove('is-compare-mode');
+        }
+
+        // 색상 강조 체크박스 상태 제어
+        if (isCompareMode) {
+            gradientCheckbox.checked = true; // 비교 모드는 항상 색상 강조 켜짐
+            gradientCheckbox.disabled = true;
+            gradientCheckbox.parentElement.style.opacity = '0.5';
+        } else {
+            // 단일 모드로 돌아갈 때, URL 파라미터 또는 기본값으로 복원
+            const params = new URLSearchParams(location.search); // URL 상태를 다시 읽어옴
+            if (params.has('gradient')) {
+                 gradientCheckbox.checked = params.get('gradient') === '1';
             } else {
-                document.body.classList.remove('is-compare-mode');
+                 // 단일 모드 기본값: 색상 강조 켜짐 (applyParamsToControls와 일관성 유지)
+                 gradientCheckbox.checked = true;
             }
-    
-            // 색상 강조 체크박스 상태 제어
-            if (isCompareMode) {
-                gradientCheckbox.checked = true; // 비교 모드는 항상 색상 강조 켜짐
-                gradientCheckbox.disabled = true;
-                gradientCheckbox.parentElement.style.opacity = '0.5';
-            } else {
-                // 단일 모드로 돌아갈 때, URL 파라미터 또는 기본값으로 복원
-                const params = new URLSearchParams(location.search);
-                if (params.has('gradient')) {
-                     gradientCheckbox.checked = params.get('gradient') === '1';
-                } else {
-                     // 단일 모드 기본값: 색상 강조 켜짐 (applyParamsToControls와 일관성 유지)
-                     gradientCheckbox.checked = true;
-                }
-                gradientCheckbox.disabled = false;
-                gradientCheckbox.parentElement.style.opacity = '1';
-            }
-    
-            // 정렬 상태 초기화 (모드에 따른 기본 정렬)
-            if (isCompareMode) {
-                 // 비교 모드 기본 정렬: 점수 (Ver1) 내림차순
-                 currentSortColumn = '점수';
-                 currentSortAsc = false;
-                 currentSortMode = 'value1';
-            } else {
-                 // 단일 모드 기본 정렬: 점수 내림차순
-                 currentSortColumn = '점수';
-                 currentSortAsc = false;
-                 currentSortMode = 'value';
-            }
-    
-            // URL 갱신 (reloadData 전에 호출하여 정확한 상태 반영)
-            updateURL();
-    
-            // 모드에 따라 적절한 데이터 로드/표시 함수 호출
-            const funcToLoad = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle;
-            funcToLoad(); // 사용자 요청: reloadData 변수 자체를 수정하지 않음.
-    
-        });
+            gradientCheckbox.disabled = false;
+            gradientCheckbox.parentElement.style.opacity = '1';
+        }
+
+        // 정렬 상태 초기화 (모드에 따른 기본 정렬)
+        if (isCompareMode) {
+             // 비교 모드 기본 정렬: 점수 (Ver1) 내림차순
+             currentSortColumn = '점수';
+             currentSortAsc = false;
+             currentSortMode = 'value1';
+        } else {
+             // 단일 모드 기본 정렬: 점수 내림차순
+             currentSortColumn = '점수';
+             currentSortAsc = false;
+             currentSortMode = 'value';
+        }
+
+        // URL 갱신 (데이터 로드 전에 호출하여 정확한 상태 반영)
+        updateURL();
+
+        // 모드에 따라 적절한 데이터 로드/표시 함수 호출
+        if (isCompareMode) {
+            loadAndDisplayComparison();
+        } else {
+            loadAndDisplaySingle();
+        }
     });
+    // --------------------------------------------
 
 
     // 4) 단일 데이터 로드 ∙ 가공 ∙ 렌더
