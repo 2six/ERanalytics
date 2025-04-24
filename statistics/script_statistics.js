@@ -1,4 +1,3 @@
-// script_statistics.js
 document.addEventListener('DOMContentLoaded', function() {
     // common.js에 정의된 함수/변수들은 전역 스코프에 있으므로 바로 사용 가능합니다.
 
@@ -15,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const versionSelectCompare = document.getElementById('version-select-compare');
     const tierSelectCompare = document.getElementById('tier-select-compare');
     const periodSelectCompare = document.getElementById('period-select-compare');
+    // --- 수정: compareCheckbox 변수 선언 추가 (ReferenceError 해결) ---
+    const compareCheckbox = document.getElementById('compare-checkbox');
+    // ---------------------------------------------
 
     // 상태
     let currentSortColumn = '점수';
@@ -125,9 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // --- 정렬 순환: Value1 ▼ -> Value1 ▲ -> Value2 ▼ -> Value2 ▲ -> Delta ▼ -> Delta ▲ -> Value1 ▼ ... ---
                 // 사용자 요청: 내림차순 -> 오름차순 순환
                 // 현재 코드의 modes와 directions 배열은 이미 내림차순(false) -> 오름차순(true) 순환을 구현하고 있습니다.
-                // modes = ['value1', 'value1', 'value2', 'value2', 'delta', 'delta'];
-                // directions = [false, true, false, true, false, true]; // false: 내림차순, true: 오름차순
-                // 따라서 코드 변경 없이 기존 로직을 유지합니다.
                 const modes = ['value1', 'value1', 'value2', 'value2', 'delta', 'delta']; // 6단계 순환 모드
                 const directions = [false, true, false, true, false, true]; // 각 단계의 오름차순 여부 (false: 내림차순, true: 오름차순)
 
@@ -185,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // URLSearchParams 인스턴스 생성
     const params = new URLSearchParams(location.search);
-    const isCompareMode = params.get('compare') === '1';
+    let isCompareMode = params.get('compare') === '1'; // isCompareMode 변수를 let으로 선언하여 변경 가능하게 함
 
     // --- 추가: 현재 모드에 따라 body 클래스 추가/제거 ---
     if (isCompareMode) {
@@ -303,14 +302,11 @@ document.addEventListener('DOMContentLoaded', function() {
         populateTierDropdown(tierSelect);
         populatePeriodDropdown(periodSelect);
 
-        if (isCompareMode) {
-            comparisonControlsDiv.style.display = 'flex';
-            compareModeLabel.style.display = 'inline';
-            // 비교 드롭다운도 채우기
-            populateVersionDropdown(versionSelectCompare, versionList);
-            populateTierDropdown(tierSelectCompare);
-            populatePeriodDropdown(periodSelectCompare);
-        }
+        // 비교 모드일 때 비교 드롭다운 채우기 (UI 표시 여부는 아래에서 제어)
+        populateVersionDropdown(versionSelectCompare, versionList);
+        populateTierDropdown(tierSelectCompare);
+        populatePeriodDropdown(periodSelectCompare);
+
 
         // URL 파라미터로부터 컨트롤 상태 복원 (versionList 로드 후 호출)
         applyParamsToControls();
@@ -526,7 +522,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ------------------------------------------
 
 
-// 7) 비교 테이블 렌더링
 // 7) 비교 테이블 렌더링
 function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
     if (!isCompareMode) return;
