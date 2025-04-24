@@ -187,41 +187,35 @@ layout: none
 
     /* 툴팁 컨테이너 (이미지 감싸는 span) */
     .tooltip-container {
-        position: relative; /* 툴팁 위치 기준 (기존 유지) */
-        display: inline-block; /* 이미지 크기에 맞게 (기존 유지) */
-        cursor: pointer; /* 마우스 오버 시 커서 변경 (기존 유지) */
+        position: relative; /* 툴팁 위치 기준 */
+        display: inline-block; /* 이미지 크기에 맞게 */
+        cursor: pointer; /* 마우스 오버 시 커서 변경 */
         /* --- 추가: 가변 너비 설정 --- */
-        width: calc(100% / 15); /* 부모 너비의 1/15로 설정 (기존 유지) */
+        width: calc(100% / 15); /* 부모 너비의 1/15로 설정 */
     }
-    /* 툴팁 박스 스타일 */
+    /* 툴팁 박스 스타일 유지 */
     .tooltip-box {
-        visibility: hidden; /* 기본 숨김 */
-        opacity: 0; /* 기본 투명 */
-        pointer-events: none; /* 숨겨져 있을 때 마우스 이벤트 무시 */
-        background-color: rgba(0, 0, 0, 0.8);
+        visibility: hidden;
+        background-color: rgba(0, 0, 0, 0.8); /* 기존 배경색 유지 */
         color: #fff;
         text-align: left;
         border-radius: 6px;
         padding: 6px 10px;
-        /* --- 수정 제안: position을 fixed로 변경, z-index 높게 설정 --- */
-        position: fixed; /* 뷰포트 기준으로 배치, 새로운 쌓임 맥락 형성 */
-        z-index: 9999; /* 가장 높은 레벨에 오도록 시도 */
-        /* --- JS로 top/left를 설정하므로 기존 bottom, left, transform 제거 --- */
-        /* bottom: 110%; */
-        /* left: 50%; */
-        /* transform: translateX(-50%); */
-        /* ----------------------------------------------------------------------------- */
+        position: absolute;
+        z-index: 100;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
         white-space: nowrap;
         font-size: 12px;
-        transition: opacity 0.3s; /* 부드러운 표시/숨김 효과 */
+        opacity: 0;
+        transition: opacity 0.3s;
     }
-    /* 툴팁 컨테이너에 마우스 오버 시 툴팁 표시 - JS가 visibility/opacity/position/top/left 제어 */
-    /* 기존 CSS 호버 스타일은 필요 없어지거나 JS에 의해 오버라이드됨 */
-    /* .tooltip-container:hover .tooltip-box {
+    /* 툴팁 컨테이너에 마우스 오버 시 툴팁 표시 */
+    .tooltip-container:hover .tooltip-box {
         visibility: visible;
         opacity: 1;
-    } */
-
+    }
 
     /* 우측 상단 버전/티어 정보 박스 스타일 (displayTierTable에서 생성) */
     .tier-info {
@@ -268,7 +262,7 @@ layout: none
 
 
     .rank-change-up { color: red; } /* 순위 상승 (숫자 감소) */
-    .rank-change-down { color: blue; } /* 순위 하락 (숫자 증가) */
+    .rank-change-down { color: #2e54ff; } /* 순위 하락 (숫자 증가) */
     .rank-change-same { color: #ccc; } /* 순위 변동 없음 */
     /* ----------------------------------- */
 
