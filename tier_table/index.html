@@ -7,12 +7,7 @@ layout: none
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>티어별 실험체</title>
-  <link rel="stylesheet" href="/style.css">
-  <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
-  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
-  <link rel="shortcut icon" href="/favicon/favicon.ico" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-  <link rel="manifest" href="/favicon/site.webmanifest" />
+  {% include head.html %}
   <style>
     /* --- 수정: 드롭다운 컨트롤 영역 레이아웃 (1행 2열 테이블 사용) --- */
     .dropdowns {
@@ -111,7 +106,7 @@ layout: none
         flex-shrink: 0; /* 공간 부족해도 줄어들지 않도록 함 */
         /* --------------------------------------- */
     }
-    
+
     /* --- 수정: 티어 테이블 페이지 스타일 (메인 표) --- */
     /* tier-table 클래스를 가진 테이블에 적용 */
     .tier-table {
