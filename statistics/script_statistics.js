@@ -527,6 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // 7) 비교 테이블 렌더링
+// 7) 비교 테이블 렌더링
 function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
     if (!isCompareMode) return;
 
@@ -640,12 +641,37 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     const val2 = row[`${col} (Ver2)`];
                     const delta = row[`${col} 변화량`]; // Numeric delta value
 
-                    // Display Ver1 value → Ver2 value Delta format
-                    let valueText1 = (typeof val1 === 'number') ? val1.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
-                    if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val1 === 'number') valueText1 += '%';
+                    // --- 수정: 승률과 TOP 3는 100을 곱하여 %로 표시 ---
+                    let valueText1;
+                    if (typeof val1 === 'number') {
+                        if (col === '승률' || col === 'TOP 3') {
+                            valueText1 = (val1 * 100).toFixed(2) + '%'; // 100 곱하고 % 추가
+                        } else if (col === '픽률') {
+                            valueText1 = val1.toFixed(2) + '%'; // 픽률은 이미 %
+                        } else if (col === '평균 순위') {
+                            valueText1 = val1.toFixed(2) + '위'; // 평균 순위는 '위' 추가
+                        } else { // 점수, RP 획득, 표본수
+                            valueText1 = val1.toFixed(2); // 소수점 둘째 자리까지
+                        }
+                    } else {
+                        valueText1 = '-';
+                    }
 
-                    let valueText2 = (typeof val2 === 'number') ? val2.toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2) : '-';
-                    if (['픽률', '승률', 'TOP 3'].includes(col) && typeof val2 === 'number') valueText2 += '%';
+                    let valueText2;
+                    if (typeof val2 === 'number') {
+                        if (col === '승률' || col === 'TOP 3') {
+                            valueText2 = (val2 * 100).toFixed(2) + '%'; // 100 곱하고 % 추가
+                        } else if (col === '픽률') {
+                            valueText2 = val2.toFixed(2) + '%'; // 픽률은 이미 %
+                        } else if (col === '평균 순위') {
+                            valueText2 = val2.toFixed(2) + '위'; // 평균 순위는 '위' 추가
+                        } else { // 점수, RP 획득, 표본수
+                            valueText2 = val2.toFixed(2); // 소수점 둘째 자리까지
+                        }
+                    } else {
+                        valueText2 = '-';
+                    }
+                    // ----------------------------------------------------
 
 
                     let verValuesHtml;
@@ -654,6 +680,7 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     if (typeof val1 === 'number' && typeof val2 === 'number') {
                         verValuesHtml = `${valueText1} → ${valueText2}`;
                         if (typeof delta === 'number') {
+                            // 델타 값은 raw difference를 toFixed(2)로 표시 (요청 변경 없음)
                             const deltaFormatted = Math.abs(delta).toFixed(['픽률', '승률', 'TOP 3'].includes(col) ? 2 : 2);
                             deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}`;
                         }
