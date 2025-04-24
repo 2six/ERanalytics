@@ -776,33 +776,42 @@ document.addEventListener('DOMContentLoaded', function () {
                 table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`;
              });
         } else {
-             // ... 단일 모드 데이터 로드 및 처리 ...
-             fetch(/*...*/)
-             .then(res => { /* ... */ return res.json(); })
-             .then(json => {
-                 // ... 데이터 가공 및 calculateTiers 호출 ...
-                 const history = json['통계'];
-                 const entries = extractPeriodEntries(history, periodSelect.value); // periodSelect.value 사용
+            // --- 기존 단일 모드 로직 ---
+            const version = versionSelect.value;
+            const tier    = tierSelect.value;
+            const period  = periodSelect.value;
 
-                 if (entries.length === 0) {
-                      table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족하거나 없습니다.</td></tr>';
-                      return;
-                 }
+            fetch(`/data/${version}/${tier}.json`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(json => {
+                    const history = json['통계'];
+                    // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
+                    const entries = extractPeriodEntries(history, period);
 
-                 const avgScore = calculateAverageScore(entries);
-                 const stddev   = calculateStandardDeviation(entries, avgScore);
-                 const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                    if (entries.length === 0 && period !== 'latest') {
+                         table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
+                         return;
+                    } else if (entries.length === 0 && period === 'latest') {
+                         table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
+                         return;
+                    }
 
-                 displayTierTable(scored, isCompareMode);
-                 setupTablePopup();
-                 // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
-                 setupTooltipPositioning(scored, isCompareMode); // 데이터와 모드를 인자로 전달
-                 // --------------------------------------------------
-             })
-             .catch(err => {
-                console.error('데이터 로드 실패:', err);
-                table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>';
-             });
+
+                    const avgScore = calculateAverageScore(entries);
+                    const stddev   = calculateStandardDeviation(entries, avgScore);
+                    const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                    // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
+                    displayTierTable(scored, isCompareMode);
+                    setupTablePopup();
+                })
+                .catch(err => {
+                    console.error('데이터 로드 실패:', err);
+                    table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                });
+            // --------------------------
         }
         // ---------------------------------------------------------------
     }
