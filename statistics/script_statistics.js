@@ -179,15 +179,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 첫 로드
         reloadData();
 
-        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 (초기 로드 시 - Success Path) ---
-        // setupTablePopup(); // 이 위치는 .then() 블록이 끝난 후 호출되므로, reloadData() 내부 호출로 충분합니다.
+        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 (초기 로드 시) ---
+        setupTablePopup(); // 팝업 기능 설정 함수 호출
         // -----------------------------------------------------
 
     }).catch(err => {
         console.error('초기화 실패:', err);
         dataContainer.innerHTML = '초기 설정 로드에 실패했습니다.';
-        // --- 수정: 에러 발생 시 팝업 기능 설정 함수 호출 제거 ---
-        // setupTablePopup(); // 에러 발생 시 테이블이 없으므로 팝업 설정 호출 제거
+        // --- 추가: 팝업 기능도 설정하여 에러 메시지 캡처 가능하도록 함 ---
+        setupTablePopup(); // 에러 메시지 캡처를 위해 에러 시에도 호출
         // ------------------------------------------------------
     });
 
@@ -545,4 +545,51 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
     setupTablePopup();
     // --------------------------------------------
 }
+
+function renderTable(data) {
+    if (isCompareMode) return; // 비교 모드에서는 실행되지 않음
+
+   const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위'];
+
+   let html = '<table><thead><tr>';
+   cols.forEach(c => {
+        // 단일 모드에서는 실험체 정렬 제외, 티어 정렬 포함
+       const sortable = c !== '실험체';
+       html += `<th data-col="${c}" ${sortable ? '' : 'data-nosort="true"'}>${c}</th>`; // 닫는 태그 </th> 추가
+   });
+   html += '</tr></thead><tbody>';
+
+   data.forEach(row => {
+       html += '<tr>';
+       cols.forEach(col => {
+           let val = row[col];
+            if (val === undefined || val === null) {
+                val = '-';
+            } else if (col === '승률' || col === 'TOP 3') {
+                val = typeof val === 'number' ? (val * 100).toFixed(2) + '%' : '-';
+            } else if (col === '픽률') {
+                val = typeof val === 'number' ? val.toFixed(2) + '%' : '-';
+            } else if (col === '점수' || col === 'RP 획득' || col === '평균 순위') {
+                val = typeof val === 'number' ? parseFloat(val).toFixed(2) : '-';
+            } else { // 실험체, 티어 등
+                val = val;
+            }
+
+           html += `<td data-col="${col}">${val}</td>`;
+       });
+       html += '</tr>';
+   });
+   html += '</tbody></table>';
+
+   dataContainer.innerHTML = html;
+
+   // Attach sort event listeners to headers (excluding '실험체')
+   attachSingleSortEventListeners(dataContainer.querySelectorAll('th:not([data-nosort])'), renderTable);
+   // Apply gradient colors if checkbox is checked
+   if (gradientCheckbox.checked) applyGradientColorsSingle(dataContainer.querySelector('table'));
+    // --- 추가: 팝업 설정 함수 호출 (렌더링 완료 후) ---
+   setupTablePopup();
+   // --------------------------------------------
+}
+
 }); // DOMContentLoaded 끝
