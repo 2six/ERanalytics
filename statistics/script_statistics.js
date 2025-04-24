@@ -1,4 +1,3 @@
-// script_statistics.js
 document.addEventListener('DOMContentLoaded', function() {
     // common.js에 정의된 함수/변수들은 전역 스코프에 있으므로 바로 사용 가능합니다.
 
@@ -185,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // URLSearchParams 인스턴스 생성
     const params = new URLSearchParams(location.search);
-    const isCompareMode = params.get('compare') === '1';
+    let isCompareMode = params.get('compare') === '1'; // isCompareMode 변수를 let으로 선언하여 변경 가능하게 함
 
     // --- 추가: 현재 모드에 따라 body 클래스 추가/제거 ---
     if (isCompareMode) {
@@ -303,20 +302,20 @@ document.addEventListener('DOMContentLoaded', function() {
         populateTierDropdown(tierSelect);
         populatePeriodDropdown(periodSelect);
 
-        if (isCompareMode) {
-            comparisonControlsDiv.style.display = 'flex';
-            compareModeLabel.style.display = 'inline';
-            // 비교 드롭다운도 채우기
-            populateVersionDropdown(versionSelectCompare, versionList);
-            populateTierDropdown(tierSelectCompare);
-            populatePeriodDropdown(periodSelectCompare);
-        }
+        // 비교 모드일 때 비교 드롭다운 채우기 (UI 표시 여부는 아래에서 제어)
+        populateVersionDropdown(versionSelectCompare, versionList);
+        populateTierDropdown(tierSelectCompare);
+        populatePeriodDropdown(periodSelectCompare);
+
 
         // URL 파라미터로부터 컨트롤 상태 복원 (versionList 로드 후 호출)
-        applyParamsToControls();
+        applyParamsToControls(); // 이 함수 안에서 isCompareMode에 따라 comparisonControlsDiv 등의 display 상태가 초기 설정됩니다.
+
 
         // 변경 시 URL 갱신 + 데이터 갱신
+        // reloadData 함수는 이벤트 리스너 안에서 사용되므로 여기서 정의
         const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle;
+
 
         versionSelect.addEventListener('change', () => { updateURL(); reloadData(); });
         tierSelect.addEventListener('change', () => { updateURL(); reloadData(); });
@@ -328,26 +327,98 @@ document.addEventListener('DOMContentLoaded', function() {
             // 비교 모드는 renderComparisonTable에서 항상 색상 적용하므로 여기서는 단일 모드만 처리
         });
 
-        if (isCompareMode) {
-            versionSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
-            tierSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
-            periodSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
-        }
+        // 비교 모드 관련 드롭다운 이벤트 리스너는 comparisonControlsDiv가 display: flex일 때만 유효해야 하지만,
+        // 이벤트 리스너 자체는 항상 부착해두고, 해당 요소가 display: none일 때는 이벤트가 발생하지 않도록 합니다.
+        versionSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
+        tierSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
+        periodSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); });
 
-        // 첫 로드
-        reloadData();
+        // --- 추가 제안: 비교 모드 체크박스 이벤트 리스너 추가 ---
+        compareCheckbox.addEventListener('change', () => {
+             isCompareMode = compareCheckbox.checked; // 상태 업데이트
+             updateURL(); // URL 업데이트 (compare 파라미터 포함)
 
-        // --- 추가: 표 이미지 팝업 기능 설정 함수 호출 (초기 로드 시) ---
-        // setupTablePopup(); // 테이블 로드 완료 후 호출되므로 여기서 호출할 필요 없음.
-        // -----------------------------------------------------
+             // UI 다시 초기화 및 데이터 재로드
+             // 비교 모드 상태에 따라 UI 요소들의 표시 상태를 변경합니다.
+             if (isCompareMode) {
+                  document.body.classList.add('is-compare-mode');
+                  comparisonControlsDiv.style.display = 'flex'; // 비교 드롭다운 표시
+                  compareModeLabel.style.display = 'inline'; // 비교 모드 라벨 표시
+                  gradientCheckbox.checked = true; // 비교 모드에서는 색상 강조 항상 켜짐
+                  gradientCheckbox.disabled = true; // 비교 모드에서는 색상 강조 비활성화
+                  gradientCheckbox.parentElement.style.opacity = '0.5'; // 색상 강조 체크박스 흐리게
+             } else {
+                  document.body.classList.remove('is-compare-mode');
+                  comparisonControlsDiv.style.display = 'none'; // 비교 드롭다운 숨김
+                  compareModeLabel.style.display = 'none'; // 비교 모드 라벨 숨김
+                  // 단일 모드에서는 색상 강조 체크박스 상태를 URL에서 로드 (applyParamsToControls 로직 재활용)
+                  // applyParamsToControls는 초기 로드 시 URL에서 값을 가져오지만,
+                  // 여기서는 체크박스 상태 변경 시 UI만 업데이트하면 되므로 직접 설정합니다.
+                  if (params.has('gradient')) {
+                       gradientCheckbox.checked = params.get('gradient') === '1';
+                  } else {
+                       gradientCheckbox.checked = true; // 단일 모드 기본값
+                  }
+                  gradientCheckbox.disabled = false; // 색상 강조 체크박스 활성화
+                  gradientCheckbox.parentElement.style.opacity = '1'; // 색상 강조 체크박스 선명하게
+             }
 
-    }).catch(err => {
+             // 데이터 재로드 (새로운 isCompareMode 상태에 맞춰 loadAndDisplaySingle 또는 loadAndDisplayComparison 호출)
+             const reloadDataAfterModeChange = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle;
+             reloadDataAfterModeChange();
+        });
+        // -------------------------------------------------------------
+
+
+        // 첫 로드 시 데이터 로드 및 렌더링 시작
+        // applyParamsToControls() 호출 후 reloadData()를 호출하도록 수정합니다.
+        // applyParamsToControls(); // 이미 위에서 호출됨
+        // const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle; // 이미 위에서 정의됨
+        // reloadData(); // 이 위치에서 호출하면 초기화 로직이 두 번 실행될 수 있습니다.
+                       // applyParamsToControls() 호출 후에 reloadData()를 호출하는 것이 더 적절합니다.
+                       // 현재 코드 구조에서는 applyParamsToControls() 호출 후에 reloadData()가 호출되지 않고 있습니다.
+                       // 초기 로드 시 applyParamsToControls() 호출 후 reloadData()를 호출하도록 수정해야 합니다.
+
+    }) // .then() 블록 끝
+    .catch(err => {
         console.error('초기화 실패:', err);
         dataContainer.innerHTML = '초기 설정 로드에 실패했습니다.';
-        // --- 추가: 팝업 기능도 설정하여 에러 메시지 캡처 가능하도록 함 ---
-        setupTablePopup(); // 에러 메시지 캡처를 위해 에러 시에도 호출
-        // ------------------------------------------------------
+        // setupTablePopup() 호출은 여기서 제거됨 (이전 수정 유지)
     });
+
+    // --- 수정 제안: 초기 로드 시 applyParamsToControls 호출 후 reloadData 호출 ---
+    // DOMContentLoaded 리스너 최상위에서 Promise.all 체인 밖에서 호출합니다.
+    // 이렇게 하면 초기 로드 시 URL 파라미터가 적용된 후 데이터가 로드됩니다.
+    // applyParamsToControls(); // Promise.all().then() 안으로 이동
+    // const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle; // Promise.all().then() 안으로 이동
+    // reloadData(); // Promise.all().then() 안으로 이동
+    // ----------------------------------------------------------------------------------------------------
+
+    // --- 수정 제안: 이벤트 리스너 부착 로직을 Promise.all().then() 블록 밖으로 이동 ---
+    // 이렇게 하면 초기 로드 실패 시에도 이벤트 리스너 부착 시도가 가능해집니다.
+    // 하지만 DOM 요소가 존재하지 않을 수 있으므로 null 체크가 필요합니다.
+    // 또는 이벤트 리스너 부착 로직을 별도의 함수로 분리하고, DOMContentLoaded 시점에 호출합니다.
+    // 가장 간단한 방법은 DOMContentLoaded 리스너 최상위에서 이벤트 리스너를 부착하는 것입니다.
+
+    // 이벤트 리스너 부착 (DOMContentLoaded 리스너 최상위에서 바로 실행)
+    // reloadData 함수는 이벤트 리스너 안에서 사용되므로 여기서 정의
+    // const reloadData = isCompareMode ? loadAndDisplayComparison : loadAndDisplaySingle; // Promise.all().then() 안으로 이동
+
+    // versionSelect.addEventListener('change', () => { updateURL(); reloadData(); }); // Promise.all().then() 안으로 이동
+    // tierSelect.addEventListener('change', () => { updateURL(); reloadData(); }); // Promise.all().then() 안으로 이동
+    // periodSelect.addEventListener('change', () => { updateURL(); reloadData(); }); // Promise.all().then() 안으로 이동
+    // gradientCheckbox.addEventListener('change', () => { // Promise.all().then() 안으로 이동
+    //     updateURL();
+    //     if (!isCompareMode && lastData && lastData.length > 0) applyGradientColorsSingle(dataContainer.querySelector('table'));
+    //     // 비교 모드는 renderComparisonTable에서 항상 색상 적용하므로 여기서는 단일 모드만 처리
+    // });
+
+    // versionSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); }); // Promise.all().then() 안으로 이동
+    // tierSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); }); // Promise.all().then() 안으로 이동
+    // periodSelectCompare.addEventListener('change', () => { updateURL(); reloadData(); }); // Promise.all().then() 안으로 이동
+
+    // compareCheckbox.addEventListener('change', () => { ... }); // Promise.all().then() 안으로 이동
+    // ----------------------------------------------------------------------------------------------------
 
 
     // 4) 단일 데이터 로드 ∙ 가공 ∙ 렌더
@@ -394,13 +465,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isCompareMode) return; // 단일 모드에서는 실행되지 않음
 
         dataContainer.innerHTML = '비교 데이터 로딩 중...';
-        const version1 = versionSelect.value;
-        const tier1 = tierSelect.value;
-        const period1 = periodSelect.value;
+        const version1 = versionSelectCompare.value; // 비교 드롭다운에서 값 가져옴
+        const tier1 = tierSelectCompare.value; // 비교 드롭다운에서 값 가져옴
+        const period1 = periodSelectCompare.value; // 비교 드롭다운에서 값 가져옴
 
-        const version2 = versionSelectCompare.value;
-        const tier2 = tierSelectCompare.value;
-        const period2 = periodSelectCompare.value;
+        const version2 = versionSelect.value; // 일반 드롭다운에서 값 가져옴 (데이터 2)
+        const tier2 = tierSelect.value; // 일반 드롭다운에서 값 가져옴 (데이터 2)
+        const period2 = periodSelect.value; // 일반 드롭다운에서 값 가져옴 (데이터 2)
+
 
         if (version1 === version2 && tier1 === tier2 && period1 === period2) {
             dataContainer.innerHTML = '데이터 1과 데이터 2가 동일합니다.';
@@ -526,7 +598,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ------------------------------------------
 
 
-// 7) 비교 테이블 렌더링
 // 7) 비교 테이블 렌더링
 function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배열입니다.
     if (!isCompareMode) return;
