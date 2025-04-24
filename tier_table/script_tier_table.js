@@ -661,9 +661,9 @@ document.addEventListener('DOMContentLoaded', function () {
                      // --- 비교 모드 툴팁 내용 형식 (요청대로) ---
                      tooltipContent = `
                          ${character.실험체}<br>
-                         픽률: ${pr1} → ${pr2}<br>
-                         RP 획득: ${rp1} → ${rp2}<br>
-                         승률: ${win1} → ${win2}
+                         픽률: ${pr2} → ${pr1}<br>
+                         RP 획득: ${rp2} → ${rp1}<br>
+                         승률: ${win2} → ${win1}
                      `;
                      // ----------------------------------------
                 } else {
