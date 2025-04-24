@@ -13,7 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 비교 모드 관련 요소
     const comparisonControlsDiv = document.getElementById('comparison-controls');
     const versionSelectCompare = document.getElementById('version-select-compare');
-    const tierSelectCompare = document('getElementById')('tier-select-compare');
+    // --- 수정: document('getElementById') 오류 수정 ---
+    const tierSelectCompare = document.getElementById('tier-select-compare'); // document.getElementById로 수정
+    // -----------------------------------------------
     const periodSelectCompare = document.getElementById('period-select-compare');
 
     // 상태
