@@ -35,7 +35,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
           # 루트 디렉토리의 versions.json을 포함시켜 푸시
-          git add versions.json data/
+          git add versions.json stats/
           
           git diff --cached --quiet && echo "변경사항 없음, 푸시 생략" || (
             git commit -m "자동 업데이트: 티어별 통계 저장"
