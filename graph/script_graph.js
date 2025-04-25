@@ -106,7 +106,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const tier    = tierSelect.value;
       const period  = periodSelect.value;
 
-      fetch(`/data/${version}/${tier}.json`)
+      // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+      fetch(`/stats/${version}/${tier}.json`)
+      // >>> 수정 끝
         .then(r => r.json())
         .then(json => {
           chartData = extractPeriodEntries(json['통계'], period);

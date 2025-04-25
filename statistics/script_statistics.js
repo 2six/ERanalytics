@@ -410,127 +410,132 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // 4) 단일 데이터 로드 ∙ 가공 ∙ 렌더
-    function loadAndDisplaySingle() {
-        if (isCompareMode) return; // 비교 모드에서는 실행되지 않음
-
-        dataContainer.innerHTML = '데이터 로딩 중...';
-        const version = versionSelect.value;
-        const tier = tierSelect.value;
-        const period = periodSelect.value;
-
-        fetch(`/data/${version}/${tier}.json`)
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                return res.json();
-            })
-            .then(json => {
-                const history = json['통계'];
-                const entries = extractPeriodEntries(history, period);
-
-                const avgScore = calculateAverageScore(entries);
-                const stddev = calculateStandardDeviation(entries, avgScore);
-
-                let scored = calculateTiers(entries, avgScore, stddev, tierConfig);
-                currentSortMode = 'value'; // 단일 모드는 value 고정
-                scored = sortData(scored, currentSortColumn, currentSortAsc, currentSortMode);
-
-                lastData = scored;
-                renderTable(scored); // 단일 모드 렌더링
-
+        // 4) 단일 데이터 로드 ∙ 가공 ∙ 렌더
+        function loadAndDisplaySingle() {
+            if (isCompareMode) return; // 비교 모드에서는 실행되지 않음
+    
+            dataContainer.innerHTML = '데이터 로딩 중...';
+            const version = versionSelect.value;
+            const tier = tierSelect.value;
+            const period = periodSelect.value;
+    
+            // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+            fetch(`/stats/${version}/${tier}.json`)
+            // >>> 수정 끝
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(json => {
+                    const history = json['통계'];
+                    const entries = extractPeriodEntries(history, period);
+    
+                    const avgScore = calculateAverageScore(entries);
+                    const stddev = calculateStandardDeviation(entries, avgScore);
+    
+                    let scored = calculateTiers(entries, avgScore, stddev, tierConfig);
+                    currentSortMode = 'value'; // 단일 모드는 value 고정
+                    scored = sortData(scored, currentSortColumn, currentSortAsc, currentSortMode);
+    
+                    lastData = scored;
+                    renderTable(scored); // 단일 모드 렌더링
+    
+                    // --- 추가: 팝업 설정 함수 호출 (렌더링 완료 후) ---
+                     setupTablePopup();
+                    // --------------------------------------------
+    
+                })
+                .catch(err => {
+                    console.error('데이터 로드 실패:', err);
+                    dataContainer.innerHTML = `데이터를 불러오는 데 실패했습니다: ${err.message}`;
+                });
+        }
+    
+        // 5) 비교 데이터 로드 ∙ 가공 ∙ 렌더
+        function loadAndDisplayComparison() {
+            if (!isCompareMode) return; // 단일 모드에서는 실행되지 않음
+    
+            dataContainer.innerHTML = '비교 데이터 로딩 중...';
+            const version1 = versionSelect.value;
+            const tier1 = tierSelect.value;
+            const period1 = periodSelect.value;
+    
+            const version2 = versionSelectCompare.value;
+            const tier2 = tierSelectCompare.value;
+            const period2 = periodSelectCompare.value;
+    
+            if (version1 === version2 && tier1 === tier2 && period1 === period2) {
+                dataContainer.innerHTML = '데이터 1과 데이터 2가 동일합니다.';
+                lastData = [];
+                return;
+            }
+    
+            // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+            const url1 = `/stats/${version1}/${tier1}.json`;
+            const url2 = `/stats/${version2}/${tier2}.json`;
+            // >>> 수정 끝
+    
+            Promise.all([
+                fetch(url1).then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url1}`);
+                    return res.json();
+                }).catch(err => { console.error(`Failed to fetch ${url1}:`, err); return null; }), // 에러 발생 시 null 반환
+                fetch(url2).then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url2}`);
+                    return res.json();
+                }).catch(err => { console.error(`Failed to fetch ${url2}:`, err); return null; }) // 에러 발생 시 null 반환
+            ])
+            .then(([json1, json2]) => {
+                if (!json1 && !json2) {
+                     dataContainer.innerHTML = '두 데이터 모두 불러오는 데 실패했습니다.';
+                     lastData = [];
+                     return;
+                }
+    
+                const history1 = json1 ? json1['통계'] : {};
+                const history2 = json2 ? json2['통계'] : {};
+    
+                // extractPeriodEntries는 이제 델타 계산 없이 해당 기간 데이터만 반환
+                const entries1 = extractPeriodEntries(history1, period1);
+                const entries2 = extractPeriodEntries(history2, period2);
+    
+                // 데이터가 하나라도 없으면 비교 불가
+                if (entries1.length === 0 && entries2.length === 0) {
+                     dataContainer.innerHTML = '선택한 기간에 해당하는 데이터가 없습니다.';
+                     lastData = [];
+                     return;
+                }
+    
+    
+                // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
+                const avgScore1 = calculateAverageScore(entries1);
+                const stddev1 = calculateStandardDeviation(entries1, avgScore1);
+                const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfig);
+    
+                const avgScore2 = calculateAverageScore(entries2);
+                const stddev2 = calculateStandardDeviation(entries2, avgScore2);
+                const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfig);
+    
+                // 두 데이터셋 병합 및 차이 계산
+                const comparisonData = mergeDataForComparison(scored1, scored2);
+    
+                // 정렬 (비교 모드에서는 병합된 데이터를 정렬)
+                const sortedComparisonData = sortData(comparisonData, currentSortColumn, currentSortAsc, currentSortMode);
+    
+                lastData = sortedComparisonData; // 비교 데이터를 lastData에 저장
+                renderComparisonTable(sortedComparisonData); // 비교 테이블 렌더링
+    
                 // --- 추가: 팝업 설정 함수 호출 (렌더링 완료 후) ---
-                 setupTablePopup();
+                setupTablePopup();
                 // --------------------------------------------
-
+    
             })
             .catch(err => {
-                console.error('데이터 로드 실패:', err);
-                dataContainer.innerHTML = `데이터를 불러오는 데 실패했습니다: ${err.message}`;
+                // Promise.all 내부에서 catch 했으므로 여기는 거의 오지 않음
+                console.error('비교 데이터 처리 실패:', err);
+                dataContainer.innerHTML = `데이터 처리 중 오류가 발생했습니다: ${err.message}`;
             });
-    }
-
-    // 5) 비교 데이터 로드 ∙ 가공 ∙ 렌더
-    function loadAndDisplayComparison() {
-        if (!isCompareMode) return; // 단일 모드에서는 실행되지 않음
-
-        dataContainer.innerHTML = '비교 데이터 로딩 중...';
-        const version1 = versionSelect.value;
-        const tier1 = tierSelect.value;
-        const period1 = periodSelect.value;
-
-        const version2 = versionSelectCompare.value;
-        const tier2 = tierSelectCompare.value;
-        const period2 = periodSelectCompare.value;
-
-        if (version1 === version2 && tier1 === tier2 && period1 === period2) {
-            dataContainer.innerHTML = '데이터 1과 데이터 2가 동일합니다.';
-            lastData = [];
-            return;
         }
-
-        const url1 = `/data/${version1}/${tier1}.json`;
-        const url2 = `/data/${version2}/${tier2}.json`; // <-- 오타 수정 완료된 상태
-
-        Promise.all([
-            fetch(url1).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url1}`);
-                return res.json();
-            }).catch(err => { console.error(`Failed to fetch ${url1}:`, err); return null; }), // 에러 발생 시 null 반환
-            fetch(url2).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url2}`);
-                return res.json();
-            }).catch(err => { console.error(`Failed to fetch ${url2}:`, err); return null; }) // 에러 발생 시 null 반환
-        ])
-        .then(([json1, json2]) => {
-            if (!json1 && !json2) {
-                 dataContainer.innerHTML = '두 데이터 모두 불러오는 데 실패했습니다.';
-                 lastData = [];
-                 return;
-            }
-
-            const history1 = json1 ? json1['통계'] : {};
-            const history2 = json2 ? json2['통계'] : {};
-
-            // extractPeriodEntries는 이제 델타 계산 없이 해당 기간 데이터만 반환
-            const entries1 = extractPeriodEntries(history1, period1);
-            const entries2 = extractPeriodEntries(history2, period2);
-
-            // 데이터가 하나라도 없으면 비교 불가
-            if (entries1.length === 0 && entries2.length === 0) {
-                 dataContainer.innerHTML = '선택한 기간에 해당하는 데이터가 없습니다.';
-                 lastData = [];
-                 return;
-            }
-
-
-            // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
-            const avgScore1 = calculateAverageScore(entries1);
-            const stddev1 = calculateStandardDeviation(entries1, avgScore1);
-            const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfig);
-
-            const avgScore2 = calculateAverageScore(entries2);
-            const stddev2 = calculateStandardDeviation(entries2, avgScore2);
-            const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfig);
-
-            // 두 데이터셋 병합 및 차이 계산
-            const comparisonData = mergeDataForComparison(scored1, scored2);
-
-            // 정렬 (비교 모드에서는 병합된 데이터를 정렬)
-            const sortedComparisonData = sortData(comparisonData, currentSortColumn, currentSortAsc, currentSortMode);
-
-            lastData = sortedComparisonData; // 비교 데이터를 lastData에 저장
-            renderComparisonTable(sortedComparisonData); // 비교 테이블 렌더링
-
-            // --- 추가: 팝업 설정 함수 호출 (렌더링 완료 후) ---
-            setupTablePopup();
-            // --------------------------------------------
-
-        })
-        .catch(err => {
-            // Promise.all 내부에서 catch 했으므로 여기는 거의 오지 않음
-            console.error('비교 데이터 처리 실패:', err);
-            dataContainer.innerHTML = `데이터 처리 중 오류가 발생했습니다: ${err.message}`;
-        });
-    }
 
     // --- 추가: 표 이미지 팝업 기능 설정 함수 ---
     function setupTablePopup() {

@@ -810,22 +810,47 @@ document.addEventListener('DOMContentLoaded', function () {
     // -------------------------------------------------------------------
 
 // --- 수정: loadAndRender 함수 끝에 setupTooltipPositioning 호출 추가 ---
-    function loadAndRender() {
-        // --- 수정: currentIsCompareMode 업데이트 ---
-        currentIsCompareMode = isCompareMode;
-        // -----------------------------------------
+function loadAndRender() {
+    // --- 수정: currentIsCompareMode 업데이트 ---
+    currentIsCompareMode = isCompareMode;
+    // -----------------------------------------
 
-        if (isCompareMode) {
-            const version1 = versionSelect.value;
-            const tier1 = tierSelect.value;
-            const period1 = periodSelect.value;
+    if (isCompareMode) {
+        const version1 = versionSelect.value;
+        const tier1 = tierSelect.value;
+        const period1 = periodSelect.value;
 
-            const version2 = versionSelectCompare.value;
-            const tier2 = tierSelectCompare.value;
-            const period2 = periodSelectCompare.value;
+        const version2 = versionSelectCompare.value;
+        const tier2 = tierSelectCompare.value;
+        const period2 = periodSelectCompare.value;
 
-            if (version1 === version2 && tier1 === tier2 && period1 === period2) {
-                 table.innerHTML = '<tr><td colspan="15">데이터 1과 데이터 2가 동일합니다.</td></tr>'; // colspan 조정 필요
+        if (version1 === version2 && tier1 === tier2 && period1 === period2) {
+             table.innerHTML = '<tr><td colspan="15">데이터 1과 데이터 2가 동일합니다.</td></tr>'; // colspan 조정 필요
+             // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
+             currentCharacterData = []; // 데이터 비어있음
+             setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
+             // -------------------------------------------------
+             return;
+        }
+
+        // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+        const url1 = `/stats/${version1}/${tier1}.json`;
+        const url2 = `/stats/${version2}/${tier2}.json`;
+        // >>> 수정 끝
+
+        Promise.all([
+            fetch(url1).then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url1}`);
+                return res.json();
+            }).catch(err => { console.error(`Failed to fetch ${url1}:`, err); return null; }), // 에러 발생 시 null 반환
+            fetch(url2).then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url2}`);
+                return res.json();
+            }).catch(err => { console.error(`Failed to fetch ${url2}:`, err); return null; }) // 에러 발생 시 null 반환
+        ])
+        .then(([json1, json2]) => {
+            if (!json1 && !json2) {
+                 table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
                  // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
                  currentCharacterData = []; // 데이터 비어있음
                  setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
@@ -833,22 +858,99 @@ document.addEventListener('DOMContentLoaded', function () {
                  return;
             }
 
-            const url1 = `/data/${version1}/${tier1}.json`;
-            const url2 = `/data/${version2}/${tier2}.json`;
+            // common.js의 extractPeriodEntries 사용 (기간별 스냅샷 추출)
+            const history1 = json1 ? json1['통계'] : {};
+            const history2 = json2 ? json2['통계'] : {};
 
-            Promise.all([
-                fetch(url1).then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url1}`);
-                    return res.json();
-                }).catch(err => { console.error(`Failed to fetch ${url1}:`, err); return null; }), // 에러 발생 시 null 반환
-                fetch(url2).then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url2}`);
-                    return res.json();
-                }).catch(err => { console.error(`Failed to fetch ${url2}:`, err); return null; }) // 에러 발생 시 null 반환
-            ])
-            .then(([json1, json2]) => {
-                if (!json1 && !json2) {
-                     table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+            // commonExtractPeriodEntries 함수는 common.js에서 선언된 전역(또는 스크립트) 함수를 사용
+            const entries1 = commonExtractPeriodEntries(history1, period1);
+            const entries2 = commonExtractPeriodEntries(history2, period2);
+
+            // 데이터가 하나라도 없으면 비교 불가 (혹은 해당 기간 데이터가 없으면)
+            // mergeDataForComparison 결과가 비어있는지로 판단합니다.
+            // mergeDataForComparison는 한쪽에만 데이터가 있어도 결과를 반환하므로,
+            // 최소한 한쪽 데이터는 있어야 테이블을 그릴 수 있습니다.
+
+            // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
+            const avgScore1 = calculateAverageScore(entries1);
+            const stddev1 = calculateStandardDeviation(entries1, avgScore1);
+            const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal);
+
+            const avgScore2 = calculateAverageScore(entries2);
+            const stddev2 = calculateStandardDeviation(entries2, avgScore2);
+            const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal);
+
+
+            // 두 데이터셋 병합 및 차이 계산 (common.js 함수 사용)
+            const comparisonData = mergeDataForComparison(scored1, scored2);
+            // --- 수정: currentCharacterData 업데이트 ---
+            currentCharacterData = comparisonData;
+            // -----------------------------------------
+
+            // 병합 결과가 없으면 표시할 데이터가 없는 것임
+            if (comparisonData.length === 0) {
+                table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
+                // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
+                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
+                // -------------------------------------------------
+                return;
+            }
+
+
+            // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
+            displayTierTable(comparisonData, isCompareMode);
+            setupTablePopup();
+            // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
+            setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
+            // --------------------------------------------------
+
+        })
+        .catch(err => {
+            console.error('비교 데이터 처리 실패:', err);
+            table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
+            // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
+            currentCharacterData = []; // 데이터 비어있음
+            setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
+            // -------------------------------------------------
+        });
+
+    } else {
+        // --- 기존 단일 모드 로직 ---
+        const version = versionSelect.value;
+        const tier    = tierSelect.value;
+        const period  = periodSelect.value;
+
+        // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+        fetch(`/stats/${version}/${tier}.json`)
+        // >>> 수정 끝
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            })
+            .then(json => {
+                const history = json['통계'];
+                // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
+                // 이 파일의 상단에 정의된 extractPeriodEntries 함수를 사용
+                const entries = extractPeriodEntries(history, period);
+
+                const avgScore = calculateAverageScore(entries);
+                const stddev   = calculateStandardDeviation(entries, avgScore);
+                const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+
+                // --- 수정: currentCharacterData 업데이트 ---
+                currentCharacterData = scored;
+                // -----------------------------------------
+
+
+                if (entries.length === 0 && period !== 'latest') {
+                     table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
+                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
+                     currentCharacterData = []; // 데이터 비어있음
+                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
+                     // -------------------------------------------------
+                     return;
+                } else if (entries.length === 0 && period === 'latest') {
+                     table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
                      // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
                      currentCharacterData = []; // 데이터 비어있음
                      setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
@@ -856,124 +958,26 @@ document.addEventListener('DOMContentLoaded', function () {
                      return;
                 }
 
-                // common.js의 extractPeriodEntries 사용 (기간별 스냅샷 추출)
-                const history1 = json1 ? json1['통계'] : {};
-                const history2 = json2 ? json2['통계'] : {};
 
-                // commonExtractPeriodEntries 함수는 common.js에서 선언된 전역(또는 스크립트) 함수를 사용
-                const entries1 = commonExtractPeriodEntries(history1, period1);
-                const entries2 = commonExtractPeriodEntries(history2, period2);
-
-                // 데이터가 하나라도 없으면 비교 불가 (혹은 해당 기간 데이터가 없으면)
-                // mergeDataForComparison 결과가 비어있는지로 판단합니다.
-                // mergeDataForComparison는 한쪽에만 데이터가 있어도 결과를 반환하므로,
-                // 최소한 한쪽 데이터는 있어야 테이블을 그릴 수 있습니다.
-
-                // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
-                const avgScore1 = calculateAverageScore(entries1);
-                const stddev1 = calculateStandardDeviation(entries1, avgScore1);
-                const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal);
-
-                const avgScore2 = calculateAverageScore(entries2);
-                const stddev2 = calculateStandardDeviation(entries2, avgScore2);
-                const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal);
-
-
-                // 두 데이터셋 병합 및 차이 계산 (common.js 함수 사용)
-                const comparisonData = mergeDataForComparison(scored1, scored2);
-                // --- 수정: currentCharacterData 업데이트 ---
-                currentCharacterData = comparisonData;
-                // -----------------------------------------
-
-                // 병합 결과가 없으면 표시할 데이터가 없는 것임
-                if (comparisonData.length === 0) {
-                    table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                    // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                    // -------------------------------------------------
-                    return;
-                }
-
-
-                // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
-                displayTierTable(comparisonData, isCompareMode);
+                // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
+                displayTierTable(scored, isCompareMode);
                 setupTablePopup();
-                // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
+                // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
                 setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
                 // --------------------------------------------------
-
             })
             .catch(err => {
-                console.error('비교 데이터 처리 실패:', err);
-                table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
-                // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
+                console.error('데이터 로드 실패:', err);
+                table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                 // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
                 currentCharacterData = []; // 데이터 비어있음
                 setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                 // -------------------------------------------------
             });
-
-        } else {
-            // --- 기존 단일 모드 로직 ---
-            const version = versionSelect.value;
-            const tier    = tierSelect.value;
-            const period  = periodSelect.value;
-
-            fetch(`/data/${version}/${tier}.json`)
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                    return res.json();
-                })
-                .then(json => {
-                    const history = json['통계'];
-                    // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
-                    // 이 파일의 상단에 정의된 extractPeriodEntries 함수를 사용
-                    const entries = extractPeriodEntries(history, period);
-
-                    const avgScore = calculateAverageScore(entries);
-                    const stddev   = calculateStandardDeviation(entries, avgScore);
-                    const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
-
-                    // --- 수정: currentCharacterData 업데이트 ---
-                    currentCharacterData = scored;
-                    // -----------------------------------------
-
-
-                    if (entries.length === 0 && period !== 'latest') {
-                         table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
-                         // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                         currentCharacterData = []; // 데이터 비어있음
-                         setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                         // -------------------------------------------------
-                         return;
-                    } else if (entries.length === 0 && period === 'latest') {
-                         table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                         // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                         currentCharacterData = []; // 데이터 비어있음
-                         setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                         // -------------------------------------------------
-                         return;
-                    }
-
-
-                    // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
-                    displayTierTable(scored, isCompareMode);
-                    setupTablePopup();
-                    // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
-                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
-                    // --------------------------------------------------
-                })
-                .catch(err => {
-                    console.error('데이터 로드 실패:', err);
-                    table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                     // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                    currentCharacterData = []; // 데이터 비어있음
-                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                    // -------------------------------------------------
-                });
-            // --------------------------
-        }
-        // ---------------------------------
+        // --------------------------
     }
+    // ---------------------------------
+}
 
 }); // DOMContentLoaded 끝
 
