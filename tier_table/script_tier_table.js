@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', function () {
               // --- 수정: 툴팁 컨테이너에 data-character-name 속성만 추가 ---
               // 툴팁 내용은 JS에서 데이터를 찾아 동적으로 생성합니다.
               html += `<span class="tooltip-container" data-character-name="${e.실험체}">
-                         <img src="/image/${imgName}.png" alt="${e.실험체}">
+                         <img src="/image/tier_table/${imgName}.png" alt="${e.실험체}">
                          ${rankChangeOverlayHtml}
                        </span>`;
               // -----------------------------------------------------------
