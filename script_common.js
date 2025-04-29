@@ -89,10 +89,10 @@ function calculateAverageScore(data) {
 
     let sumRP = 0, sumWin = 0, sumTop3 = 0;
     validData.forEach(i => {
-        const w = i['표본수'] / total;
-        sumRP += (i['RP 획득'] || 0) * w;
-        sumWin += (i['승률'] || 0) * w;
-        sumTop3 += (i['TOP 3'] || 0) * w;
+        const w = (i['표본수'] || 0) / total; // 표본수 null/undefined 방지
+        sumRP += (i['RP 획득'] || 0) * w; // RP 획득 null/undefined 방지
+        sumWin += (i['승률'] || 0) * w; // 승률 null/undefined 방지
+        sumTop3 += (i['TOP 3'] || 0) * w; // TOP 3 null/undefined 방지
     });
     return getRPScore(sumRP) + sumWin * 9 + sumTop3 * 3;
 }
@@ -104,20 +104,26 @@ function calculateStandardDeviation(data, avgScore) {
     if (total === 0) return 0;
 
     const variance = validData.reduce((sum, item) => {
-        const s = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3;
-        return sum + Math.pow(s - avgScore, 2) * (item['표본수'] / total);
+        const s = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 방지
+        return sum + Math.pow(s - avgScore, 2) * ((item['표본수'] || 0) / total); // 표본수 null/undefined 방지
     }, 0);
     return Math.sqrt(variance);
 }
 
 function calculateTiers(data, avgScore, stddev, config) {
-    const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0);
-    const avgPickRate = total === 0 ? 0 : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0) / total / (data.length || 1);
+    const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0); // 표본수 null/undefined 방지
+    const avgPickRate = total === 0 ? 0 : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0) / total / (data.length || 1); // 표본수 null/undefined 방지
 
     const k = 1.5;
 
     return data.map(item => {
-        if ((item['표본수'] || 0) === 0) { // null/undefined 대비
+        // 이 함수는 델타 데이터나 스냅샷 데이터 모두 처리할 수 있어야 합니다.
+        // 델타 데이터의 '표본수'는 증가분, 스냅샷 데이터의 '표본수'는 해당 시점의 총 표본수입니다.
+        // 점수 계산 로직은 '표본수', 'RP 획득', '승률', 'TOP 3' 값을 사용하므로,
+        // 이 값들이 델타를 나타내는지, 스냅샷을 나타내는지에 따라 점수와 티어가 계산됩니다.
+        // 이는 사용자 요구사항 ("델타 통계를 가져와서 비교")에 부합합니다.
+
+        if ((item['표본수'] || 0) === 0) { // null/undefined 대비 및 표본수 0인 경우
              return {
                  ...item,
                  '점수': 0.00,
@@ -137,10 +143,10 @@ function calculateTiers(data, avgScore, stddev, config) {
         if (r > 5) {
             factor += 0.05 * (1 - Math.min((r - 5) / 5, 1));
         }
-        const baseScore = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3;
+        const baseScore = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 방지
         let score;
 
-        if (avgPickRate !== 0 && (item['표본수'] || 0) < total * avgPickRate) {
+        if (avgPickRate !== 0 && (item['표본수'] || 0) < total * avgPickRate) { // null/undefined 방지
             score =
                 baseScore * (originWeight + meanWeight * Math.min(1, pickRate / avgPickRate)) +
                 avgScore * meanWeight * (1 - Math.min(1, pickRate / avgPickRate));
@@ -155,13 +161,12 @@ function calculateTiers(data, avgScore, stddev, config) {
             ...item,
             '점수': parseFloat(score.toFixed(2)),
             '티어': tierLabel,
-            '픽률': parseFloat((pickRate * 100).toFixed(2))
+            '픽률': parseFloat((pickRate * 100).toFixed(2)) // 픽률은 전체 표본 중 해당 캐릭터 표본 비율
         };
     });
 }
 
-// 8. 데이터 정렬 (mode 인자 추가 및 로직 수정)
-// mode: 'value' (단일), 'value1' (비교 Ver1), 'value2' (비교 Ver2), 'delta' (비교 변화량)
+// 8. 데이터 정렬 (mode 인자 추가 및 로직 수정) - 기존 유지
 function sortData(data, column, asc, mode = 'value') {
     if (!data || data.length === 0) return [];
 
@@ -296,7 +301,7 @@ function sortData(data, column, asc, mode = 'value') {
    });
 }
 
-// 9. 기간별 데이터 추출 함수 (델타 계산 로직 제거)
+// 9. 기간별 데이터 추출 함수 (스냅샷 반환) - 기존 유지
 function extractPeriodEntries(history, period) {
     const keys = Object.keys(history).sort();
     if (keys.length === 0) return [];
@@ -345,14 +350,115 @@ function extractPeriodEntries(history, period) {
     return history[pastKey]; // Return the data for the found past key
 }
 
-// 10. 색상 보간 헬퍼 함수 (기존 함수 유지)
+
+// 10. 기간 동안 추가된 표본의 통계 추출 (델타 계산) - 신규 함수
+function extractDeltaEntries(history, period) {
+    const keys = Object.keys(history).sort();
+    if (keys.length === 0) return [];
+
+    const latestKey = keys[keys.length - 1];
+    const latestData = history[latestKey];
+
+    // latest 기간은 델타 계산이 의미 없으므로 스냅샷을 반환하거나 빈 배열 반환
+    // 사용자 요청: '최근 N일'만 델타를 사용하므로, latest는 여기서 처리하지 않고 호출하는 쪽에서 스냅샷을 가져오도록 함
+    // 따라서 period가 'latest'이면 이 함수를 호출하지 않도록 설계합니다.
+    if (period === 'latest') {
+         console.error("extractDeltaEntries should not be called with 'latest' period.");
+         return []; // 잘못된 호출 방지
+    }
+
+    const days = period === '3day' ? 3 : 7;
+    let latestDate = new Date(latestKey.replace('_', 'T'));
+    if (isNaN(latestDate.getTime())) {
+         const parts = latestKey.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
+         if (parts) {
+              latestDate = new Date(Date.UTC(parts[1], parts[2]-1, parts[3], parts[4], parts[5]));
+         } else {
+              console.error("Unsupported date format in extractDeltaEntries:", latestKey);
+              return [];
+         }
+    }
+    latestDate.setUTCHours(0, 0, 0, 0); // Normalize to start of day UTC
+
+    const cutoff = new Date(latestDate.getTime());
+    cutoff.setUTCDate(cutoff.getUTCDate() - days);
+
+    // Find the latest key *before or on* the cutoff date
+    const pastKey = keys.slice().reverse().find(k => {
+        let kDate;
+        const kParts = k.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
+         if (kParts) {
+              kDate = new Date(Date.UTC(kParts[1], kParts[2]-1, kParts[3], kParts[4], kParts[5]));
+         } else {
+              kDate = new Date(k.replace('_', 'T'));
+         }
+        if (isNaN(kDate.getTime())) return false;
+
+        kDate.setUTCHours(0,0,0,0); // Normalize to start of day UTC
+        return kDate <= cutoff;
+    });
+
+    // 과거 데이터가 없으면 델타 계산 불가
+    if (!pastKey) {
+        console.warn(`No past data found before cutoff date ${cutoff.toISOString()} for period '${period}' in extractDeltaEntries. Cannot calculate delta.`);
+        return [];
+    }
+
+    const prevData = history[pastKey];
+    const currMap = Object.fromEntries(latestData.map(d => [d.실험체, d]));
+    const prevMap = Object.fromEntries(prevData.map(d => [d.실험체, d]));
+    const delta = [];
+
+    // Iterate through characters present in the latest data to calculate delta
+    for (const name in currMap) {
+        const c = currMap[name];
+        const p = prevMap[name];
+
+        // Only calculate delta for characters present in both periods and with increased sample size
+        const currSample = c['표본수'] || 0;
+        const prevSample = p ? (p['표본수'] || 0) : 0; // 과거 데이터에 없는 경우 표본수 0으로 간주
+
+        const diff = currSample - prevSample;
+
+        // 표본수가 증가한 경우에만 델타 계산
+        if (diff > 0) {
+             // Calculate weighted average of stats for the *new* sample (diff)
+             const rpDiff = ((c['RP 획득'] || 0) * currSample) - ((p ? (p['RP 획득'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
+             const winDiff = ((c['승률'] || 0) * currSample) - ((p ? (p['승률'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
+             const top3Diff = ((c['TOP 3'] || 0) * currSample) - ((p ? (p['TOP 3'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
+             const rankDiff = ((c['평균 순위'] || 0) * currSample) - ((p ? (p['평균 순위'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
+
+
+            delta.push({
+                '실험체': name,
+                '표본수': diff, // Sample size is the *difference*
+                'RP 획득': rpDiff / diff,
+                '승률':    winDiff / diff,
+                'TOP 3':   top3Diff / diff,
+                '평균 순위': rankDiff / diff
+                // '점수', '티어', '픽률'은 calculateTiers에서 이 델타 스탯을 기반으로 계산될 것임
+            });
+        } else if (diff < 0) {
+            // 표본수가 감소한 경우 (데이터 수집 방식에 따라 발생 가능성 있음) - 델타로 포함하지 않음
+            // console.warn(`Sample size decreased for ${name} (${prevSample} -> ${currSample}). Skipping delta calculation.`);
+        } else if (diff === 0 && currSample > 0) {
+             // 표본수 변화는 없지만 데이터가 있는 경우 - 델타로 포함하지 않음
+             // console.log(`Sample size unchanged for ${name} (${currSample}). Skipping delta calculation.`);
+        }
+        // diff <= 0 인 경우는 델타 결과에 포함시키지 않음
+    }
+    return delta;
+}
+
+
+// 11. 색상 보간 헬퍼 함수 (기존 함수 유지)
 function interpolateColor(start, end, ratio) {
     const t = Math.max(0, Math.min(1, ratio));
     const rgb = start.map((s,i) => Math.round(s + (end[i] - s) * t));
     return `rgba(${rgb.join(',')}, ${0.3 + 0.5 * t})`;
 }
 
-// 티어 색상 (단일 모드)
+// 티어 색상 (단일 모드) - 기존 유지
 const TIER_COLORS_SINGLE = {
     'S+': 'rgba(255,127,127, 1)',
     'S':  'rgba(255,191,127, 1)',
@@ -363,7 +469,7 @@ const TIER_COLORS_SINGLE = {
     'F':  'rgba(127,255,255, 1)',
 };
 
-// 11. 단일 데이터용 그라디언트 색상 적용
+// 12. 단일 데이터용 그라디언트 색상 적용 - 기존 유지
 function applyGradientColorsSingle(table) {
     if (!table) return;
     const rows = [...table.querySelectorAll('tbody tr')];
@@ -382,7 +488,7 @@ function applyGradientColorsSingle(table) {
         // 색상 스케일링에 사용할 값들을 모읍니다.
         const valuesOnly = rows.map(r => {
              const cell = r.children[i];
-             const text = cell.textContent.replace('%','');
+             const text = cell.textContent.replace('%','').replace('위',''); // '위' 제거 추가
              const val = parseFloat(text);
              return isNaN(val) ? null : val;
         }).filter(v => v !== null);
@@ -406,7 +512,7 @@ function applyGradientColorsSingle(table) {
              // 그 외 스탯 열은 픽률을 가중치로 사용한 가중평균
              const valuesWithPickRate = rows.map(r => {
                   const cell = r.children[i];
-                  const text = cell.textContent.replace('%','');
+                  const text = cell.textContent.replace('%','').replace('위',''); // '위' 제거 추가
                   const val = parseFloat(text);
 
                   let pickRate = 0;
@@ -435,7 +541,7 @@ function applyGradientColorsSingle(table) {
 
         rows.forEach((r) => {
             const cell = r.children[i];
-            const cellText = cell.textContent.replace('%','');
+            const cellText = cell.textContent.replace('%','').replace('위',''); // '위' 제거 추가
             const v = parseFloat(cellText);
 
             if (isNaN(v) || v === null) {
@@ -502,7 +608,7 @@ function applyGradientColorsSingle(table) {
     }
 }
 
-// 12. 비교 데이터용 그라디언트 색상 적용
+// 12. 비교 데이터용 그라디언트 색상 적용 - 기존 유지
 // data: 정렬된 비교 데이터 배열 (행 객체들의 배열)
 // mode: 현재 정렬 모드 ('value1', 'value2', 'delta')
 // sortedCol: 현재 정렬 기준 컬럼의 data-col 값 ('점수', '티어', 등)
@@ -512,7 +618,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
     const headers = Array.from(table.querySelectorAll('thead th'));
 
     // 픽률 정보를 가져올 컬럼 인덱스를 찾습니다. (가중치로 사용)
-    const pickRateColIndex = headers.findIndex(th => th.dataset.col === '픽률'); // 픽률 컬럼 인덱스
+    const pickRateColIndex1 = headers.findIndex(th => th.dataset.col === '픽률'); // '픽률' 헤더를 찾아 인덱스 확인
 
     headers.forEach((th, i) => {
         const col = th.dataset.col;
@@ -523,10 +629,11 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         }
 
         // --- 티어 컬럼 색상 로직 ---
+        // 티어 컬럼은 숫자형 델타 색상 대신 티어 변화 문자열 기반 색상 또는 Value1/Value2 기반 티어 색상을 사용
         if (col === '티어') {
             rows.forEach((r, idx) => {
                 const cell = r.children[i];
-                cell.style.backgroundColor = ''; // Clear any previous inline style for Tier column
+                cell.style.backgroundColor = ''; // Clear any previous inline style
 
                 if (mode === 'value1') {
                     // Value1 mode: Apply standard tier color based on Ver1 Tier value
@@ -543,7 +650,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
                         cell.style.backgroundColor = color;
                     }
                 } else if (mode === 'delta') {
-                    // Delta mode: Apply gradient based on numeric rank change
+                    // Delta mode: Apply gradient based on numeric rank change (if available)
                     const rankChangeValue = data[idx]['순위 변화값']; // Get rank change for this row
 
                     // Apply gradient only if rank change is numeric
@@ -559,7 +666,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 
                          if (valuesOnly.length === 0) {
                               // No numeric delta data in column, no coloring
-                              return;
+                              return; // Exit this column's processing
                          }
 
                          const min = Math.min(...valuesOnly);
@@ -595,7 +702,8 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
             return; // Finished processing Tier column, move to next header
         }
 
-        // --- 다른 숫자 컬럼 색상 로직 (기존 그대로) ---
+
+        // --- 다른 숫자 컬럼 색상 로직 ---
         let valueKey; // Key to get the value for gradient calculation
         let isBetterWhenLower; // Is lower value better for coloring?
         let useSimpleAverage = false; // Should we use simple average instead of weighted?
@@ -606,19 +714,20 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
          } else if (mode === 'value2') {
              valueKey = col + ' (Ver2)';
          } else { // mode === 'delta'
+             // Delta 모드에서는 변화량 키를 사용하고, 기본적으로 단순 평균 사용
              valueKey = (col === '평균 순위') ? '평균 순위 변화량' : col + ' 변화량';
+             useSimpleAverage = true; // Delta 모드는 항상 단순 평균
          }
 
          // Determine if lower is better based on the valueKey
          const lowerKeysAreBetter = ['평균 순위', '평균 순위 (Ver1)', '평균 순위 (Ver2)', '순위 변화값', '평균 순위 변화량'];
          isBetterWhenLower = lowerKeysAreBetter.includes(valueKey);
 
-         // Use simple average for Pick Rate (any mode) and any column in Delta mode
-         if (col === '픽률' || mode === 'delta') {
+         // Value1 또는 Value2 모드에서 '픽률' 컬럼은 단순 평균
+         if (mode !== 'delta' && col === '픽률') {
              useSimpleAverage = true;
          }
-         // Otherwise, use weighted average (default is false)
-        // Note: Tier column now handled separately above, so this weighted average logic applies only to other numeric columns
+         // 그 외 (Value1/Value2 모드의 점수, RP, 승률 등)는 가중평균
 
         // Collect numeric values for the determined valueKey
         const valuesOnly = data.map(d => {
@@ -628,7 +737,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 
         if (valuesOnly.length === 0) {
              rows.forEach(tr => tr.children[i].style.backgroundColor = '');
-             return; // Changed from continue to return
+             return; // Exit this column's processing
         }
 
         const min = Math.min(...valuesOnly);
@@ -639,16 +748,17 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         if (useSimpleAverage) {
              avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length;
         } else {
-            // Weighted average
+            // Weighted average (Only for Value1/Value2 mode, non-PickRate columns)
             const pickRateKey = mode === 'value1' ? '픽률 (Ver1)' : '픽률 (Ver2)';
             const tuples = data.map(d => {
                 const v = d[valueKey];
                 const pr = d[pickRateKey];
+                // 픽률이 숫자가 아니거나 0이면 가중치 적용 불가 (Value1/Value2 픽률 컬럼이 누락된 경우 등)
                 return (typeof v === 'number' && typeof pr === 'number' && pr > 0) ? {v, pr: pr/100} : null;
             }).filter(x=>x);
             const totalPr = tuples.reduce((s,x)=>s+x.pr,0);
             const wsum    = tuples.reduce((s,x)=>s+x.v*x.pr,0);
-            avg = totalPr > 0 ? wsum/totalPr : 0;
+            avg = totalPr > 0 ? wsum/totalPr : 0; // 픽률 합이 0이면 평균 0
         }
 
 
@@ -657,10 +767,10 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
             const cell = r.children[i];
             const v = data[idx][valueKey]; // Get the value for this specific row
 
-            // Skip coloring if value is not numeric
+            // Skip coloring if value is not numeric (e.g., '신규 → ', '→ 삭제')
             if (typeof v !== 'number' || v === null || v === undefined) {
                  cell.style.backgroundColor = ''; // Clear any previous inline style
-                 // CSS rules will handle non-numeric states like '신규'/'삭제'
+                 // CSS rules handle non-numeric states like '신규'/'삭제' for text/color
                  return;
             }
 
@@ -690,7 +800,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
     });
 }
 
-// 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
+// 두 데이터셋 병합 및 변화량 계산 (common.js로 이동) - 기존 유지
 function mergeDataForComparison(data1, data2) {
     const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
     const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
@@ -701,11 +811,14 @@ function mergeDataForComparison(data1, data2) {
     const statsCols = ['점수', '픽률', 'RP 획득', '승률', 'TOP 3', '평균 순위', '표본수'];
 
     // 순위 계산을 위해 data1, data2를 점수 기준으로 미리 정렬합니다.
+    // (data1, data2는 calculateTiers를 거친 상태이며, '점수' 키를 가집니다)
     const sortedData1 = [...data1].sort((a,b) => {
+         // 점수가 같으면 실험체 이름으로 정렬하여 순위의 일관성 확보
          if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
          return String(a['실험체']).localeCompare(String(b['실험체']));
     });
      const sortedData2 = [...data2].sort((a,b) => {
+         // 점수가 같으면 실험체 이름으로 정렬하여 순위의 일관성 확보
          if ((b['점수'] || 0) !== (a['점수'] || 0)) return (b['점수'] || 0) - (a['점수'] || 0);
          return String(a['실험체']).localeCompare(String(b['실험체']));
      });
@@ -715,34 +828,37 @@ function mergeDataForComparison(data1, data2) {
 
 
     allCharacters.forEach(charName => {
-        const d1 = map1[charName];
-        const d2 = map2[charName];
+        const d1 = map1[charName]; // data1 (Ver1) 데이터
+        const d2 = map2[charName]; // data2 (Ver2) 데이터
 
         const result = { '실험체': charName };
 
+        // Ver1과 Ver2의 각 스탯 값을 결과 객체에 추가
         statsCols.forEach(col => {
-             const val1 = d1 ? d1[col] : null;
-             const val2 = d2 ? d2[col] : null;
+             result[`${col} (Ver1)`] = d1 ? d1[col] : null;
+             result[`${col} (Ver2)`] = d2 ? d2[col] : null;
 
-             result[`${col} (Ver1)`] = val1;
-             result[`${col} (Ver2)`] = val2;
+             // 변화량 계산 (Value2 - Value1)
+             const val1 = result[`${col} (Ver1)`];
+             const val2 = result[`${col} (Ver2)`];
 
-             // 숫자 값인 경우에만 변화량 계산
              if (typeof val1 === 'number' && typeof val2 === 'number') {
                   result[`${col} 변화량`] = val2 - val1;
              } else {
-                  result[`${col} 변화량`] = null; // 둘 중 하나라도 숫자가 아니면 변화량 없음
+                  // 둘 중 하나라도 숫자가 아니면 변화량 없음
+                  result[`${col} 변화량`] = null;
              }
         });
 
         // 티어 변화 계산
-         const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
-         const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
+        // calculateTiers에서 이미 '티어' 키가 계산되어 있음.
+        // d1, d2가 null일 경우 해당 시점에 데이터가 없다는 의미.
+        const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
+        const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
 
-         // --- 추가: Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장 ---
+         // Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장
          result['티어 (Ver1)'] = d1 ? d1['티어'] : null;
          result['티어 (Ver2)'] = d2 ? d2['티어'] : null;
-         // ----------------------------------------------------
 
 
          if (!d1 && d2) {
