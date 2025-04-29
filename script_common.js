@@ -94,7 +94,7 @@ function calculateAverageScore(data) {
     let sumRP = 0, sumWin = 0, sumTop3 = 0;
     validData.forEach(i => {
         const w = (i['표본수'] || 0) / total; // 표본수가 null/undefined인 경우 0으로 처리
-        // 승률, TOP 3는 0-1 스케일로 입력된다고 가정
+        // 승률, TOP 3는 0-1 스케일로 입력된다고 가정합니다.
         sumRP += (i['RP 획득'] || 0) * w; // 스탯 값이 null/undefined인 경우 0으로 처리
         sumWin += (i['승률'] || 0) * w;
         sumTop3 += (i['TOP 3'] || 0) * w;
@@ -305,13 +305,13 @@ function calculatePeriodStatsForNewSamples(snapshotLatest, snapshotPast) {
         return [];
     }
     // 과거 스냅샷은 비어있을 수 있습니다.
-    if (!Array.isArray(snapshotPast)) {
+    if (!Array.isArray(snapshotPast)) { // past는 비어있을 수 있습니다.
          console.warn("calculatePeriodStatsForNewSamples: snapshotPast이 유효하지 않음. 빈 것으로 처리.");
          snapshotPast = []; // 안전하게 빈 배열로 처리
     }
 
-    // 과거 스냅샷 맵 생성 (과거 스냅샷이 null일 경우 빈 맵)
-    const pastMap = Object.fromEntries((snapshotPast || []).map(d => [d.실험체, d]));
+
+    const pastMap = Object.fromEntries((snapshotPast || []).map(d => [d.실험체, d])); // 과거 스냅샷 맵 생성
 
     // 최신 스냅샷에 존재하는 모든 캐릭터를 대상으로 총 표본 증가분을 계산합니다.
     let totalSampleDiffPositive = 0; // 양수 표본 증가분 합계 (신규 캐릭터 포함)
@@ -421,7 +421,7 @@ function getProcessedStatsForPeriod(history, period, tierConfig) {
         // JSON 예시대로 승률/TOP3/픽률은 이미 0-1 스케일입니다.
         dataToProcess = getSnapshotAtTimestampKey(history, latestKey);
 
-        // latest 스냅샷 데이터의 각 캐릭터 객체에 RP, 승률, TOP 3, 평균 순위, 픽률, 표본수가 모두 있는지 확인합니다.
+        // latest 스냅샷 데이터의 각 캐릭터 객체에 필요한 필드가 모두 있는지 확인합니다.
         // 없으면 0 또는 null로 처리합니다. calculateTiers 등이 이를 처리할 수 있어야 합니다.
         // calculateAverageScore, calculateStandardDeviation, calculateTiers 함수는 이미 item['필드명'] || 0 형태로 방어 로직을 가지고 있습니다.
 
@@ -639,12 +639,17 @@ const TIER_COLORS_SINGLE = {
     'F':  'rgba(127,255,255, 1)',
 };
 
+// ReferenceError 해결: goodCols와 badCols를 함수 밖으로 이동시켰습니다.
+const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
+const badCols = ['평균 순위'];
+
+
 // 11. 단일 데이터용 그라디언트 색상 적용
 function applyGradientColorsSingle(table) {
     if (!table) return;
     const rows = [...table.querySelectorAll('tbody tr')];
     const headers = [...table.querySelectorAll('thead th')];
-    // ReferenceError 해결: goodCols와 badCols를 applyGradientColorsSingle 함수 밖으로 이동시켰습니다.
+    // ReferenceError 해결: goodCols와 badCols를 함수 밖으로 이동시켰습니다.
     // const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
     // const badCols = ['평균 순위'];
 
@@ -654,7 +659,7 @@ function applyGradientColorsSingle(table) {
 
     headers.forEach((th, i) => {
         const col = th.dataset.col;
-        // ReferenceError 해결: goodCols와 badCols를 applyGradientColorsSingle 함수 밖으로 이동시켰습니다.
+        // ReferenceError 해결: goodCols와 badCols를 함수 밖으로 이동시켰습니다.
         // if (![...goodCols, ...badCols].includes(col)) return;
          const isGoodCol = goodCols.includes(col);
          const isBadCol = badCols.includes(col);
@@ -717,7 +722,6 @@ function applyGradientColorsSingle(table) {
              // weightedSum은 스탯 값(다양한 스케일) * 픽률 가중치(0-1 스케일) 의 합
              let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
 
-             // 平均はweightedSum / totalPickRate. この平均のスケールはステータス値のスケールを追跡します。
              // 평균은 weightedSum / totalPickRate. 이 평균의 스케일은 스탯 값의 스케일을 따라갑니다.
              avg = totalPickRate === 0 ? (valuesOnly.length > 0 ? valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length : 0) : weightedSum / totalPickRate; // Fallback to simple average if totalPickRate is 0 or valuesOnly is empty
         }
@@ -757,11 +761,11 @@ function applyGradientColorsSingle(table) {
             ratio = Math.max(0, Math.min(1, ratio)); // Clamp between 0 and 1
 
             let color;
-            // Interpolate from Blue (0 - Worst) to White (0.5 - Avg) to Red (1 - Best)
-            // Based on the ratio.
+            // 파랑 (0 - 최악) 에서 흰색 (0.5 - 평균) 으로 빨강 (1 - 최고) 으로 색 보간
+            // ratio에 기반합니다.
             color = (ratio >= 0.5)
-                 ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
-                 : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+                 ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // 흰색 -> 빨강 (평균에서 최고)
+                 : interpolateColor([164,194,244], [255,255,255], ratio*2); // 파랑 -> 흰색 (최악에서 평균)
 
             cell.style.backgroundColor = color;
         });
@@ -791,7 +795,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
     const rows = Array.from(table.querySelectorAll('tbody tr'));
     const headers = Array.from(table.querySelectorAll('thead th'));
 
-    // ReferenceError 해결: goodCols와 badCols를 applyGradientColorsComparison 함수 밖으로 이동시켰습니다.
+    // ReferenceError 해결: goodCols와 badCols를 함수 밖으로 이동시켰습니다.
     // const goodCols = ['점수','픽률','RP 획득','승률','TOP 3'];
     // const badCols = ['평균 순위'];
 
@@ -806,8 +810,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
              return;
         }
 
-        // ReferenceError 해결: goodCols와 badCols를 applyGradientColorsComparison 함수 밖으로 이동시켰습니다.
-        // if (![...goodCols, ...badCols].includes(col)) return;
+        // ReferenceError 해결: goodCols와 badCols를 함수 밖으로 이동시켰습니다.
          const isGoodCol = goodCols.includes(col);
          const isBadCol = badCols.includes(col);
          if (!isGoodCol && !isBadCol) {
@@ -821,68 +824,68 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         if (col === '티어') {
             rows.forEach((r, idx) => {
                 const cell = r.children[i];
-                cell.style.backgroundColor = ''; // Clear any previous inline style for Tier column
+                cell.style.backgroundColor = ''; // 이전 인라인 스타일 모두 제거
 
-                // In comparison mode, tier column coloring is based on Rank Change Delta value (numeric).
-                // The tier icons/text inside the cell provide the Ver1/Ver2 tier information.
-                const rankChangeValue = data[idx]['순위 변화값']; // Get rank change for this row (number or string)
+                // 비교 모드에서 티어 컬럼 색칠은 순위 변화 델타 값(숫자)을 기반으로 합니다.
+                // 티어 아이콘/텍스트는 Ver1/Ver2 티어 정보를 제공합니다.
+                const rankChangeValue = data[idx]['순위 변화값']; // 이 행의 순위 변화 값 (숫자 또는 문자열)
 
-                // Apply gradient only if rank change is numeric for coloring
+                // 순위 변화가 숫자일 경우에만 색칠 적용
                 if (typeof rankChangeValue === 'number' && rankChangeValue !== null && rankChangeValue !== undefined) {
                      const valueKey = '순위 변화값';
-                     const isBetterWhenLower = true; // Lower rank change (more negative) is better
+                     const isBetterWhenLower = true; // 낮은 순위 변화(더 음수)가 더 좋음
 
-                     // Collect numeric rank change values for gradient calculation across the column
+                     // 컬럼 전체에 대한 숫자 순위 변화 값을 수집하여 그라디언트 계산에 사용
                      const valuesOnly = data.map(d => {
                           const val = d[valueKey];
                           return (typeof val === 'number') ? val : null;
                      }).filter(v => v !== null);
 
                      if (valuesOnly.length === 0) {
-                          // No numeric delta data in column, no coloring
-                          // rows.forEach(tr => tr.children[i].style.backgroundColor = ''); // Already cleared at start of cell loop
-                          return; // Exit this cell's coloring logic
+                          // 컬럼에 숫자 델타 데이터가 없으면 색칠 안 함
+                          // rows.forEach(tr => tr.children[i].style.backgroundColor = ''); // 이미 셀 루프 시작 시 제거됨
+                          return; // 이 셀의 색칠 로직 중단
                      }
 
                      const min = Math.min(...valuesOnly);
                      const max = Math.max(...valuesOnly);
-                     const avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length; // Simple average for numeric rank change
+                     const avg = valuesOnly.reduce((s,v)=>s+v,0) / valuesOnly.length; // 숫자 순위 변화에 대한 단순 평균
 
                      let ratio;
                      if (max === min) {
                          ratio = 0.5;
-                     } else if (!isBetterWhenLower) { // Higher is better (not applicable for rank change)
-                         // This branch is unlikely for rank change but kept for generality based on original logic.
+                     } else if (!isBetterWhenLower) { // 높을수록 좋음 (순위 변화에는 해당되지 않음)
+                         // 순위 변화에는 해당되지 않지만 원본 로직 기반으로 일반성 유지.
                          ratio = (rankChangeValue >= avg)
                              ? 0.5 + (rankChangeValue - avg) / (max - avg) * 0.5
                              : 0.5 - (avg - rankChangeValue) / (avg - min) * 0.5;
-                     } else { // Lower is better (rank change)
-                         // The logic `(avg - v) / (avg - min)` for `v <= avg` mapping [min, avg] to [0, 1] (min->1, avg->0)
-                         // And `(v - avg) / (max - avg)` for `v > avg` mapping [avg, max] to [0, 1] (avg->0, max->1)
-                         // Then combining them with 0.5 offset is correct for using avg as center.
-                          if (rankChangeValue <= avg) { // v is better than or equal to avg
-                             // map [min, avg] to [1, 0.5]
+                     } else { // 낮을수록 좋음 (순위 변화)
+                         // 로직 `(avg - v) / (avg - min)` 은 `v <= avg`에 대해 [0, 1] 매핑 (min->1, avg->0)
+                         // 로직 `(v - avg) / (max - avg)` 은 `v > avg`에 대해 [0, 1] 매핑 (avg->0, max->1)
+                         // 그런 다음 0.5 오프셋과 결합하면 평균을 중심으로 사용하는 것이 올바릅니다.
+                          if (rankChangeValue <= avg) { // v가 평균보다 좋거나 같은 경우
+                             // [min, avg]를 [1, 0.5]로 매핑
                               if (avg === min) ratio = 0.5; else ratio = 0.5 + (avg - rankChangeValue) / (avg - min) * 0.5;
-                         } else { // v > avg (v is worse)
-                              // map [avg, max] to [0.5, 0]
+                         } else { // v가 평균보다 나쁜 경우 (v > avg)
+                              // [avg, max]를 [0.5, 0]으로 매핑
                               if (max === avg) ratio = 0.5; else ratio = 0.5 - (rankChangeValue - avg) / (max - avg) * 0.5;
                          }
 
                      }
-                     ratio = Math.max(0, Math.min(1, ratio)); // Clamp between 0 and 1
+                     ratio = Math.max(0, Math.min(1, ratio)); // 0과 1 사이로 제한
 
                      let color;
-                     // Interpolate from Blue (0 - Worst) to White (0.5 - Avg) to Red (1 - Best)
-                     // For rank change (lower is better), min (large negative, best) maps to ratio 1 (Red), max (large positive, worst) maps to ratio 0 (Blue).
+                     // 파랑 (0 - 최악) 에서 흰색 (0.5 - 평균) 으로 빨강 (1 - 최고) 으로 색 보간
+                     // ratio에 기반합니다. (낮을수록 좋음, min(큰 음수, 최고)는 ratio 1(빨강)로, max(큰 양수, 최악)는 ratio 0(파랑)로 매핑됩니다.)
                      color = (ratio >= 0.5)
-                          ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
-                          : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
+                          ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // 흰색 -> 빨강 (평균에서 최고)
+                          : interpolateColor([164,194,244], [255,255,255], ratio*2); // 파랑 -> 흰색 (최악에서 평균)
 
-                     cell.style.backgroundColor = color; // Apply gradient via inline style
+                     cell.style.backgroundColor = color; // 인라인 스타일로 그라디언트 적용
                 }
-                // Non-numeric rank change (신규, 삭제, -) will have no background color from this JS logic, relying on CSS if defined.
+                // 숫자 순위 변화가 아닌 경우(신규, 삭제, -)는 이 JS 로직에서 배경색이 적용되지 않으며, 정의된 경우 CSS에 의존합니다.
             });
-            return; // Finished processing Tier column, move to next header
+            return; // 티어 컬럼 처리가 완료되었습니다. 다음 헤더로 이동합니다.
         }
 
         // --- 다른 숫자 컬럼 색상 로직 ---
@@ -914,11 +917,12 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         // 결정된 valueKey에 대해 데이터 배열의 모든 행에서 숫자 값을 수집합니다.
         // mergeDataForComparison 결과의 승률, TOP 3, 픽률은 0-1 스케일입니다.
         // valuesOnly에는 셀에 표시될 스케일의 숫자를 모읍니다.
+        // renderComparisonTable에서 표시될 스케일은 (승률/TOP3/픽률 0-100%, 나머지는 값 그대로) 입니다.
         const valuesOnly = data.map(d => {
              const val = d[valueKey];
              let v;
              if (typeof val === 'number') {
-                  // renderComparisonTable에서 픽률, 승률, TOP 3 컬럼은 표시될 때 %가 붙으며, 100이 곱해집니다.
+                  // renderComparisonTable에서 승률, TOP 3, 픽률 컬럼은 표시될 때 %가 붙으며, 100이 곱해집니다.
                   // 예를 들어 승률이 0.51이면 표시될 때 "51.00%"가 되고, 여기서 파싱하면 51이 됩니다.
                   // 픽률이 0.015이면 표시될 때 "1.50%"가 되고, 여기서 파싱하면 1.5가 됩니다.
                   // RP, 점수, 평균 순위, 표본수는 값 그대로 표시됩니다.
@@ -997,7 +1001,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
             const isBad = isBadCol; // goodCols/badCols는 함수 밖으로 이동했습니다.
 
             // 평균값(avg)을 기준으로 스케일링
-            // v와 avg는 동일한 スケール (컬럼에 따라 다름)
+            // v와 avg는 동일한 스케일 (컬럼에 따라 다름)
              if (max === min) {
                  ratio = 0.5;
              } else if (!isBad) { // 클수록 좋음
