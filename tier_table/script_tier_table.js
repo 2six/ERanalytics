@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tierLabel    = tierLabels[tierSelect.value];
 
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-        const groups = tiers.reduce((o, t) => (o[t] = [], o), {});
+        const groups = tiers.reduce((o, t) => (o[t] = [], o), groups); // groups 객체 초기화 오류 수정
 
         // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
         data.forEach(item => {
@@ -519,21 +519,30 @@ document.addEventListener('DOMContentLoaded', function () {
               // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
               let rankChangeOverlayHtml = '';
               if (isCompareMode) { /* ... 순위 변동 로직 ... */
-                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string
+                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string (이제 latest - past)
                    let rankChangeText = '';
                    let rankChangeClass = '';
 
                    if (typeof rankChangeValue === 'number') {
                         const absChange = Math.abs(rankChangeValue);
-                        if (rankChangeValue < 0) { rankChangeText = `▼${absChange}`; rankChangeClass = 'rank-change-down'; } // 순위 숫자 감소 (좋아짐)
-                        else if (rankChangeValue > 0) { rankChangeText = `▲${absChange}`; rankChangeClass = 'rank-change-up'; } // 순위 숫자 증가 (나빠짐)
-                        else { rankChangeText = `=`; rankChangeClass = 'rank-change-same'; }
+                        // --- 수정 시작: 순위 변화값 부호에 따른 ▲/▼ 기호 및 클래스 변경 ---
+                        if (rankChangeValue < 0) { // 순위 숫자가 감소 (좋아짐): ▲
+                            rankChangeText = `▲${absChange}`;
+                            rankChangeClass = 'rank-change-down'; // 순위 번호는 내려감
+                        } else if (rankChangeValue > 0) { // 순위 숫자가 증가 (나빠짐): ▼
+                            rankChangeText = `▼${absChange}`;
+                            rankChangeClass = 'rank-change-up'; // 순위 번호는 올라감
+                        } else { // 순위 변화 없음
+                            rankChangeText = `=`;
+                            rankChangeClass = 'rank-change-same';
+                        }
+                        // --- 수정 끝
                    } else { // 문자열 ('신규 → ', '→ 삭제', '-')
                         if (rankChangeValue === '신규 → ') { rankChangeText = '신규'; rankChangeClass = 'rank-change-up'; }
                         else if (rankChangeValue === '→ 삭제') { rankChangeText = '삭제'; rankChangeClass = 'rank-change-down'; }
                         else { rankChangeText = '-'; rankChangeClass = 'rank-change-same'; } // '-' 또는 예상치 못한 값
                    }
-                   // 텍스트가 '신규', '삭제', '=' 등 의미 있는 변화를 나타낼 때만 오버레이 표시
+                   // 텍스트가 '신규', '삭제', '=', '▲N', '▼N' 등 의미 있는 변화를 나타낼 때만 오버레이 표시
                    if (rankChangeText !== '-' && rankChangeText !== '') {
                         rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
                    }

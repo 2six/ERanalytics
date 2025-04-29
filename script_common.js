@@ -839,15 +839,17 @@ function mergeDataForComparison(data1, data2) {
              result[`${col} (Ver2)`] = d2 ? d2[col] : null;
 
              // 변화량 계산 (Value2 - Value1)
-             const val1 = result[`${col} (Ver1)`];
-             const val2 = result[`${col} (Ver2)`];
+             // --- 수정 시작: 델타 계산 순서를 Value1 - Value2로 변경 ---
+             const val1 = result[`${col} (Ver1)`]; // 최신 시점 값
+             const val2 = result[`${col} (Ver2)`]; // 과거 시점 값
 
              if (typeof val1 === 'number' && typeof val2 === 'number') {
-                  result[`${col} 변화량`] = val2 - val1;
+                  result[`${col} 변화량`] = val1 - val2; // (최신 값) - (과거 값)
              } else {
                   // 둘 중 하나라도 숫자가 아니면 변화량 없음
                   result[`${col} 변화량`] = null;
              }
+             // --- 수정 끝
         });
 
         // 티어 변화 계산
@@ -876,27 +878,31 @@ function mergeDataForComparison(data1, data2) {
          }
 
         // 순위 변화 계산 (점수 기준)
-        const rank1 = rankMap1[charName];
-        const rank2 = rankMap2[charName];
+        const rank1 = rankMap1[charName]; // 최신 순위
+        const rank2 = rankMap2[charName]; // 과거 순위
 
         result['순위 (Ver1)'] = rank1;
         result['순위 (Ver2)'] = rank2;
 
         if (typeof rank1 === 'number' && typeof rank2 === 'number') {
-             result['순위 변화값'] = rank2 - rank1; // 실제 변화량 (-10, +10 등)
+             // --- 수정 시작: 순위 변화값 계산 순서를 rank1 - rank2로 변경 ---
+             result['순위 변화값'] = rank1 - rank2; // (최신 순위) - (과거 순위)
+             // --- 수정 끝
         } else if (typeof rank1 === 'number') {
-             result['순위 변화값'] = '→ 삭제'; // string
+             result['순위 변화값'] = '신규 → '; // string (Ver2에 없고 Ver1에만 있음)
         } else if (typeof rank2 === 'number') {
-             result['순위 변화값'] = '신규 → '; // string
+             result['순위 변화값'] = '→ 삭제'; // string (Ver1에 없고 Ver2에만 있음)
         } else {
              result['순위 변화값'] = '-'; // string
         }
 
         // 평균 순위 변화량 계산 (숫자)
-        const avgRank1 = d1 ? d1['평균 순위'] : null;
-        const avgRank2 = d2 ? d2['평균 순위'] : null;
+        const avgRank1 = d1 ? d1['평균 순위'] : null; // 최신 평균 순위
+        const avgRank2 = d2 ? d2['평균 순위'] : null; // 과거 평균 순위
         if (typeof avgRank1 === 'number' && typeof avgRank2 === 'number') {
-             result['평균 순위 변화량'] = avgRank2 - avgRank1;
+             // --- 수정 시작: 평균 순위 변화량 계산 순서를 avgRank1 - avgRank2로 변경 ---
+             result['평균 순위 변화량'] = avgRank1 - avgRank2; // (최신 평균 순위) - (과거 평균 순위)
+             // --- 수정 끝
         } else {
              result['평균 순위 변화량'] = null;
         }
