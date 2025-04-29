@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tierSelect    = document.getElementById('tier-select');
     const periodSelect  = document.getElementById('period-select');
     const table         = document.getElementById('tier-table');
-    const container     = document.getElementById('tier-table-container');
+    const container     = document.getElementById('tier-table-container'); // 컨테이너 요소
 
     // 비교 모드 관련 DOM 요소
     const comparisonControlsDiv = document.getElementById('comparison-controls');
@@ -51,12 +51,16 @@ document.addEventListener('DOMContentLoaded', function () {
         loadAndRender();
     }).catch(err => {
         console.error('초기 설정 로드 실패:', err);
-        // 에러 시에도 팝업 버튼은 표시될 수 있으므로 팝업 설정 함수 호출
+         // 테이블 요소를 찾아 메시지 표시
+         const targetTable = document.getElementById('tier-table');
+         if (targetTable) {
+              targetTable.innerHTML = '<tr><td colspan="15">초기 설정 로드에 실패했습니다.</td></tr>'; // 에러 메시지 표시
+         } else {
+              // 테이블 요소 자체가 없는 경우 컨테이너에 메시지 표시
+              if (container) container.innerHTML = '초기 설정 로드에 실패했습니다.';
+         }
+        // 에러 시에도 팝업 버튼은 표시될 수 있으므로 팝업 설정 함수 호출 (테이블 존재 여부 확인 포함)
         setupTablePopup();
-         // 로딩 메시지를 오류 메시지로 변경
-         if (container) container.innerHTML = '<table class="tier-table" id="tier-table"><tr><td colspan="15">초기 설정 로드에 실패했습니다.</td></tr></table>';
-         // 테이블 요소가 숨겨져 있다면 표시하여 메시지가 보이게 함
-         if (table) table.style.display = 'table';
     });
 
     // 2) 드롭다운 초기화
@@ -189,10 +193,23 @@ document.addEventListener('DOMContentLoaded', function () {
         // currentIsCompareMode 업데이트
         currentIsCompareMode = isCompareMode;
 
-        // 테이블 비우고 로딩 메시지 표시 (tier-table-container에 직접 텍스트 넣기)
-        if (container) container.innerHTML = '데이터 로딩 중...';
-        // 기존 테이블 요소는 필요하면 숨기거나 제거 (이미 HTML에 빈 테이블이 있으므로 숨기기)
-        if (table) table.style.display = 'none';
+        // 테이블 요소를 찾아 로딩 메시지 표시
+        const targetTable = document.getElementById('tier-table');
+
+        // 테이블 요소가 없으면 메시지 표시 및 로직 중단
+        if (!targetTable) {
+             if (container) container.innerHTML = '테이블 요소를 찾을 수 없습니다.';
+             setupTablePopup(); // 팝업 설정 (테이블 존재 여부 확인 포함)
+             return;
+        }
+
+        // 테이블 초기화 및 로딩 메시지 표시
+        targetTable.innerHTML = '<tr><td colspan="15">데이터 로딩 중...</td></tr>'; // colspan 조정 필요
+        targetTable.style.display = 'table'; // 테이블이 숨겨져 있다면 표시 (로딩 메시지 보이게)
+        if (container && container.innerHTML === '데이터 로딩 중...') {
+             // 컨테이너에 로딩 메시지를 직접 넣었었다면 지워줍니다.
+             container.innerHTML = '';
+        }
 
 
         if (isCompareMode) {
@@ -206,13 +223,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 데이터 1과 데이터 2가 동일한 경우
             if (version1 === version2 && tier1 === tier2 && period1 === period2) {
-                 if (container) container.innerHTML = '<table class="tier-table" id="tier-table"><tr><td colspan="15">데이터 1과 데이터 2가 동일합니다.</td></tr></table>'; // colspan 조정 필요
+                 targetTable.innerHTML = '<tr><td colspan="15">데이터 1과 데이터 2가 동일합니다.</td></tr>'; // colspan 조정 필요
                  // 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달)
                  currentCharacterData = []; // 데이터 비어있음
                  setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                  setupTablePopup(); // 팝업 설정
-                 // 테이블 요소가 있다면 표시하여 메시지가 보이게 함
-                 if (table) table.style.display = 'table';
                  return;
             }
 
@@ -237,11 +252,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 const history2 = json2 ? json2['통계'] : null;
 
                 if (!history1 && !history2) {
-                     if (container) container.innerHTML = '<table class="tier-table" id="tier-table"><tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr></table>'; // colspan 조정 필요
+                     targetTable.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
                      currentCharacterData = [];
                      setupTooltipPositioning(currentCharacterData, currentIsCompareMode);
                      setupTablePopup();
-                     if (table) table.style.display = 'table';
                      return;
                 }
 
@@ -256,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 두 최종 데이터셋을 병합 및 차이 계산 (common.js 함수 사용)
                 // mergeDataForComparison는 이제 getProcessedStatsForPeriod의 결과 두 개를 입력받습니다.
-                // mergeDataForComparison 결과의 승률/TOP3/픽률은 0-1 스케일입니다.
+                // mergeDataForComparison 결과의 승률/TOP3/픽률은 0-1 스케일입니다。
                 const comparisonData = mergeDataForComparison(processedData1, processedData2); // common.js 함수
 
                 // currentCharacterData 업데이트 (툴팁에 사용될 데이터)
@@ -264,16 +278,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 병합 결과가 없으면 표시할 데이터가 없는 것임
                 if (!comparisonData || comparisonData.length === 0) {
-                    if (container) container.innerHTML = '<table class="tier-table" id="tier-table"><tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr></table>'; // colspan 조정 필요
+                    targetTable.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode);
                     setupTablePopup();
-                    if (table) table.style.display = 'table';
                     return;
                 }
-
-                 // 로딩 메시지 제거 및 테이블 표시
-                 if (container) container.innerHTML = ''; // 로딩 메시지 제거
-                 if (table) table.style.display = 'table'; // 숨겨뒀던 테이블 다시 표시
 
                 // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달 (기존 table 요소를 사용)
                 displayTierTable(comparisonData, isCompareMode);
@@ -285,11 +294,10 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => {
                 // Promise.all 내부에서 catch 했으므로 여기는 거의 오지 않음
                 console.error('비교 데이터 처리 실패:', err);
-                if (container) container.innerHTML = `<table class="tier-table" id="tier-table"><tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr></table>`; // colspan 조정 필요
+                targetTable.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
                 currentCharacterData = [];
                 setupTooltipPositioning(currentCharacterData, currentIsCompareMode);
                 setupTablePopup();
-                if (table) table.style.display = 'table';
             });
 
         } else {
@@ -319,16 +327,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // 데이터가 없는 경우 (getProcessedStatsForPeriod 결과 빈 배열) 메시지 표시
                     if (!processedData || processedData.length === 0) {
-                        if (container) container.innerHTML = '<table class="tier-table" id="tier-table"><tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족하거나 없습니다.</td></tr></table>'; // colspan 조정 필요
+                        targetTable.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족하거나 없습니다.</td></tr>'; // colspan 조정 필요
                         setupTooltipPositioning(currentCharacterData, currentIsCompareMode);
                         setupTablePopup();
-                        if (table) table.style.display = 'table';
                         return;
                     }
-
-                    // 로딩 메시지 제거 및 테이블 표시
-                    if (container) container.innerHTML = ''; // 로딩 메시지 제거
-                    if (table) table.style.display = 'table'; // 숨겨뒀던 테이블 다시 표시
 
                     // displayTierTable에 단일 데이터와 비교 모드 플래그 전달 (기존 table 요소를 사용)
                     displayTierTable(processedData, isCompareMode);
@@ -338,11 +341,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(err => {
                     console.error('데이터 로드 실패:', err);
-                    if (container) container.innerHTML = `<table class="tier-table" id="tier-table"><tr><td colspan="15">데이터를 불러오는 데 실패했습니다: ${err.message}</td></tr></table>`; // colspan 조정 필요
+                    targetTable.innerHTML = `<tr><td colspan="15">데이터를 불러오는 데 실패했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
                     currentCharacterData = [];
                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode);
                     setupTablePopup();
-                    if (table) table.style.display = 'table';
                 });
             // --------------------------
         }
@@ -482,18 +484,15 @@ document.addEventListener('DOMContentLoaded', function () {
           html += `</div></td></tr>`; // 유지
         });
 
-        // 기존 테이블 내용 교체
+        // 기존 테이블 내용 교체 (HTMLElement 객체의 innerHTML 사용)
         const targetTable = document.getElementById('tier-table');
         if (targetTable) {
              targetTable.innerHTML = html;
         } else {
-             // 만약 테이블이 container 내부에 동적으로 생성되었다면 여기서 다시 찾아야 합니다.
-             // loadAndRender에서 container.innerHTML로 테이블 자체를 생성했다면, 여기서 다시 getElementById로 찾을 필요 없습니다.
-             // 현재 loadAndRender는 container.innerHTML = '로딩중...' -> container.innerHTML = '' -> table.innerHTML = html 로 흐릅니다.
-             // table 변수는 페이지 로드 시의 빈 테이블 요소를 참조하고 있을 것입니다.
-             // 따라서 table 변수에 innerHTML을 설정하는 것이 맞습니다.
+             // 테이블 요소가 존재하지 않는 심각한 오류 상황
+             console.error("renderTable: Table element #tier-table not found.");
+             if (container) container.innerHTML = '<p>오류: 테이블 요소를 찾을 수 없습니다.</p>';
         }
-
     }
 
     // 툴팁 위치를 동적으로 계산하여 설정하는 함수
@@ -563,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
                      // const top3_2 = character['TOP 3 (Ver2)']; // 0-1
 
 
-                     // 포맷팅
+                     // 포맷팅 (0-1 스케일은 100 곱하고 % 붙임)
                      const pr1Text = typeof pr1 === 'number' ? (pr1 * 100).toFixed(2) + '%' : '-'; // 0-1 -> 0-100%
                      const pr2Text = typeof pr2 === 'number' ? (pr2 * 100).toFixed(2) + '%' : '-'; // 0-1 -> 0-100%
                      const rp1Text = typeof rp1 === 'number' ? rp1.toFixed(1) : '-'; // 값 그대로
@@ -592,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function () {
                      // const top3 = character['TOP 3']; // 0-1
 
 
-                     // 포맷팅
+                     // 포맷팅 (0-1 스케일은 100 곱하고 % 붙임)
                      const pickRateText = typeof pickRate === 'number' ? (pickRate * 100).toFixed(2) + '%' : '-'; // 0-1 -> 0-100%
                      const rpText = typeof rp === 'number' ? rp.toFixed(1) : '-'; // 값 그대로
                      const winRateText = typeof winRate === 'number' ? (winRate * 100).toFixed(1) + '%' : '-'; // 0-1 -> 0-100%
@@ -753,7 +752,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (closeButton) {
              // 기존 이벤트 리스너가 있다면 제거
              if (closeButton.onclick) {
-                  closeButton.onclick = null;
+                   closeButton.onclick = null;
              }
              closeButton.onclick = () => { if(popup) popup.style.display = 'none'; };
         }
@@ -778,7 +777,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return name;
     }
 
-    // NOTE: commonExtractPeriodEntries 변수 선언은 필요 없어 제거되었습니다.
-    // 이제 script_common.js의 getProcessedStatsForPeriod 등의 함수를 직접 사용합니다.
+    // NOTE: 로컬 extractPeriodEntries 함수는 getProcessedStatsForPeriod 등의 함수로 대체되어 제거되었습니다.
 
 }); // DOMContentLoaded 끝
