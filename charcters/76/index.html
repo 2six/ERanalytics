@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이터널 리턴 시뮬레이터</title>
+    <!-- CSS 파일 연결 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>이터널 리턴 시뮬레이터</h1>
+
+        <!-- 캐릭터 스탯 입력 섹션 -->
+        <section id="character-input-section">
+            <h2>캐릭터 스탯 입력</h2>
+            <!-- 레벨, 무기, 숙련도 등 입력 필드들이 여기에 추가될 예정 -->
+            <div id="character-level-input">레벨 입력</div>
+            <div id="character-weapon-input">무기 선택</div>
+            <div id="character-mastery-input">숙련도 입력</div>
+            <div id="character-skill-level-input">스킬 레벨 입력</div>
+        </section>
+
+        <!-- 스킬 콤보 입력 섹션 -->
+        <section id="skill-combo-section">
+            <h2>스킬 콤보 입력</h2>
+            <!-- 스킬 콤보 입력 필드가 여기에 추가될 예정 -->
+            <div id="combo-input">콤보 입력 필드</div>
+        </section>
+
+        <!-- 캐릭터 정보 및 아이템/적 정보 컨테이너 -->
+        <div class="info-container">
+            <!-- 계산된 캐릭터 정보 섹션 -->
+            <section id="calculated-character-info">
+                <h2>계산된 캐릭터 정보</h2>
+                <!-- 최종 스탯 정보가 여기에 동적으로 표시될 예정 -->
+                <div id="character-stats-output">스탯 정보 출력</div>
+            </section>
+
+            <!-- 아이템 정보 및 적 캐릭터 정보 컨테이너 -->
+            <div class="side-info-container">
+                <!-- 아이템 정보 섹션 -->
+                <section id="item-info-section">
+                    <h2>아이템 정보</h2>
+                    <!-- 장착 아이템 정보가 여기에 표시될 예정 (초기 자리만 마련) -->
+                    <div id="equipped-items-output">아이템 정보 출력</div>
+                </section>
+
+                <!-- 적 캐릭터 정보 섹션 -->
+                <section id="enemy-info-section">
+                    <h2>적 캐릭터 정보</h2>
+                    <!-- 적 캐릭터 스탯 입력 필드들이 여기에 추가될 예정 -->
+                    <div id="enemy-stats-input">적 스탯 입력 필드</div>
+                </section>
+            </div>
+        </div>
+
+        <!-- 최종 계산 결과 섹션 -->
+        <section id="final-calculation-result">
+            <h2>최종 계산 결과</h2>
+            <!-- 스킬 콤보 계산 결과 등이 여기에 표시될 예정 -->
+            <div id="calculation-output">계산 결과 출력</div>
+        </section>
+
+        <!-- 스킬 정보 섹션 -->
+        <section id="skill-info-section">
+            <h2>스킬 정보</h2>
+            <!-- 각 스킬 정보가 표 형태로 여기에 동적으로 표시될 예정 -->
+            <div id="skill-table-output">스킬 정보 표 출력</div>
+        </section>
+    </div>
+
+    <!-- JavaScript 파일 연결 -->
+    <!-- defer 속성을 사용하여 HTML 파싱 후 스크립트 실행 -->
+    <script src="script.js" defer></script>
+</body>
+</html>
