@@ -1,4 +1,4 @@
-// START OF FILE script_graph.js 
+//START OF FILE script_graph.js
 document.addEventListener('DOMContentLoaded', function () {
     // common.js에 정의된 함수/변수들은 전역 스코프에 있으므로 바로 사용 가능합니다.
 
@@ -33,11 +33,15 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentTab   = getParam('tab', 'pick-rp');
 
 
+    // --- 오류 수정: Chart.js 플러그인 정의를 등록 전에 위치 ---
     // 레이블 플러그인 정의
     const labelPlugin = {
       id:'labelPlugin',
       afterDatasetsDraw(chart){
-        const ctx=chart.ctx;
+        // Chart 객체가 유효할 때만 호출된다고 가정하지만, 혹시 모를 상황 대비 ctx 접근 안전화
+        const ctx = chart && chart.ctx;
+        if (!ctx) return; // ctx가 없으면 그리지 않음
+
         chart.getDatasetMeta(0).data.forEach((pt,i)=>{
           const x=pt.x,y=pt.y,l=chart.data.labels[i];
           ctx.save();
@@ -55,7 +59,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const cornerTextPlugin = {
         id: 'cornerTextPlugin',
         afterDraw(chart) {
-          const { ctx, chartArea } = chart;
+          // Chart 객체가 유효할 때만 호출된다고 가정하지만, 혹시 모를 상황 대비 ctx 접근 안전화
+          const ctx = chart && chart.ctx;
+          if (!ctx) return; // ctx가 없으면 그리지 않음
+
+          const { chartArea } = chart;
           const centerX = (chartArea.left + chartArea.right) / 2;
 
           // 중앙 상단 2줄
@@ -81,6 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
           ctx.textAlign = 'right';
           ctx.font      = '14px sans-serif';
 
+          // typeof check에 isNaN 체크 추가하여 유효한 숫자만 표시
           if (typeof avgPick === 'number' && !isNaN(avgPick)) {
             ctx.fillText(
               `평균 픽률: ${avgPick.toFixed(2)}%`, // 이미 0-100% 값
@@ -106,19 +115,23 @@ document.addEventListener('DOMContentLoaded', function () {
           ctx.restore();
         }
     };
+    // -------------------------------------------------------------
 
 
-    // --- 오류 수정: Chart.js 라이브러리 로드 확인 및 플러그인 등록 ---
+    // --- Chart.js 라이브러리 로드 확인 및 플러그인 등록 (정의 아래로 이동) ---
     // Chart 객체가 window에 정의되어 있고 null이 아닌지 확인합니다.
     if (typeof window.Chart === 'undefined' || window.Chart === null) {
         console.error("Chart.js library (global 'Chart' variable) not found or not initialized. Cannot register plugins.");
         // canvas를 비우고 오류 메시지 표시
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.font = '20px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'red';
-        ctx.fillText('Chart.js 라이브러리 로드 실패.', canvas.width / 2, canvas.height / 2);
+        if (ctx) { // ctx가 유효할 때만 그림
+             ctx.clearRect(0, 0, canvas.width, canvas.height);
+             ctx.font = '20px sans-serif';
+             ctx.textAlign = 'center';
+             ctx.fillStyle = 'red';
+             ctx.fillText('Chart.js 라이브러리 로드 실패.', canvas.width / 2, canvas.height / 2);
+        }
+
 
         // 그래프 관련 UI 요소 비활성화 (존재하는지 확인 후)
         if (popupButton) popupButton.disabled = true;
@@ -133,8 +146,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    // Chart.js 플러그인 등록 (페이지 로드 시 Chart가 유효한 것이 확인된 후 플러그인 정의 아래에서 한 번만)
-    Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']); // Line 68 (이전 37)
+    // Chart.js 플러그인 등록 (Chart가 유효한 것이 확인된 후 플러그인 정의 아래에서 한 번만)
+    Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
 
     // -------------------------------------------------------------
 
@@ -213,11 +226,13 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(err => {
           console.error('초기 설정 로드 실패:', err);
           const ctx = canvas.getContext('2d');
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.font = '20px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = 'red';
-          ctx.fillText('초기 설정 로드 실패.', canvas.width / 2, canvas.height / 2);
+          if (ctx) { // ctx가 유효할 때만 그림
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.font = '20px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillStyle = 'red';
+              ctx.fillText('초기 설정 로드 실패.', canvas.width / 2, canvas.height / 2);
+          }
           // UI 비활성화 (이미 초기 Chart.js 로드 실패에서 처리했지만, 여기서도 안전하게)
           if (popupButton) popupButton.disabled = true;
           if (versionSelect) versionSelect.disabled = true;
@@ -248,11 +263,13 @@ document.addEventListener('DOMContentLoaded', function () {
            console.error("loadData called before tierConfig is loaded.");
            // 데이터 로드 UI를 표시하고 종료 또는 에러 처리
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = '20px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = 'red';
-            ctx.fillText('설정 로드 대기 중 오류 발생.', canvas.width / 2, canvas.height / 2);
+            if (ctx) { // ctx가 유효할 때만 그림
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'red';
+                ctx.fillText('설정 로드 대기 중 오류 발생.', canvas.width / 2, canvas.height / 2);
+            }
            return;
       }
 
@@ -263,11 +280,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // canvas 비우고 로딩 메시지 표시
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = '20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#888';
-      ctx.fillText('데이터 로딩 중...', canvas.width / 2, canvas.height / 2);
+      if (ctx) { // ctx가 유효할 때만 그림
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.font = '20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#888';
+          ctx.fillText('데이터 로딩 중...', canvas.width / 2, canvas.height / 2);
+      }
 
 
       // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
@@ -281,18 +300,21 @@ document.addEventListener('DOMContentLoaded', function () {
           const history = json['통계'];
           // common.js에서 calculateFinalStatsForPeriod 함수를 사용하여 최종 데이터셋 계산
           // 이 함수가 period에 따라 누적 스냅샷 또는 기간 역산 데이터를 가져와 calculateTiers까지 수행합니다.
-          // tierConfig는 초기화 시 로드된 것을 사용합니다.
+          // calculateFinalStatsForPeriod 결과의 승률/TOP3는 0-1 스케일, 픽률은 0-100% 스케일입니다.
           chartData = calculateFinalStatsForPeriod(history, period, tierConfig); // common.js 함수
 
           // 데이터가 없는 경우 (calculateFinalStatsForPeriod 결과 빈 배열) 처리
           if (!chartData || chartData.length === 0) {
                console.warn("No data found for selected period.");
                if (myChart) myChart.destroy(); // 기존 그래프 파괴
-               ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
-               ctx.font = '20px sans-serif';
-               ctx.textAlign = 'center';
-               ctx.fillStyle = '#888';
-               ctx.fillText('선택한 조건에 해당하는 데이터가 없습니다.', canvas.width / 2, canvas.height / 2);
+               const ctx = canvas.getContext('2d'); // 다시 ctx 가져옴
+               if (ctx) { // ctx가 유효할 때만 그림
+                   ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
+                   ctx.font = '20px sans-serif';
+                   ctx.textAlign = 'center';
+                   ctx.fillStyle = '#888';
+                   ctx.fillText('선택한 조건에 해당하는 데이터가 없습니다.', canvas.width / 2, canvas.height / 2);
+               }
                filteredData = []; // 필터된 데이터도 비워줌
                return; // 이후 로직 중단
           }
@@ -315,11 +337,14 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(err => {
             console.error('데이터 로드 또는 가공 실패:', err);
             if (myChart) myChart.destroy(); // 기존 그래프 파괴
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
-            ctx.font = '20px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = 'red';
-            ctx.fillText(`데이터 로드/처리 실패: ${err.message}`, canvas.width / 2, canvas.height / 2);
+            const ctx = canvas.getContext('2d'); // 다시 ctx 가져옴
+            if (ctx) { // ctx가 유효할 때만 그림
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'red';
+                ctx.fillText(`데이터 로드/처리 실패: ${err.message}`, canvas.width / 2, canvas.height / 2);
+            }
             filteredData = []; // 필터된 데이터도 비워줌
         });
     }
@@ -338,9 +363,9 @@ document.addEventListener('DOMContentLoaded', function () {
       filteredData = chartData.filter(d => {
         const pr = d['픽률'] || 0; // 캐릭터의 픽률 (0-100%)
         // 픽률 기준은 전체 데이터셋 (chartData)의 평균 픽률을 사용합니다.
-        // 평균 픽률이 0인 경우는 필터링 로직을 건너뜁니다.
-        if (lowPickrateCheckbox.checked  && avgPickRateChartData > 0 && pr < avgPickRateChartData / 4) return false;
-        if (highPickrateCheckbox.checked && avgPickRateChartData > 0 && pr > avgPickRateChartData * 5) return false;
+        // 평균 픽률이 0인 경우는 필터링 로직을 건너뛰지 않습니다. pr < 0 / 4 (0) 또는 pr > 0 * 5 (0) 비교는 가능합니다.
+        if (lowPickrateCheckbox.checked  && pr < avgPickRateChartData / 4) return false; // avgPickRateChartData가 0이면 pr<0 비교
+        if (highPickrateCheckbox.checked && pr > avgPickRateChartData * 5) return false; // avgPickRateChartData가 0이면 pr>0 비교
         return true;
       });
     }
@@ -350,12 +375,14 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!filteredData || filteredData.length === 0) {
            console.warn("No data to display graph.");
            if (myChart) myChart.destroy(); // 기존 그래프 파괴
-           const ctx = canvas.getContext('2d');
-           ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
-           ctx.font = '20px sans-serif';
-           ctx.textAlign = 'center';
-           ctx.fillStyle = '#888';
-           ctx.fillText('그래프를 표시할 데이터가 없습니다.', canvas.width / 2, canvas.height / 2);
+           const ctx = canvas.getContext('2d'); // 다시 ctx 가져옴
+           if (ctx) { // ctx가 유효할 때만 그림
+               ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
+               ctx.font = '20px sans-serif';
+               ctx.textAlign = 'center';
+               ctx.fillStyle = '#888';
+               ctx.fillText('그래프를 표시할 데이터가 없습니다.', canvas.width / 2, canvas.height / 2);
+           }
            return; // 그래프 생성 중단
       }
 
@@ -367,8 +394,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const { xKey,yKey,radiusKey,title } = maps[type];
 
       // 평균값 계산 (ChartData 기준, annotation 라인에 사용)
-      // calculateFinalStatsForPeriod 결과에는 'RP 획득', '승률', 'TOP 3', '픽률' 필드가 있습니다.
-      // '픽률'은 0-100%, '승률', 'TOP 3'는 0-1 스케일, 'RP 획득'은 값 그대로.
+      // calculateFinalStatsForPeriod 결과에는 'RP 획득', '승률', 'TOP 3', '픽률', '표본수', '평균 순위' 필드가 있습니다.
+      // '픽률'은 0-100%, '승률', 'TOP 3'는 0-1 스케일, 'RP 획득', '평균 순위', '표본수'는 값 그대로.
       // 이전 코드의 가중 평균 RP/승률 계산 로직을 유지하되, chartData (calculateFinalStatsForPeriod 결과)를 사용합니다.
       // 평균 픽률 (0-100%)
       const pickRateValuesInChartData = chartData.map(d => d['픽률']).filter(pr => typeof pr === 'number' && pr >= 0); // 0 이상인 픽률 값만
@@ -392,36 +419,36 @@ document.addEventListener('DOMContentLoaded', function () {
       const labels  = filteredData.map(d => d['실험체']);
       // 픽률 및 승률 값은 100으로 나누어 0-1 스케일로 플로팅
       const xValues = filteredData.map(d => {
-           const val = d[xKey] || 0; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
+           const val = d[xKey]; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            // '픽률'은 0-100%, '승률', 'TOP 3'는 0-1 스케일로 넘어온다고 가정합니다.
            // 플로팅 시에는 0-1 스케일로 변환해야 합니다.
-           if (xKey === '픽률') return val / 100; // 0-100% 값을 0-1 스케일로
+           if (xKey === '픽률') return (val || 0) / 100; // 0-100% 값을 0-1 스케일로
            // '승률', 'TOP 3'는 이미 0-1 스케일이라고 가정합니다.
            // 만약 '승률'이나 'TOP 3'가 xKey라면, 값 자체를 그대로 사용합니다.
-           return val; // RP 획득 등은 값 그대로
+           return (val || 0); // RP 획득 등은 값 그대로
       });
       const yValues = filteredData.map(d => {
-           const val = d[yKey] || 0; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
+           const val = d[yKey]; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            // '픽률'은 0-100%, '승률', 'TOP 3'는 0-1 스케일로 넘어온다고 가정합니다.
            // 플로팅 시에는 0-1 스케일로 변환해야 합니다.
-           if (yKey === '픽률') return val / 100; // 0-100% 값을 0-1 스케일로
+           if (yKey === '픽률') return (val || 0) / 100; // 0-100% 값을 0-1 스케일로
            // '승률', 'TOP 3'는 이미 0-1 스케일이라고 가정합니다.
            // 만약 '승률'이나 'TOP 3'가 yKey라면, 값 자체를 그대로 사용합니다.
-           return val; // RP 획득 등은 값 그대로
+           return (val || 0); // RP 획득 등은 값 그대로
       });
        // 반지름 기준 값도 100으로 나누어 0-1 스케일로 변환하여 사용 (픽률만 해당)
        // calculateTiers 결과의 '승률', 'TOP 3'는 0-1 스케일로 넘어온다고 가정합니다.
       const rValues = filteredData.map(d => {
-           const val = d[radiusKey] || 0; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
-           if (radiusKey === '픽률') return val / 100; // 0-100% 픽률을 0-1 스케일로
+           const val = d[radiusKey]; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
+           if (radiusKey === '픽률') return (val || 0) / 100; // 0-100% 픽률을 0-1 스케일로
            // '승률', 'TOP 3'가 반지름 기준이라면 이미 0-1 스케일이므로 그대로 사용합니다.
-           return val; // 그 외 값은 그대로
+           return (val || 0); // 그 외 값은 그대로
       });
 
 
       if (myChart) myChart.destroy(); // 기존 차트 인스턴스 파괴
 
-      // ctx는 DOMContentLoaded 시작 시 canvas가 존재하는 것이 보장되므로 문제 없습니다.
+      const ctx = canvas.getContext('2d'); // 다시 ctx 가져옴
 
       myChart = new Chart(ctx, {
         type: 'scatter',
@@ -431,11 +458,13 @@ document.addEventListener('DOMContentLoaded', function () {
             data: filteredData.map((d,i)=>({x:xValues[i],y:yValues[i],label:d['실험체']})),
             backgroundColor: ctx => {
               // 각 데이터 포인트에 고유한 색상 적용 (HSV 색 공간 사용)
-              const hue = (ctx.dataIndex * 360 / filteredData.length) % 360;
+              // ctx.dataIndex가 undefined일 경우를 대비한 안전 장치 추가
+              const dataIndex = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i; // Fallback to outer loop index if needed
+              const hue = (dataIndex * 360 / filteredData.length) % 360;
               return `hsl(${hue}, 60%, 70%, 0.8)`; // 0.8 투명도
             },
             pointRadius:  ctx => {
-              const v = rValues[ctx.dataIndex]; // 이미 0-1 스케일 값
+              const v = rValues[ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i]; // 이미 0-1 스케일 값, 안전 장치 추가
               // rValues가 모두 동일한 값일 경우 (예: 데이터가 1개) 반지름 15 고정
               // 아니면 6 ~ 30 사이 스케일링
               const mn = Math.min(...rValues), mx = Math.max(...rValues);
@@ -443,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function () {
               return mn === mx ? 15 : 6 + ((v - mn) / (mx - mn)) * 24;
             },
             pointHoverRadius: ctx => {
-              const v = rValues[ctx.dataIndex]; // 이미 0-1 스케일 값
+              const v = rValues[ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i]; // 이미 0-1 스케일 값, 안전 장치 추가
               // rValues가 모두 동일한 값일 경우 (예: 데이터가 1개) 반지름 15 고정
               // 아니면 6 ~ 30 사이 스케일링 (마우스 오버 시 반지름 동일하게 유지)
                const mn = Math.min(...rValues), mx = Math.max(...rValues);
@@ -460,7 +489,11 @@ document.addEventListener('DOMContentLoaded', function () {
               callbacks:{
                 title:()=>'', // 툴팁 제목 없음
                 label:ctx=>{
-                  const d = filteredData[ctx.dataIndex]; // 해당 데이터 포인트 원본 객체 (calculateFinalStatsForPeriod 결과)
+                  // ctx.dataIndex가 undefined일 경우를 대비한 안전 장치 추가
+                  const dataIndex = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : 0; // Default to 0
+                  const d = filteredData[dataIndex]; // 해당 데이터 포인트 원본 객체 (calculateFinalStatsForPeriod 결과)
+                  if (!d) return ''; // 데이터가 없으면 빈 문자열 반환
+
                   return [
                     d['실험체'], // 실험체 이름
                     // 툴팁에서 % 값 표시 수정 (calculateFinalStatsForPeriod 결과 값은 이미 0-100% 또는 RP/평균순위 등 형태)
@@ -496,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
               title:{display:true,text:xKey}, // x축 제목
               // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일)
               min: (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') ? 0 : undefined,
-              // 최대값은 데이터의 최대값 + 약간 여유 (Chart.js가 적절히 자동 스케일링하도록 max는 undefined로 두는 것이 일반적입니다.)
+              // 최대값은 데이터의 최대값 + 약간 여유 (Chart.js가 적절히 자동 스케일링하도록 max는 undefined가 보통 좋음입니다.)
               ticks:{
                 callback: v => {
                   // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등)
@@ -506,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   }
                    if (xKey === 'RP 획득') {
                        // RP 획득은 값 그대로 표시 (calculateFinalStatsForPeriod에서 이미 평균)
-                       return v.toFixed(1); // 소수점 첫째 자리까지 표시 유지
+                       return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 유효한 숫자만 표시
                    }
                   // 그 외는 기본값 (평균 순위 등)
                   // 다른 숫자 값도 소수점 첫째 자리까지 표시하도록 변경
@@ -529,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
                    }
                     if (yKey === 'RP 획득') {
                         // RP 획득은 값 그대로 표시
-                        return v.toFixed(1); // 소수점 첫째 자리까지 표시 유지
+                        return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 유효한 숫자만 표시
                     }
                    // 그 외는 기본값 (평균 순위 등)
                    // 다른 숫자 값도 소수점 첫째 자리까지 표시하도록 변경
@@ -557,4 +590,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // NOTE: extractPeriodEntries 함수는 calculateFinalStatsForPeriod 등의 함수로 대체되어 제거되었습니다.
 });
-// END OF FILE script_graph.js
+//END OF FILE script_graph.js
