@@ -1,4 +1,4 @@
-//START OF FILE script_graph.js
+// script_graph.js
 document.addEventListener('DOMContentLoaded', function () {
     // common.js에 정의된 함수/변수들은 전역 스코프에 있으므로 바로 사용 가능합니다.
 
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 상태
-    let chartData    = []; // getProcessedStatsForPeriod 결과 저장 (승률/TOP3/픽률 0-1, 나머지는 값 그대로)
+    let chartData    = []; // getProcessedStatsForPeriod 결과 저장 (RP/AvgRank/SampleSize 값 그대로, Win/TOP3/Pick 0-1)
     let filteredData = []; // 필터링된 데이터
     let myChart      = null;
     let tierConfig   = null; // config.ini에서 로드된 티어 설정
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
               if (popup && popupImage) {
                   popup.style.display = 'block';
                   popupImage.src = c.toDataURL();
-              }
+                }
             });
           });
         }
@@ -363,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function () {
       filteredData = chartData.filter(d => {
         const pr = d['픽률'] || 0; // 캐릭터의 픽률 (0-1)
         // 픽률 기준은 전체 데이터셋 (chartData)의 평균 픽률을 사용합니다.
-        // 平均픽률이0인 경우는フィルタリング ロジック을 건너뛰지 않습니다. pr < 0 / 4 (0) または pr > 0 * 5 (0) 比較は可能です。
+        // 平均픽률이0인 경우는フィルタリング 로직을 건너뛰지 않습니다. pr < 0 / 4 (0) または pr > 0 * 5 (0) 比較は可能です。
         if (lowPickrateCheckbox.checked && pr < avgPickRateChartData / 4) return false; // avgPickRateChartData가 0이면 pr<0 비교
         if (highPickrateCheckbox.checked && pr > avgPickRateChartData * 5) return false; // avgPickRateChartData가 0이면 pr>0 비교
         return true;
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
                ctx.fillStyle = '#888';
                ctx.fillText('그래프를 표시할 데이터가 없습니다.', canvas.width / 2, canvas.height / 2);
            }
-           return; // グラフ生成中断
+           return; // 그래프 생성 중단
       }
 
       const maps = {
@@ -393,23 +393,23 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       const { xKey,yKey,radiusKey,title } = maps[type];
 
-      // 平均値 계산 (ChartData 기준, annotation ラインに使用)
-      // getProcessedStatsForPeriod 結果에는 'RP 획득', '승률', 'TOP 3', '픽률', '표본수', '平均順位' 필드가 있습니다.
-      // '勝率', 'TOP 3', '픽률'은 0-1 스케일, 'RP 획득', '平均順位', '表본数'는 값 그대로.
-      // 以前の コードの加重 平均 RP/勝率 계산ロジック을 유지하되、chartData (getProcessedStatsForPeriod 結果)を使用します。
+      // 평균값 계산 (ChartData 기준, annotation 라인에 사용)
+      // getProcessedStatsForPeriod 결과에는 'RP 획득', '승률', 'TOP 3', '픽률', '표본수', '평균 순위' 필드가 있습니다.
+      // '승률', 'TOP 3', '픽률'은 0-1 스케일, 'RP 획득', '평균 순위', '표본수'는 값 그대로.
+      // 이전 코드의 가중 평균 RP/승률 계산 로직을 유지하되, chartData (getProcessedStatsForPeriod 결과)를 사용합니다.
       // 평균픽률 (0-1)
       const pickRateValuesInChartData = chartData.map(d => d['픽률']).filter(pr => typeof pr === 'number' && pr >= 0); // 0 이상인 픽률 값만
-      const avgPickRateChartData = pickRateValuesInChartData.length === 0 ? 0 : pickRateValuesInChartData.reduce((s, pr) => s + pr, 0) / pickRateValuesInChartData.length; // 0-1 平均픽률
+      const avgPickRateChartData = pickRateValuesInChartData.length === 0 ? 0 : pickRateValuesInChartData.reduce((s, pr) => s + pr, 0) / pickRateValuesInChartData.length; // 0-1 평균 픽률
 
-       // 가중 평균 RP 획득, 勝率 계산 (chartData 기준, 表본数 가중치 사용)
-       // chartData의 '勝率', 'TOP 3', '픽률'은 0-1 스케일로 저장되어 있다고 가정
+       // 가중 평균 RP 획득, 승률, 픽률 계산 (chartData 기준, 표본수 가중치 사용)
+       // chartData의 '승률', 'TOP 3', '픽률'은 0-1 스케일로 저장되어 있다고 가정
        let wRP_sum = 0, wWin_sum = 0, wPick_sum = 0, totalWeight_chartData = 0;
        chartData.forEach(d => {
-           const weight = d['표본수'] || 0; // getProcessedStatsForPeriod 結果に含まれる 表본数を使用
+           const weight = d['표본수'] || 0; // getProcessedStatsForPeriod 결과에 포함된 표본수를 가중치로 사용
            if (weight > 0) {
-               wRP_sum += (d['RP 획득'] || 0) * weight; // getProcessedStatsForPeriod 結果의 RP 획득 값 사용
-               wWin_sum += (d['승률'] || 0) * weight;   // getProcessedStatsForPeriod 結果의 勝率 값 사용 (0-1 スケール)
-               wPick_sum += (d['픽률'] || 0) * weight;  // getProcessedStatsForPeriod 結果の 픽률 값 사용 (0-1 スケール)
+               wRP_sum += (d['RP 획득'] || 0) * weight; // getProcessedStatsForPeriod 결과의 RP 획득 값 사용
+               wWin_sum += (d['승률'] || 0) * weight;   // getProcessedStatsForPeriod 결과의 승률 값 사용 (0-1 스케일)
+               wPick_sum += (d['픽률'] || 0) * weight;  // getProcessedStatsForPeriod 결과의 픽률 값 사용 (0-1 스케일)
                totalWeight_chartData += weight;
            }
        });
@@ -419,15 +419,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
       const labels  = filteredData.map(d => d['실험체']);
-      // 픽률 및 勝率 값은 Chart.js가 기대하는 スケール로 변환하여 플로팅
-      // getProcessedStatsForPeriod 結果 データ는 RP/平均順位 값 그대로, Win/TOP3/Pick 0-1 스케일입니다。
-      // Chart.js 플로팅 データ는 일반적으로 RP/平均順位 값 그대로, Win/TOP3/Pick 0-1 スケールで合わせます。
-      const xValues = filteredData.map(d => (d[xKey] || 0)); // 勝率/TOP3/픽률は0-1이므로そのまま 使用。 RP/平均順位もそのまま 使用。
-      const yValues = filteredData.map(d => (d[yKey] || 0)); // 勝率/TOP3/픽률は0-1이므로そのまま 使用。 RP/平均順位も 그대로 使用。
-      const rValues = filteredData.map(d => (d[radiusKey] || 0)); // 勝率/TOP3/픽률は0-1이므로そのまま 使用。 RP/平均順位もそのまま 使用。
+      // 픽률 및 승률 값은 Chart.js가 기대하는 스케일로 변환하여 플로팅
+      // getProcessedStatsForPeriod 결과 데이터는 RP/평균 순위 값 그대로, 승률/TOP3/픽률 0-1 스케일입니다.
+      // Chart.js 플로팅 데이터는 일반적으로 RP/평균 순위 값 그대로, 승률/TOP3/픽률 0-1 스케일로 맞춥니다.
+      const xValues = filteredData.map(d => (d[xKey] || 0)); // 승률/TOP3/픽률은 0-1이므로 그대로 사용. RP/평균 순위도 값 그대로 사용.
+      const yValues = filteredData.map(d => (d[yKey] || 0)); // 승률/TOP3/픽률은 0-1이므로 그대로 사용. RP/평균 순위도 값 그대로 사용.
+      const rValues = filteredData.map(d => (d[radiusKey] || 0)); // 승률/TOP3/픽률은 0-1이므로 그대로 사용. RP/평균 순위도 값 그대로 사용.
 
 
-      if (myChart) myChart.destroy(); // 기존 Chart インスタンス 파괴
+      if (myChart) myChart.destroy(); // 기존 Chart 인스턴스 파괴
 
       const ctx = canvas.getContext('2d'); // 다시 ctx 가져옴
 
@@ -439,42 +439,42 @@ document.addEventListener('DOMContentLoaded', function () {
             data: filteredData.map((d,i)=>({x:xValues[i],y:yValues[i],label:d['실험체']})),
             backgroundColor: ctx => {
               // 각 데이터 포인트에 고유 색 적용 (HSV 색 공간 사용)
-              // ctx.dataIndexがundefinedの場合에 대비한 안전装置追加
+              // ctx.dataIndex가 undefined일 경우를 대비한 안전 장치 추가
               const dataIndex = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i; // Fallback to outer loop index if needed
               const hue = (dataIndex * 360 / filteredData.length) % 360;
-              return `hsl(${hue}, 60%, 70%, 0.8)`; // 0.8 透明度
+              return `hsl(${hue}, 60%, 70%, 0.8)`; // 0.8 투명도
             },
             pointRadius:  ctx => {
               const v = rValues[ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i]; // 0-1 스케일 값 또는 값 그대로, 안전 장치 추가
-              // rValues가 모두 동일한 값일 경우 (예: データ가 1개) 반경 15 고정
-              // 아니면 6 ~ 30 사이 スケール링
+              // rValues가 모두 동일한 값일 경우 (예: 데이터가 1개) 반경 15 고정
+              // 아니면 6 ~ 30 사이 스케일링
               const mn = Math.min(...rValues), mx = Math.max(...rValues);
               // min/max가 같으면 나누기 0 되므로 예외 처리
               if (mn === mx) return 15;
-              // v를 0-1に正規化하여 スケールリングに使用。 vの スケール에 따라正規化 방식変更 필요
+              // v를 0-1에 정규화하여 스케일링에 사용. v의 스케일에 따라 정규화 방식 변경 필요
               let normalizedV;
               if (radiusKey === 'RP 획득' || radiusKey === '평균 순위' || radiusKey === '표본수') { // 값 그대로인 경우
                    normalizedV = (v - mn) / (mx - mn); // Standard normalization to 0-1
-              } else { // 勝率/TOP3/픽률 (0-1 스케일로 플로팅データ)
-                   // 이미 0-1 스케일이므로 min, max도 그 スケール에서 計算됨
+              } else { // 승률/TOP3/픽률 (0-1 스케일로 플로팅 데이터)
+                   // 이미 0-1 스케일이므로 min, max도 그 스케일에서 계산됨
                    normalizedV = (v - mn) / (mx - mn); // Already 0-1, but normalize within the range of rValues
               }
-              // 正規化結果를 0-1範囲にclamp
+              // 정규화 결과를 0-1 범위에 clamp
               normalizedV = Math.max(0, Math.min(1, normalizedV));
               return 6 + normalizedV * 24; // 6 ~ 30 사이
             },
             pointHoverRadius: ctx => {
-               const v = rValues[ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i]; // 0-1 スケール値または값 그대로, 安全装置追加
+               const v = rValues[ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : i]; // 0-1 스케일 값 또는 값 그대로, 안전 장치 추가
                const mn = Math.min(...rValues), mx = Math.max(...rValues);
                if (mn === mx) return 15;
                let normalizedV;
                if (radiusKey === 'RP 획득' || radiusKey === '평균 순위' || radiusKey === '표본수') { // 값 그대로인 경우
                     normalizedV = (v - mn) / (mx - mn); // Standard normalization to 0-1
-               } else { // 勝率/TOP3/픽률 (0-1 スケールでプロットデータ)
+               } else { // 승률/TOP3/픽률 (0-1 스케일로 플로팅 데이터)
                     normalizedV = (v - mn) / (mx - mn); // Already 0-1, but normalize within the range of rValues
                }
                normalizedV = Math.max(0, Math.min(1, normalizedV));
-               return 6 + normalizedV * 24; // マウスオーバー時も 같은 반경 維持
+               return 6 + normalizedV * 24; // 마우스 오버 시 같은 반경 유지
             }
           }]
         },
@@ -488,14 +488,14 @@ document.addEventListener('DOMContentLoaded', function () {
               callbacks:{
                 title:()=>'',
                 label:ctx=>{
-                  // ctx.dataIndex가 undefinedの場合에 대비한 안전装置追加
+                  // ctx.dataIndex가 undefined일 경우를 대비한 안전 장치 추가
                   const dataIndex = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : 0; // Default to 0
                   const d = filteredData[dataIndex]; // 해당 데이터 포인트 원본 객체 (getProcessedStatsForPeriod 결과)
-                  if (!d) return ''; // データがなければ빈 文字列を返す
+                  if (!d) return ''; // 데이터가 없으면 빈 문자열 반환
 
-                  // getProcessedStatsForPeriod 結果 값의 원래 スケール(RP/平均順位/表본数 값 그대로, 勝率/TOP3/픽률 0-1)에 맞춰 포맷팅
+                  // getProcessedStatsForPeriod 결과 값의 원래 스케일(RP/평균 순위/표본수 값 그대로, 승률/TOP3/픽률 0-1)에 맞춰 포맷팅
                   return [
-                    d['실험체'] || '-', // キャラクター 이름
+                    d['실험체'] || '-', // 실험체 이름
                     `픽률: ${typeof d['픽률'] === 'number' && !isNaN(d['픽률']) ? (d['픽률'] * 100).toFixed(2) + '%' : '-'}`, // 0-1 -> 0-100%
                     `RP 획득: ${typeof d['RP 획득'] === 'number' && !isNaN(d['RP 획득']) ? d['RP 획득'].toFixed(2) : '-'}`, // 값 그대로
                     `승률: ${typeof d['승률'] === 'number' && !isNaN(d['승률']) ? (d['승률'] * 100).toFixed(2) + '%' : '-'}` // 0-1 -> 0-100%
@@ -507,20 +507,20 @@ document.addEventListener('DOMContentLoaded', function () {
               annotations:[
                 {
                   type:'line', scaleID:'x',
-                  // annotation ラインの値はChartDataから取得した 平均値의 원래 スケールを使用합니다。
-                  // chartDataで計算された 平均値 (wRP_chartData, wWin_chartData, wPick_chartData)は getProcessedStatsForPeriod 結果の スケール을 따릅니다。
-                  // RP 값 그대로, 勝率/TOP3/픽률 0-1 스케일.
-                  // annotationのvalueは 축の スケール에合わせる 필요가 있습니다。プロットデータは RP/平均順位 값 그대로、Win/TOP3/Pick 0-1 スケールです。
-                  value: xKey==='RP 획득' || xKey==='평균 순위' || xKey==='표본수' ? wRP_chartData : // xKeyが 값 그대로인 경우, 평균RP 사용
+                  // annotation 라인 값은 ChartData에서 가져온 평균값의 원래 스케일을 사용합니다.
+                  // chartData에서 계산된 평균값 (wRP_chartData, wWin_chartData, wPick_chartData)은 getProcessedStatsForPeriod 결과의 스케일을 따릅니다.
+                  // RP 값 그대로, 승률/TOP3/픽률 0-1 스케일.
+                  // annotation의 value는 축의 스케일에 맞춰야 합니다. 플로팅 데이터는 RP/평균 순위 값 그대로, 승률/TOP3/픽률 0-1 스케일입니다.
+                  value: xKey==='RP 획득' || xKey==='평균 순위' || xKey==='표본수' ? wRP_chartData : // xKey가 값 그대로인 경우, 평균RP 사용
                          xKey==='승률' || xKey==='TOP 3' || xKey==='픽률' ? wPick_chartData : // xKey가 0-1인 경우, 평균픽률 사용 (JSON 예시 픽률 스케일 반영)
                          undefined, // 알 수 없는 xKey
                   borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 },
                 {
                   type:'line', scaleID:'y',
-                   // annotation ラインの値はChartDataから取得した 平均値의 원래 スケールを使用합니다。
-                   value: yKey==='RP 획득' || yKey==='평균 순위' || yKey==='표본수' ? wRP_chartData : // yKeyが 값 그대로인 경우, 평균RP 사용
-                          yKey==='승률' || yKey==='TOP 3' || yKey==='픽률' ? wWin_chartData : // yKeyが0-1인 경우, 평균승률 사용 (JSON 예시 勝率 スケール 반영)
+                   // annotation 라인 값은 ChartData에서 가져온 평균값의 원래 스케일を使用합니다.
+                   value: yKey==='RP 획득' || yKey==='평균 순위' || yKey==='표본수' ? wRP_chartData : // yKey가 값 그대로인 경우, 평균RP 사용
+                          yKey==='승률' || yKey==='TOP 3' || yKey==='픽률' ? wWin_chartData : // yKey가 0-1인 경우, 평균승률 사용 (JSON 예시 승률 スケール 반영)
                           undefined, // 알 수 없는 yKey
                   borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 }
@@ -530,14 +530,14 @@ document.addEventListener('DOMContentLoaded', function () {
           scales:{
             x:{
               title:{display:true,text:xKey},
-              // 픽률, 勝率, TOP 3 축の min 設定 (0-1 スケール) - plotting data와合わせる必要あり
-              // 원본 コード 그대로 維持.
-              min: xKey==='픽률'?0:undefined, // 픽률 축만 0에서 시작
+              // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일) - plotting data와 맞춰야 함
+              // 원본 코드 그대로 유지.
+              min: xKey==='픽률'?0:undefined, // 픽률 축만 0
               max: xKey==='픽률'?Math.ceil(Math.max(...xValues)*500)/500:undefined, // 원본 로직 유지 (픽률 축만 max 설정)
               ticks:{
                 callback: v => {
-                  // v는 Chart.js의 스케일 값 (plotting data スケール)。 여기서 표시될 텍스트 포맷팅。
-                  // v는 프로트 데이터 스케일 (RP/平均順位 値そのまま, Win/TOP3/픽률 0-1)
+                  // v는 Chart.js의 스케일 값 (plotting data 스케일)。 여기서 표시될 텍스트 포맷팅。
+                  // v는 플로팅 데이터 스케일 (RP/평균 순위 값 그대로, 승률/TOP3/픽률 0-1)
                   if (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') {
                       // v가 0-1 스케일로 들어오므로 100 곱해서 %로 표시
                       return `${(v * 100).toFixed(1)}%`;
@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function () {
                        // v는 값 그대로 들어옴
                        return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 유효한 숫자만 표시
                    }
-                  // 平均順位 등 다른 값
+                  // 평균 순위 등 다른 값
                   return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 다른 숫자도 소수점 첫째 자리까지 표시
                 },
                  stepSize: xKey === 'RP 획득' ? 1 : (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3' ? 0.002 : undefined) // 원본 로직 유지
@@ -554,23 +554,23 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             y:{
               title:{display:true,text:yKey},
-               // 픽률, 勝率, TOP 3 축の min 設定 (0-1 スケール) - plotting data와合わせる 必要あり
-               // 원본 코드 그대로 維持.
-              min: yKey==='픽률'?0:undefined, // 픽률 축만 0에서 시작
+               // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일) - plotting data와 맞춰야 함
+               // 원본 코드 그대로 유지.
+              min: yKey==='픽률'?0:undefined, // 픽률 축만 0
               max: yKey==='픽률'?Math.ceil(Math.max(...yValues)*500)/500:undefined, // 원본 로직 유지 (픽률 축만 max 설정)
               ticks:{
                 callback: v => {
                    // v는 Chart.js의 스케일 값 (plotting data 스케일)。 여기서 표시될 텍스트 포맷팅。
-                   // v는 프로트 데이터 스케일 (RP/平均順位 値そのまま, Win/TOP3/픽률 0-1)
+                   // v는 플로팅 데이터 스케일 (RP/평균 순위 값 그대로, 승률/TOP3/픽률 0-1)
                    if (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') {
-                       // vが0-1スケールで입력되는ため100倍して % で表示
+                       // v가0-1 스케일로 입력되므로 100 곱해서 %로 표시
                        return `${(v * 100).toFixed(1)}%`;
                    }
                     if (yKey === 'RP 획득') {
                         // v는 값 그대로 입력된다
                         return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 유효한 숫자만 표시
                     }
-                   // 平均順位 など他の 값
+                   // 평균 순위 등 다른 값
                    return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 다른 숫자도 소수점 첫째 자리까지 표시
                  },
                   stepSize: yKey === 'RP 획득' ? 1 : (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3' ? 0.002 : undefined) // 원본 로직 유지
@@ -582,8 +582,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       // 메타데이터 (common.js의 tierMap 사용)
-      // chartData에서 계산된 平均値 (wRP_chartData, wWin_chartData, wPick_chartData)는 getProcessedStatsForPeriod 結果の スケール을 따릅니다。
-      // RP 값 그대로, 勝率/TOP3/픽률 0-1 스케일.
+      // chartData에서 계산된 평균값 (wRP_chartData, wWin_chartData, wPick_chartData)는 getProcessedStatsForPeriod 결과의 스케일을 따릅니다.
+      // RP 값 그대로, 승률/TOP3/픽률 0-1 스케일.
       myChart.config._제목 = title;
       myChart.config._평균픽률 = wPick_chartData * 100; // 0-1 스케일이므로 100 곱해서 저장 (코너 텍스트 표시용)
       myChart.config._가중평균RP = wRP_chartData; // 값 그대로 저장

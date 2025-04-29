@@ -444,8 +444,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                    if (typeof rankChangeValue === 'number') {
                         const absChange = Math.abs(rankChangeValue);
-                        if (rankChangeValue < 0) { rankChangeText = `▲${absChange}`; rankChangeClass = 'rank-change-up'; } // 순위 숫자 감소 (좋아짐)
-                        else if (rankChangeValue > 0) { rankChangeText = `▼${absChange}`; rankChangeClass = 'rank-change-down'; } // 순위 숫자 증가 (나빠짐)
+                        if (rankChangeValue < 0) { rankChangeText = `▼${absChange}`; rankChangeClass = 'rank-change-down'; }
+                        else if (rankChangeValue > 0) { rankChangeText = `▲${absChange}`; rankChangeClass = 'rank-change-up'; } 
                         else { rankChangeText = `=`; rankChangeClass = 'rank-change-same'; }
                    } else { // string ('신규 → ', '→ 삭제', '-')
                        rankChangeText = rankChangeValue || '-';
@@ -574,12 +574,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                      // 비교 모드 툴팁 내용 형식 (요청대로)
                      // 픽률, RP 획득, 승률만 표시하고 TOP 3는 제외합니다.
-                     // 순서는 Ver1 → Ver2로 표시합니다.
                      tooltipContent = `
                          <b>${character.실험체}</b><br>
-                         픽률: ${pr1Text} → ${pr2Text}<br>
-                         RP 획득: ${rp1Text} → ${rp2Text}<br>
-                         승률: ${win1Text} → ${win2Text}
+                         픽률: ${pr2Text} → ${pr1Text}<br>
+                         RP 획득: ${rp2Text} → ${rp1Text}<br>
+                         승률: ${win2Text} → ${win1Text}
                      `;
 
                 } else {
