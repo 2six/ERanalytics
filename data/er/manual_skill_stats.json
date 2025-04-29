@@ -3904,50 +3904,50 @@
         "l10nLobbyDescText": "캐시가 실이 묶인 바늘을 던져 스킬 피해를 입히고 짧은 시간 동안 속박시킵니다. 바늘이 적중하면 관통하여 최대 1명의 적에게 추가로 적중할 수 있습니다. \\n관통한 바늘이 적에게 적중하면 먼저 적중당한 적을 나중에 적중당한 적 쪽으로 밀쳐내 둘이 충돌하면 기절시키고 추가 스킬 피해를 입힙니다. 관통한 바늘이 벽에 충돌하면 처음 바늘에 적중한 적을 벽으로 밀어내 기절시키고 추가 스킬 피해를 입힙니다.\\n\\n수쳐의 충돌 피해는 외상 스택을 부여하지 않습니다.",
         "l10nExpansionTipText": "",
         "placeholder": {
-            "{0}": "baseDamage",
-            "{6}": "skillAmp",
-            "{2}": "rootDuration",
-            "{3}": "stunDuration",
-            "{4}": "baseDamage2",
-            "{7}": "skillAmp2"
+            "{0}": ["baseDamage_1", "skillDamage_1"],
+            "{6}": ["skillAmp_1", "skillDamage_1"],
+            "{2}": ["rootDuration_1", "ccDuration"],
+            "{3}": ["stunDuration_1", "ccDuration"],
+            "{4}": ["baseDamage_2", "skillDamage_2"],
+            "{7}": ["skillAmp_2", "skillDamage_2"]
         },
         "coefficient": {
-            "baseDamage": [
+            "baseDamage_1": [
                 30,
                 40,
                 50,
                 60,
                 70
             ],
-            "skillAmp": [
+            "skillAmp_1": [
                 0.4,
                 0.4,
                 0.4,
                 0.4,
                 0.4
             ],
-            "rootDuration": [
+            "rootDuration_1": [
                 0.7,
                 0.7,
                 0.7,
                 0.7,
                 0.7
             ],
-            "stunDuration": [
+            "stunDuration_1": [
                 0.9,
                 0.9,
                 0.9,
                 0.9,
                 0.9
             ],
-            "baseDamage2": [
+            "baseDamage_2": [
                 30,
                 50,
                 70,
                 90,
                 110
             ],
-            "skillAmp2": [
+            "skillAmp_2": [
                 0.5,
                 0.5,
                 0.5,

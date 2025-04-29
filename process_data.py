@@ -286,6 +286,7 @@ def process_and_combine_data(raw_data, manual_skill_stats, target_char_codes):
                               continue # '10'으로 시작하지 않는 스킬은 스킵 (무기 스킬 등)
 
                          skill_code_int = int(skill_code_str) # 정수 스킬 코드
+                         skill_key = manual_stat_original.get("skillKey", "Unknown")
 
                          # L10N에서 필요한 텍스트 필드 키 생성 (스킬 이름, 설명/계수 템플릿, 확장팁)
                          l10n_skill_name_key = f"Skill/Group/Name/{skill_code_str}"
@@ -306,11 +307,12 @@ def process_and_combine_data(raw_data, manual_skill_stats, target_char_codes):
                          # 딕셔너리 정의를 먼저 하고, 그 다음에 업데이트 수행
                          combined_skill_data = {
                              "code": skill_code_int, # 스킬 코드 (정수)
+                            "skillKey": skill_key,
                              # skillKey, weaponType 필드 제거 (캐릭터 고유 스킬이므로)
                              # name 대신 skillName 사용 (요청 반영)
                              "skillName": skill_name, # L10N 또는 manual stats에서 가져온 이름 사용
-                             "l10nDescText": l10n_desc_text, # L10N Desc 텍스트 값 자체 저장 (키 대신)
                              "l10nCoefText": l10n_coef_text, # L10N Coef 텍스트 값 자체 저장
+                             "l10nDescText": l10n_desc_text, # L10N Desc 텍스트 값 자체 저장 (키 대신)
                              "l10nLobbyDescText": l10n_lobby_desc_text, # L10N Lobby Desc 텍스트 값 자체 저장
                              "l10nExpansionTipText": l10n_expansion_tip_text, # L10N Expansion Tip 텍스트 값 추가
                          }

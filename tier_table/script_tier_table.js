@@ -255,8 +255,8 @@ document.addEventListener('DOMContentLoaded', function () {
                  return;
             }
 
-            const url1 = `/data/${version1}/${tier1}.json`;
-            const url2 = `/data/${version2}/${tier2}.json`;
+            const url1 = `/stats/${version1}/${tier1}.json`;
+            const url2 = `/stats/${version2}/${tier2}.json`;
 
             Promise.all([
                 fetch(url1).then(res => {
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const tier    = tierSelect.value;
             const period  = periodSelect.value;
 
-            fetch(`/data/${version}/${tier}.json`)
+            fetch(`/stats/${version}/${tier}.json`)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                     return res.json();
