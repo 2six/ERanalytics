@@ -565,8 +565,8 @@ function displaySkillTable(skillResults, l10nData) {
          htmlContent += '<tr>';
          // 이미지 표시 (Placeholder 또는 실제 이미지)
          // 이미지 경로 규칙 (image/skill/{skillCode}.png) 사용
-         const imageUrl = `image/skill/${skill.code}.png`; // 실제 이미지 경로
-         const placeholderImageUrl = 'image/placeholder.png'; // Placeholder 이미지 경로
+         const imageUrl = `/image/skill/${skill.code}.png`; // 실제 이미지 경로
+         const placeholderImageUrl = '/image/placeholder.png'; // Placeholder 이미지 경로
          // TODO: 실제 이미지가 없을 경우 Placeholder 사용 로직 구현
          htmlContent += `<td><img src="${placeholderImageUrl}" alt="${skill.name}" width="50"></td>`;
 
