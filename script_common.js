@@ -800,10 +800,10 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
     });
 }
 
-// 두 데이터셋 병합 및 변화량 계산 (common.js로 이동) - 기존 유지
+// 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
 function mergeDataForComparison(data1, data2) {
-    const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
-    const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
+    const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d])); // Ver1 데이터 (보통 최신)
+    const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d])); // Ver2 데이터 (보통 과거 또는 비교 대상)
 
     const allCharacters = new Set([...Object.keys(map1), ...Object.keys(map2)]);
     const comparisonResult = [];
@@ -823,8 +823,8 @@ function mergeDataForComparison(data1, data2) {
          return String(a['실험체']).localeCompare(String(b['실험체']));
      });
 
-    const rankMap1 = Object.fromEntries(sortedData1.map((d, i) => [d['실험체'], i + 1])); // 1부터 시작하는 순위
-    const rankMap2 = Object.fromEntries(sortedData2.map((d, i) => [d['실험체'], i + 1]));
+    const rankMap1 = Object.fromEntries(sortedData1.map((d, i) => [d['실험체'], i + 1])); // Ver1 순위
+    const rankMap2 = Object.fromEntries(sortedData2.map((d, i) => [d['실험체'], i + 1])); // Ver2 순위
 
 
     allCharacters.forEach(charName => {
@@ -838,8 +838,7 @@ function mergeDataForComparison(data1, data2) {
              result[`${col} (Ver1)`] = d1 ? d1[col] : null;
              result[`${col} (Ver2)`] = d2 ? d2[col] : null;
 
-             // 변화량 계산 (Value2 - Value1)
-             // --- 수정 시작: 델타 계산 순서를 Value1 - Value2로 변경 ---
+             // 변화량 계산 (Value1 - Value2)
              const val1 = result[`${col} (Ver1)`]; // 최신 시점 값
              const val2 = result[`${col} (Ver2)`]; // 과거 시점 값
 
@@ -849,45 +848,44 @@ function mergeDataForComparison(data1, data2) {
                   // 둘 중 하나라도 숫자가 아니면 변화량 없음
                   result[`${col} 변화량`] = null;
              }
-             // --- 수정 끝
         });
 
         // 티어 변화 계산
         // calculateTiers에서 이미 '티어' 키가 계산되어 있음.
         // d1, d2가 null일 경우 해당 시점에 데이터가 없다는 의미.
-        const tier1 = d1 ? d1['티어'] : '삭제'; // 데이터 1에 없으면 '삭제'로 간주
-        const tier2 = d2 ? d2['티어'] : '삭제'; // 데이터 2에 없으면 '삭제'로 간주
+        const tier1 = d1 ? d1['티어'] : '삭제'; // Ver1 티어 (데이터 없으면 '삭제'로 간주)
+        const tier2 = d2 ? d2['티어'] : '삭제'; // Ver2 티어 (데이터 없으면 '삭제'로 간주)
 
          // Ver1 및 Ver2의 실제 티어 값을 결과 객체에 저장
          result['티어 (Ver1)'] = d1 ? d1['티어'] : null;
          result['티어 (Ver2)'] = d2 ? d2['티어'] : null;
 
 
-         if (!d1 && d2) {
-             result['티어 변화'] = `신규 → ${tier2}`;
-         } else if (d1 && !d2) {
-             result['티어 변화'] = `${tier1} → 삭제`;
-         } else if (d1 && d2) {
+         // --- 수정 시작: '티어 변화' 문자열 생성 로직 (Ver2 → Ver1 방향) ---
+         if (!d2 && d1) { // Ver2에 없고 Ver1에만 있음 -> Ver1에서 신규 등장
+             result['티어 변화'] = `신규 → ${tier1}`; // '신규 → {Ver1 티어}'
+         } else if (d2 && !d1) { // Ver2에 있고 Ver1에 없음 -> Ver1에서 삭제됨
+             result['티어 변화'] = `${tier2} → 삭제`; // '{Ver2 티어} → 삭제'
+         } else if (d1 && d2) { // 둘 다 있음
              if (tier1 === tier2) {
-                  result['티어 변화'] = tier1; // 티어 변화 없으면 현재 티어만 표시 (string)
+                  result['티어 변화'] = tier1; // 티어 변화 없으면 Ver1 티어만 표시
              } else {
-                  result['티어 변화'] = `${tier1} → ${tier2}`; // 티어 변화 표시 (string)
+                  result['티어 변화'] = `${tier2} → ${tier1}`; // '{Ver2 티어} → {Ver1 티어}'
              }
-         } else {
+         } else { // 둘 다 없음 (실제 발생 가능성은 낮지만 안전 장치)
              result['티어 변화'] = '-';
          }
+         // --- 수정 끝
 
         // 순위 변화 계산 (점수 기준)
-        const rank1 = rankMap1[charName]; // 최신 순위
-        const rank2 = rankMap2[charName]; // 과거 순위
+        const rank1 = rankMap1[charName]; // Ver1 순위
+        const rank2 = rankMap2[charName]; // Ver2 순위
 
         result['순위 (Ver1)'] = rank1;
         result['순위 (Ver2)'] = rank2;
 
         if (typeof rank1 === 'number' && typeof rank2 === 'number') {
-             // --- 수정 시작: 순위 변화값 계산 순서를 rank1 - rank2로 변경 ---
-             result['순위 변화값'] = rank1 - rank2; // (최신 순위) - (과거 순위)
-             // --- 수정 끝
+             result['순위 변화값'] = rank1 - rank2; // (Ver1 순위) - (Ver2 순위)
         } else if (typeof rank1 === 'number') {
              result['순위 변화값'] = '신규 → '; // string (Ver2에 없고 Ver1에만 있음)
         } else if (typeof rank2 === 'number') {
@@ -897,12 +895,10 @@ function mergeDataForComparison(data1, data2) {
         }
 
         // 평균 순위 변화량 계산 (숫자)
-        const avgRank1 = d1 ? d1['평균 순위'] : null; // 최신 평균 순위
-        const avgRank2 = d2 ? d2['평균 순위'] : null; // 과거 평균 순위
+        const avgRank1 = d1 ? d1['평균 순위'] : null; // Ver1 평균 순위
+        const avgRank2 = d2 ? d2['평균 순위'] : null; // Ver2 평균 순위
         if (typeof avgRank1 === 'number' && typeof avgRank2 === 'number') {
-             // --- 수정 시작: 평균 순위 변화량 계산 순서를 avgRank1 - avgRank2로 변경 ---
-             result['평균 순위 변화량'] = avgRank1 - avgRank2; // (최신 평균 순위) - (과거 평균 순위)
-             // --- 수정 끝
+             result['평균 순위 변화량'] = avgRank1 - avgRank2; // (Ver1 평균 순위) - (Ver2 평균 순위)
         } else {
              result['평균 순위 변화량'] = null;
         }

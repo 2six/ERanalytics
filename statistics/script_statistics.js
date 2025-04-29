@@ -634,7 +634,7 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
     if (!isCompareMode) return;
 
     // 기존 테이블 컬럼 목록
-    const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위', '표본수']; // 표본수 다시 추가
+    const cols = ['실험체','점수','티어','픽률','RP 획득','승률','TOP 3','평균 순위', '표본수'];
 
     let comparisonTableHtml = '<table id="stats-table"><thead><tr>'; // 테이블 ID 추가
     cols.forEach(c => {
@@ -669,28 +669,38 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
             } else if (col === '티어') {
                 // 티어 컬럼에는 티어 변화 정보와 순위 변화 정보만 표시
                 const tierChange = row['티어 변화'] || '-'; // string
-                const rank1 = row['순위 (Ver1)'] !== null && row['순위 (Ver1)'] !== undefined ? row['순위 (Ver1)'] : '-'; // number 또는 '-'
-                const rank2 = row['순위 (Ver2)'] !== null && row['순위 (Ver2)'] !== undefined ? row['순위 (Ver2)'] : '-'; // number 또는 '-'
-                const rankChangeValue = row['순위 변화값']; // number or string
+                const rank1 = row['순위 (Ver1)'] !== null && row['순위 (Ver1)'] !== undefined ? row['순위 (Ver1)'] : '-'; // number 또는 '-' (최신 순위)
+                const rank2 = row['순위 (Ver2)'] !== null && row['순위 (Ver2)'] !== undefined ? row['순위 (Ver2)'] : '-'; // number 또는 '-' (과거 순위)
+                const rankChangeValue = row['순위 변화값']; // number or string (latest - past)
 
                 let rankInfoText = '';
                     if (typeof rank1 === 'number' && typeof rank2 === 'number') {
                          // 순위 변화값이 숫자인 경우에만 화살표 및 변화량 표시
                         if (typeof rankChangeValue === 'number') {
                             const rankChangeFormatted = Math.abs(rankChangeValue);
-                            // 순위 숫자가 작아지면 개선 (▲), 커지면 악화 (▼)
-                             rankInfoText = `${rank1}위 → ${rank2}위 ${rankChangeValue < 0 ? `▲${rankChangeFormatted}` : (rankChangeValue > 0 ? `▼${rankChangeFormatted}` : '')}`;
+                            // --- 수정 시작: 순위 표시 순서를 과거 → 최신으로 변경 ---
+                            // rankChangeValue가 음수이면 ▲, 양수이면 ▼ (latest - past 기준)
+                             rankInfoText = `${rank2}위 → ${rank1}위 ${rankChangeValue < 0 ? `▲${rankChangeFormatted}` : (rankChangeValue > 0 ? `▼${rankChangeFormatted}` : '')}`;
+                            // --- 수정 끝
                          } else { // 순위 변화값이 신규/삭제인 경우
-                             rankInfoText = `${rank1}위 → ${rank2}위`;
+                             // --- 수정 시작: 순위 표시 순서를 과거 → 최신으로 변경 ---
+                             rankInfoText = `${rank2}위 → ${rank1}위`;
+                             // --- 수정 끝
                          }
                     } else if (rankChangeValue === '신규 → ') {
                         rankInfoText = `(신규)`;
                     } else if (rankChangeValue === '→ 삭제') {
                         rankInfoText = `(삭제)`;
-                    } else if (rank1 !== '-') { // Ver1에만 데이터 있고 Ver2에 없는 경우 (병합 로직 상 → 삭제 케이스에 포함될 확률 높음)
-                        rankInfoText = `${rank1}위 → -`;
-                    } else if (rank2 !== '-') { // Ver2에만 데이터 있고 Ver1에 없는 경우 (병합 로직 상 신규 → 케이스에 포함될 확률 높음)
-                        rankInfoText = `- → ${rank2}위`;
+                    } else if (rank1 !== '-') { // Ver1에만 데이터 있고 Ver2에 없는 경우 (병합 로직 상 신규 → 케이스에 포함될 확률 높음)
+                        // 이 경우는 순위 변화값 문자열이 '신규 → ' 일 때입니다.
+                        // 따라서 이 분기는 거의 실행되지 않지만, 안전 장치로 유지합니다.
+                        // 표시 형식은 '과거(-) → 최신' 형태가 됩니다.
+                        rankInfoText = `- → ${rank1}위`;
+                    } else if (rank2 !== '-') { // Ver2에만 데이터 있고 Ver1에 없는 경우 (병합 로직 상 → 삭제 케이스에 포함될 확률 높음)
+                        // 이 경우는 순위 변화값 문자열이 '→ 삭제' 일 때입니다.
+                        // 따라서 이 분기는 거의 실행되지 않지만, 안전 장치로 유지합니다.
+                        // 표시 형식은 '과거 → 최신(-)' 형태가 됩니다.
+                        rankInfoText = `${rank2}위 → -`;
                     } else {
                         rankInfoText = '-';
                     }
@@ -723,21 +733,21 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                 // 이 속성들은 이전 상태 그대로 유지합니다.
                     if (tierChange.includes('→')) {
                         const tiers = tierChange.split('→').map(t => t.trim());
-                        const tier1 = tiers[0];
-                        const tier2 = tiers[1];
+                        const tier1Value = tiers[1]; // 최신 티어 (Ver1) 값
+                        const tier2Value = tiers[0]; // 과거 티어 (Ver2) 값
                         const tierOrder = ['S+', 'S', 'A', 'B', 'C', 'D', 'F', '삭제', '신규']; // '신규' 추가
-                        const index1 = tierOrder.indexOf(tier1);
-                        const index2 = tierOrder.indexOf(tier2);
+                        const index1 = tierOrder.indexOf(tier1Value); // 최신 티어 인덱스
+                        const index2 = tierOrder.indexOf(tier2Value); // 과거 티어 인덱스
 
                         if (tierChange.includes('신규 →')) {
-                            dataAttributes += ` data-tierchange="new"`;
+                            dataAttributes += ` data-tierchange="new"`; // 신규는 항상 'up'으로 간주
                         } else if (index1 >= 0 && index2 >= 0) {
-                             // 순서 값이 작을수록 좋은 티어이므로, index2 < index1 이 개선임
-                            if (index2 < index1) dataAttributes += ` data-tierchange="up"`; // 개선
-                            else if (index2 > index1) dataAttributes += ` data-tierchange="down"`; // 악화
+                             // 순서 값이 작을수록 좋은 티어이므로, index1 < index2 이 개선임
+                            if (index1 < index2) dataAttributes += ` data-tierchange="up"`; // 개선 (최신 티어 인덱스가 과거 티어 인덱스보다 작음)
+                            else if (index1 > index2) dataAttributes += ` data-tierchange="down"`; // 악화 (최신 티어 인덱스가 과거 티어 인덱스보다 큼)
                             else dataAttributes += ` data-tierchange="same"`; // 동일
                         } else if (tierChange === '→ 삭제') {
-                            dataAttributes += ` data-tierchange="removed"`;
+                            dataAttributes += ` data-tierchange="removed"`; // 삭제는 항상 'down'으로 간주
                         } else { // 예상치 못한 변화 형태
                              dataAttributes += ` data-tierchange="none"`;
                         }
@@ -748,12 +758,11 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     }
 
             } else { // Other numeric stat columns (점수, 픽률, RP 획득, 승률, TOP 3, 평균 순위, 표본수)
-                    const val1 = row[`${col} (Ver1)`];
-                    const val2 = row[`${col} (Ver2)`];
-                    const delta = row[`${col} 변화량`]; // Numeric delta value
+                    const val1 = row[`${col} (Ver1)`]; // 최신 값
+                    const val2 = row[`${col} (Ver2)`]; // 과거 값
+                    const delta = row[`${col} 변화량`]; // Numeric delta value (latest - past)
 
                     // Display Ver2 value → Ver1 value Delta format
-                    // --- 수정 시작: 표시 순서를 Ver2 → Ver1으로 변경 ---
                     let valueText1;
                     if (typeof val1 === 'number') {
                         if (col === '승률' || col === 'TOP 3') {
@@ -794,35 +803,25 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                     let verValuesHtml;
                     let deltaHtml = '';
 
+                    // --- 수정 시작: 순서 그대로 valueText2 → valueText1 유지 ---
                     if (typeof val1 === 'number' && typeof val2 === 'number') {
-                        // *** 수정된 부분: 순서를 valueText2 → valueText1으로 변경 ***
-                        verValuesHtml = `${valueText2} → ${valueText1}`;
+                        verValuesHtml = `${valueText2} → ${valueText1}`; // 과거 → 최신
                         if (typeof delta === 'number') {
-                            // --- 수정: 승률과 TOP 3 변화량은 100을 곱하고 %는 붙이지 않음 ---
-                            // 평균 순위 변화량은 '위'를 붙이지 않음
-                            // 표본수 변화량은 정수
-                            let deltaValueForFormatting = delta;
-                            let deltaSuffix = ''; // 단위
-                            if (col === '승률' || col === 'TOP 3') {
-                                deltaValueForFormatting = delta * 100; // 100 곱함
-                                // deltaSuffix = '%'; // 변화량에는 % 안 붙이기로 함
-                            } else if (col === '평균 순위') {
-                                // deltaSuffix = '위'; // 변화량에는 단위 안 붙이기로 함
-                            } else if (col === '표본수') {
-                                // deltaSuffix = ''; // 변화량에는 단위 안 붙이기로 함
-                            }
-                            // 소수점 둘째 자리까지 표시, 표본수 변화량은 정수
-                            const deltaFormatted = col === '표본수' ? Math.abs(deltaValueForFormatting).toFixed(0) : Math.abs(deltaValueForFormatting).toFixed(2);
+                             // 델타 값 포맷팅 및 ▲▼ 기호는 delta (latest - past) 부호에 따라 결정
+                             let deltaValueForFormatting = delta;
+                             let deltaSuffix = ''; // 단위
+                             if (col === '승률' || col === 'TOP 3') {
+                                 deltaValueForFormatting = delta * 100;
+                             }
+                             const deltaFormatted = col === '표본수' ? Math.abs(deltaValueForFormatting).toFixed(0) : Math.abs(deltaValueForFormatting).toFixed(2);
 
-                            deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}${deltaSuffix}`;
-                            // ----------------------------------------------------------
+                             // delta가 양수이면 ▲, 음수이면 ▼ (latest - past 기준)
+                             deltaHtml = `${delta > 0 ? `▲${deltaFormatted}` : (delta < 0 ? `▼${deltaFormatted}` : '')}${deltaSuffix}`;
                         }
-                    } else if (typeof val1 === 'number' && (val2 === null || val2 === undefined)) { // Only Ver1 data exists (removed)
-                        // 순서 유지 (Ver1 → 삭제)
-                        verValuesHtml = `${valueText1} → 삭제`;
-                    } else if ((val1 === null || val1 === undefined) && typeof val2 === 'number') { // Only Ver2 data exists (new)
-                        // 순서 유지 (신규 → Ver2)
-                        verValuesHtml = `신규 → ${valueText2}`;
+                    } else if (typeof val2 === 'number' && (val1 === null || val1 === undefined)) { // Ver2에 있고 Ver1에만 없음 (삭제)
+                        verValuesHtml = `${valueText2} → 삭제`; // 과거 → 삭제
+                    } else if ((val2 === null || val2 === undefined) && typeof val1 === 'number') { // Ver2에 없고 Ver1에만 있음 (신규)
+                        verValuesHtml = `신규 → ${valueText1}`; // 신규 → 최신
                     } else { // Neither has data
                         verValuesHtml = '-';
                     }
@@ -839,12 +838,13 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
 
 
                     // Store delta value for color grading (numeric delta or status string)
+                    // data-delta 속성 값은 delta (latest - past) 값 또는 상태 문자열 그대로 유지
                     if (typeof delta === 'number') {
                         dataAttributes += ` data-delta="${delta}"`;
-                    } else if ((val1 === null || val1 === undefined) && (val2 !== null && val2 !== undefined)) { // New
-                        dataAttributes += ` data-delta="new"`;
-                    } else if ((val1 !== null && val1 !== undefined) && (val2 === null || val2 === undefined)) { // Removed
+                    } else if ((val2 !== null && val2 !== undefined) && (val1 === null || val1 === undefined)) { // Removed (과거에 있고 최신에 없음)
                         dataAttributes += ` data-delta="removed"`;
+                    } else if ((val2 === null || val2 === undefined) && (val1 !== null && val1 !== undefined)) { // New (과거에 없고 최신에 있음)
+                        dataAttributes += ` data-delta="new"`;
                     } else {
                         dataAttributes += ` data-delta="none"`;
                     }
