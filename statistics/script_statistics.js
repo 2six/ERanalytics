@@ -427,8 +427,17 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(json => {
                 const history = json['통계'];
-                // common.js의 extractPeriodEntries 사용 (단일 모드는 latest/3day/7day 모두 스냅샷 가져옴)
-                const entries = extractPeriodEntries(history, period);
+                let entries;
+
+                // --- 수정 시작: 기간에 따라 extractPeriodEntries 또는 extractDeltaEntries 호출 ---
+                if (period === 'latest') {
+                    // 'latest' 기간은 스냅샷 사용
+                    entries = extractPeriodEntries(history, period); // common.js의 extractPeriodEntries
+                } else {
+                    // '3day' 또는 '7day' 기간은 델타 통계 사용
+                    entries = extractDeltaEntries(history, period); // common.js의 extractDeltaEntries
+                }
+                // --- 수정 끝
 
                 const avgScore = calculateAverageScore(entries);
                 const stddev = calculateStandardDeviation(entries, avgScore);
@@ -441,13 +450,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderTable(scored); // 단일 모드 렌더링
 
                 // --- 추가: 팝업 설정 함수 호출 (렌더링 완료 후) ---
-                 setupTablePopup();
+                    setupTablePopup();
                 // --------------------------------------------
 
             })
             .catch(err => {
                 console.error('데이터 로드 실패:', err);
                 dataContainer.innerHTML = `데이터를 불러오는 데 실패했습니다: ${err.message}`;
+                    // 에러 시에도 팝업 버튼이 동작하도록 설정
+                setupTablePopup();
             });
     }
 

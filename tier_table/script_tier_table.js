@@ -296,7 +296,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     entries1 = commonExtractPeriodEntries(history1, period1);
                 } else {
                     // 데이터 1 기간이 '3day' 또는 '7day'이면 델타 통계 사용 (common.js의 extractDeltaEntries)
-                    entries1 = extractDeltaEntries(history1, period1);
+                    // commonExtractDeltaEntries 변수 사용
+                    entries1 = commonExtractDeltaEntries(history1, period1);
                 }
 
                 if (period2 === 'latest') {
@@ -304,7 +305,8 @@ document.addEventListener('DOMContentLoaded', function () {
                      entries2 = commonExtractPeriodEntries(history2, period2);
                 } else {
                      // 데이터 2 기간이 '3day' 또는 '7day'이면 델타 통계 사용 (common.js의 extractDeltaEntries)
-                     entries2 = extractDeltaEntries(history2, period2);
+                     // commonExtractDeltaEntries 변수 사용
+                     entries2 = commonExtractDeltaEntries(history2, period2);
                 }
                 // --- 수정 끝
 
@@ -369,11 +371,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .then(json => {
                     const history = json['통계'];
-                    // 단일 모드는 latest/3day/7day 모두 기간의 '스냅샷' 데이터(common.js의 extractPeriodEntries)를 가져옵니다.
-                    // 티어 테이블의 단일 모드 '최근 N일' 기간은 변화량 데이터를 보여주는 것이 아니라,
-                    // 해당 시점의 전체 통계 데이터를 보여주는 것입니다. (script_statistics.js와 통일)
-                    // 따라서 common.js의 extractPeriodEntries (스냅샷) 함수를 사용합니다.
-                    const entries = commonExtractPeriodEntries(history, period);
+                    let entries;
+
+                    // --- 수정 시작: 기간에 따라 common.js의 함수 호출 ---
+                    if (period === 'latest') {
+                        // 'latest' 기간은 스냅샷 사용
+                         entries = commonExtractPeriodEntries(history, period); // common.js의 extractPeriodEntries
+                    } else {
+                        // '3day' 또는 '7day' 기간은 델타 통계 사용
+                         // 기존 로컬 extractPeriodEntries는 삭제되었고, commonExtractDeltaEntries 변수 사용
+                         entries = commonExtractDeltaEntries(history, period);
+                    }
+                    // --- 수정 끝
 
                     const avgScore = calculateAverageScore(entries);
                     const stddev   = calculateStandardDeviation(entries, avgScore);
