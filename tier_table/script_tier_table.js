@@ -449,7 +449,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const tierLabel    = tierLabels[tierSelect.value];
 
         const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-        const groups = tiers.reduce((o, t) => (o[t] = [], o), groups); // groups 객체 초기화 오류 수정
+        // --- 수정 시작: groups 변수 초기화 오류 수정 ---
+        // reduce 함수의 초기값으로 빈 객체 {}를 전달합니다.
+        const groups = tiers.reduce((o, t) => {
+            o[t] = [];
+            return o;
+        }, {});
+        // --- 수정 끝
 
         // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
         data.forEach(item => {
@@ -528,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function () {
               // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
               let rankChangeOverlayHtml = '';
               if (isCompareMode) { /* ... 순위 변동 로직 ... */
-                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string (이제 latest - past)
+                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string (latest - past)
                    let rankChangeText = '';
                    let rankChangeClass = '';
 
