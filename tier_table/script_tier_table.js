@@ -1,4 +1,3 @@
-// script_tier_table.js
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect    = document.getElementById('tier-select');
@@ -143,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         // URL → 드롭다운 값 복원 /* 기존 유지 */
+        // versionList가 역순으로 정렬되어 있으므로 versionList[0]은 가장 최신 버전
         versionSelect.value = getParam('version', versionList[0]); /* 기존 유지 */
         tierSelect.value    = getParam('tier',    'diamond_plus'); /* 기존 유지 */
         periodSelect.value  = getParam('period',  'latest'); /* 기존 유지 */
@@ -159,56 +159,59 @@ document.addEventListener('DOMContentLoaded', function () {
         // 변경 시 URL 갱신 + 재렌더 /* 기존 유지 */
         versionSelect.addEventListener('change', () => { /* 기존 유지 */
             // --- 수정: 비교 모드 여부에 따라 비교 파라미터 삭제 --- /* 기존 유지 */
-            if (!compareCheckbox.checked) { // 체크박스가 꺼져있으면 (단일 모드 상태로 변경됐으면) /* 기존 유지 */
-                 params.delete('version2'); /* 기존 유지 */
-                 params.delete('tier2'); /* 기존 유지 */
-                 params.delete('period2'); /* 기존 유지 */
-                 params.delete('compare'); /* 기존 유지 */
-            } /* 기존 유지 */
+            // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
+            // if (!compareCheckbox.checked) { // 체크박스가 꺼져있으면 (단일 모드 상태로 변경됐으면) /* 기존 유지 */
+            //      params.delete('version2'); /* 기존 유지 */
+            //      params.delete('tier2'); /* 기존 유지 */
+            //      params.delete('period2'); /* 기존 유지 */
+            //      params.delete('compare'); /* 기존 유지 */
+            // } /* 기존 유지 */
             // ------------------------------------ /* 기존 유지 */
             setParam('version', versionSelect.value); /* 기존 유지 */
             loadAndRender(); /* 기존 유지 */
         }); /* 기존 유지 */
         tierSelect.addEventListener('change', () => { /* 기존 유지 */
             // --- 수정: 비교 모드 여부에 따라 비교 파라미터 삭제 --- /* 기존 유지 */
-            if (!compareCheckbox.checked) { /* 기존 유지 */
-                 params.delete('version2'); /* 기존 유지 */
-                 params.delete('tier2'); /* 기존 유지 */
-                 params.delete('period2'); /* 기존 유지 */
-                 params.delete('compare'); /* 기존 유지 */
-            } /* 기존 유지 */
+            // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
+            // if (!compareCheckbox.checked) { /* 기존 유지 */
+            //      params.delete('version2'); /* 기존 유지 */
+            //      params.delete('tier2'); /* 기존 유지 */
+            //      params.delete('period2'); /* 기존 유지 */
+            //      params.delete('compare'); /* 기존 유지 */
+            // } /* 기존 유지 */
             // ------------------------------------ /* 기존 유지 */
             setParam('tier', tierSelect.value); /* 기존 유지 */
             loadAndRender(); /* 기존 유지 */
         }); /* 기존 유지 */
         periodSelect.addEventListener('change', () => { /* 기존 유지 */
             // --- 수정: 비교 모드 여부에 따라 비교 파라미터 삭제 --- /* 기존 유지 */
-            if (!compareCheckbox.checked) { /* 기존 유지 */
-                 params.delete('version2'); /* 기존 유지 */
-                 params.delete('tier2'); /* 기존 유지 */
-                 params.delete('period2'); /* 기존 유지 */
-                 params.delete('compare'); /* 기존 유지 */
-            } /* 기존 유지 */
+            // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
+            // if (!compareCheckbox.checked) { /* 기존 유지 */
+            //      params.delete('version2'); /* 기존 유지 */
+            //      params.delete('tier2'); /* 기존 유지 */
+            //      params.delete('period2'); /* 기존 유지 */
+            //      params.delete('compare'); /* 기존 유지 */
+            // } /* 기존 유지 */
             // ------------------------------------ /* 기존 유지 */
             setParam('period', periodSelect.value); /* 기존 유지 */
             loadAndRender(); /* 기존 유지 */
         }); /* 기존 유지 */
 
         // --- 추가: 비교 드롭다운 변경 이벤트 리스너 --- /* 기존 유지 */
-        if (isCompareMode) { /* 기존 유지 */
-             versionSelectCompare.addEventListener('change', () => { /* 기존 유지 */
-                 setParam('version2', versionSelectCompare.value); /* 기존 유지 */
-                 loadAndRender(); /* 기존 유지 */
-             }); /* 기존 유지 */
-             tierSelectCompare.addEventListener('change', () => { /* 기존 유지 */
-                 setParam('tier2', tierSelectCompare.value); /* 기존 유지 */
-                 loadAndRender(); /* 기존 유지 */
-             }); /* 기존 유지 */
-             periodSelectCompare.addEventListener('change', () => { /* 기존 유지 */
-                 setParam('period2', periodSelectCompare.value); /* 기존 유지 */
-                 loadAndRender(); /* 기존 유지 */
-             }); /* 기존 유지 */
-        } /* 기존 유지 */
+        // 비교 모드 체크박스 상태와 상관없이 리스너는 항상 부착합니다.
+        // loadAndRender 내부에서 isCompareMode에 따라 로직이 분기됩니다.
+        versionSelectCompare.addEventListener('change', () => { /* 기존 유지 */
+            setParam('version2', versionSelectCompare.value); /* 기존 유지 */
+            loadAndRender(); /* 기존 유지 */
+        }); /* 기존 유지 */
+        tierSelectCompare.addEventListener('change', () => { /* 기존 유지 */
+            setParam('tier2', tierSelectCompare.value); /* 기존 유지 */
+            loadAndRender(); /* 기존 유지 */
+        }); /* 기존 유지 */
+        periodSelectCompare.addEventListener('change', () => { /* 기존 유지 */
+            setParam('period2', periodSelectCompare.value); /* 기존 유지 */
+            loadAndRender(); /* 기존 유지 */
+        }); /* 기존 유지 */
         // ---------------------------------------------------- /* 기존 유지 */
 
         // --- 추가: 비교 모드 체크박스 이벤트 리스너 --- /* 기존 유지 */
@@ -252,11 +255,14 @@ document.addEventListener('DOMContentLoaded', function () {
                  currentCharacterData = []; // 데이터 비어있음
                  setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                  // -------------------------------------------------
+                 setupTablePopup(); // 팝업 설정
                  return;
             }
 
+            // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
             const url1 = `/stats/${version1}/${tier1}.json`;
             const url2 = `/stats/${version2}/${tier2}.json`;
+            // >>> 수정 끝
 
             Promise.all([
                 fetch(url1).then(res => {
@@ -275,22 +281,36 @@ document.addEventListener('DOMContentLoaded', function () {
                      currentCharacterData = []; // 데이터 비어있음
                      setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                      // -------------------------------------------------
+                     setupTablePopup(); // 팝업 설정
                      return;
                 }
 
-                // common.js의 extractPeriodEntries 사용 (기간별 스냅샷 추출)
                 const history1 = json1 ? json1['통계'] : {};
                 const history2 = json2 ? json2['통계'] : {};
 
-                const entries1 = commonExtractPeriodEntries(history1, period1); // common.js의 함수 사용
-                const entries2 = commonExtractPeriodEntries(history2, period2); // common.js의 함수 사용
+                let entries1, entries2;
 
-                // 데이터가 하나라도 없으면 비교 불가 (혹은 해당 기간 데이터가 없으면)
-                // mergeDataForComparison 결과가 비어있는지로 판단합니다.
-                // mergeDataForComparison는 한쪽에만 데이터가 있어도 결과를 반환하므로,
-                // 최소한 한쪽 데이터는 있어야 테이블을 그릴 수 있습니다.
+                // --- 수정 시작: 기간에 따라 common.js의 함수 호출 ---
+                if (period1 === 'latest') {
+                    // 데이터 1 기간이 'latest'이면 스냅샷 사용 (common.js의 extractPeriodEntries)
+                    entries1 = commonExtractPeriodEntries(history1, period1);
+                } else {
+                    // 데이터 1 기간이 '3day' 또는 '7day'이면 델타 통계 사용 (common.js의 extractDeltaEntries)
+                    entries1 = extractDeltaEntries(history1, period1);
+                }
+
+                if (period2 === 'latest') {
+                     // 데이터 2 기간이 'latest'이면 스냅샷 사용 (common.js의 extractPeriodEntries)
+                     entries2 = commonExtractPeriodEntries(history2, period2);
+                } else {
+                     // 데이터 2 기간이 '3day' 또는 '7day'이면 델타 통계 사용 (common.js의 extractDeltaEntries)
+                     entries2 = extractDeltaEntries(history2, period2);
+                }
+                // --- 수정 끝
 
                 // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
+                // calculateTiers는 common.js의 함수를 사용합니다.
+                // entries1/entries2가 델타 데이터인 경우, calculateTiers는 해당 델타 데이터의 특성을 반영한 점수/티어를 계산합니다.
                 const avgScore1 = calculateAverageScore(entries1);
                 const stddev1 = calculateStandardDeviation(entries1, avgScore1);
                 const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal);
@@ -312,13 +332,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                     // -------------------------------------------------
+                    setupTablePopup(); // 팝업 설정
                     return;
                 }
 
-
                 // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
                 displayTierTable(comparisonData, isCompareMode);
-                setupTablePopup();
+                setupTablePopup(); // 팝업 설정
                 // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
                 setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
                 // --------------------------------------------------
@@ -327,10 +347,11 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => {
                 console.error('비교 데이터 처리 실패:', err);
                 table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
-                // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
+                 // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
                 currentCharacterData = []; // 데이터 비어있음
                 setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                 // -------------------------------------------------
+                setupTablePopup(); // 팝업 설정
             });
 
         } else {
@@ -339,15 +360,20 @@ document.addEventListener('DOMContentLoaded', function () {
             const tier    = tierSelect.value;
             const period  = periodSelect.value;
 
+            // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
             fetch(`/stats/${version}/${tier}.json`)
+            // >>> 수정 끝
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                     return res.json();
                 })
                 .then(json => {
                     const history = json['통계'];
-                    // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
-                    const entries = extractPeriodEntries(history, period);
+                    // 단일 모드는 latest/3day/7day 모두 기간의 '스냅샷' 데이터(common.js의 extractPeriodEntries)를 가져옵니다.
+                    // 티어 테이블의 단일 모드 '최근 N일' 기간은 변화량 데이터를 보여주는 것이 아니라,
+                    // 해당 시점의 전체 통계 데이터를 보여주는 것입니다. (script_statistics.js와 통일)
+                    // 따라서 common.js의 extractPeriodEntries (스냅샷) 함수를 사용합니다.
+                    const entries = commonExtractPeriodEntries(history, period);
 
                     const avgScore = calculateAverageScore(entries);
                     const stddev   = calculateStandardDeviation(entries, avgScore);
@@ -358,26 +384,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     // -----------------------------------------
 
 
-                    if (entries.length === 0 && period !== 'latest') {
-                         table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
+                    if (entries.length === 0) { // 기간에 해당하는 데이터가 아예 없는 경우
+                         let message = '데이터가 없습니다.';
+                         if (period !== 'latest') {
+                              // latest가 아닌데 데이터가 없으면 기간 부족 메시지
+                              message = '선택한 기간에 해당하는 데이터가 부족합니다.';
+                         }
+                         table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
+
                          // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
                          currentCharacterData = []; // 데이터 비어있음
                          setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                          // -------------------------------------------------
-                         return;
-                    } else if (entries.length === 0 && period === 'latest') {
-                         table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                         // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                         currentCharacterData = []; // 데이터 비어있음
-                         setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                         // -------------------------------------------------
+                         setupTablePopup(); // 팝업 설정
                          return;
                     }
 
 
                     // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
                     displayTierTable(scored, isCompareMode);
-                    setupTablePopup();
+                    setupTablePopup(); // 팝업 설정
                     // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
                     // --------------------------------------------------
@@ -389,99 +415,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     currentCharacterData = []; // 데이터 비어있음
                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
                     // -------------------------------------------------
+                    setupTablePopup(); // 팝업 설정
                 });
             // --------------------------
         }
         // ---------------------------------
     }
 
-    // 4) 기간별 데이터 추출 (티어 테이블 페이지 전용 - 변화량 계산 포함)
-    function extractPeriodEntries(history, period) {
-        const keys = Object.keys(history).sort();
-        if (keys.length === 0) return []; // Add check for empty history
+    // 4) 기간별 데이터 추출 (기존 로컬 함수 삭제됨)
+    // 이 위치에 있던 extractPeriodEntries 함수는 삭제되었습니다.
 
-        const latestKey = keys[keys.length - 1];
-        const latestData = history[latestKey];
-        if (period === 'latest') return latestData;
-
-        const days = period === '3day' ? 3 : 7;
-        // Use robust date parsing similar to common.js
-        let latestDate = new Date(latestKey.replace('_', 'T'));
-        if (isNaN(latestDate.getTime())) {
-             const parts = latestKey.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
-             if (parts) {
-                  latestDate = new Date(Date.UTC(parts[1], parts[2]-1, parts[3], parts[4], parts[5]));
-             } else {
-                  console.error("Unsupported date format in tier_table:", latestKey);
-                  return latestData; // Fallback to latest if date format is bad
-             }
-        }
-        latestDate.setUTCHours(0, 0, 0, 0); // Normalize to start of day UTC
-
-        const cutoff = new Date(latestDate.getTime());
-        cutoff.setUTCDate(cutoff.getUTCDate() - days);
-
-        // Find the latest key *before or on* the cutoff date
-        const pastKey = keys.slice().reverse().find(k => {
-            let kDate;
-            const kParts = k.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2})/);
-             if (kParts) {
-                  kDate = new Date(Date.UTC(kParts[1], kParts[2]-1, kParts[3], kParts[4], kParts[5]));
-             } else {
-                  kDate = new Date(k.replace('_', 'T'));
-             }
-            if (isNaN(kDate.getTime())) return false;
-
-            kDate.setUTCHours(0,0,0,0); // Normalize to start of day UTC
-            return kDate <= cutoff;
-        });
-
-        if (!pastKey) {
-            console.warn(`No data found before cutoff date ${cutoff.toISOString()} for period '${period}' in tier_table. Returning latest data.`);
-            return latestData; // Return latest data if no past data found
-        }
-
-        const prevData = history[pastKey];
-        const currMap = Object.fromEntries(latestData.map(d => [d.실험체, d]));
-        const prevMap = Object.fromEntries(prevData.map(d => [d.실험체, d]));
-        const delta = [];
-
-        // Iterate through characters present in the latest data
-        for (const name in currMap) {
-            const c = currMap[name];
-            const p = prevMap[name];
-
-            // Only calculate delta for characters present in both periods
-            if (!p) continue;
-
-            const diff = (c['표본수'] || 0) - (p['표본수'] || 0); // Handle potential null/undefined sample size
-            // Only include entries with increased sample size in the delta calculation
-            if (diff <= 0) continue;
-
-            // Calculate weighted average of stats for the *new* sample (diff)
-            // (Total stat sum in current data - Total stat sum in previous data) / difference in sample size
-            const rpDiff = ((c['RP 획득'] || 0) * (c['표본수'] || 0)) - ((p['RP 획득'] || 0) * (p['표본수'] || 0));
-            const winDiff = ((c['승률'] || 0) * (c['표본수'] || 0)) - ((p['승률'] || 0) * (p['표본수'] || 0));
-            const top3Diff = ((c['TOP 3'] || 0) * (c['표본수'] || 0)) - ((p['TOP 3'] || 0) * (p['표본수'] || 0));
-            const rankDiff = ((c['평균 순위'] || 0) * (c['표본수'] || 0)) - ((p['평균 순위'] || 0) * (p['평균 순위'] || 0));
-
-
-            delta.push({
-                '실험체': name,
-                '표본수': diff, // Sample size is the *difference*
-                'RP 획득': rpDiff / diff,
-                '승률':    winDiff / diff,
-                'TOP 3':   top3Diff / diff,
-                '평균 순위': rankDiff / diff
-                // Note: '점수' and '티어' will be calculated later by calculateTiers based on these delta stats
-            });
-        }
-        return delta;
-    }
-    // -----------------------------------------------------------------
-
-
-    // 5) 티어별 테이블 렌더링 (기존 함수 유지하되 툴팁 생성 로직 제거)
+    // 5) 티어별 테이블 렌더링 (기존 함수 유지하되 툴팁 생성 로직 제거) - 기존 유지
     // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
     function displayTierTable(data, isCompareMode) {
         const tierLabels = {
@@ -501,16 +445,17 @@ document.addEventListener('DOMContentLoaded', function () {
         // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
         data.forEach(item => {
             // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
+            // 단일 모드일 때는 '티어' 기준으로 그룹화
             const itemTier = isCompareMode ? item['티어 (Ver1)'] : item.티어;
             // 단일 모드 또는 비교 모드에서 Ver1 티어가 유효한 경우에만 그룹에 추가
             // Ver1에 없는 캐릭터 (신규)는 티어 테이블에 표시되지 않음 (기존 동작 유지)
-            if (itemTier && groups[itemTier]) {
+            if (itemTier && groups[itemTier]) { // itemTier가 null이거나 undefined인 경우 방지
                  groups[itemTier].push(item);
             }
         });
         // ----------------------------------------------------
 
-        // --- 수정: totalSample 계산 (단일 모드에서만 사용) ---
+        // --- 수정: totalSample 계산 (단일 모드에서만 사용) - 이 계산은 displayTierTable에서 직접 사용되지 않으므로 유지 ---
         // 단일 모드: 현재 데이터의 표본수 합계
         // 비교 모드: 픽률은 개별 픽률 사용, 총 표본수는 필요 없음.
         const totalSample = isCompareMode
@@ -546,6 +491,7 @@ document.addEventListener('DOMContentLoaded', function () {
           // --- 수정: sortData 함수 사용 (비교 모드 고려) ---
           // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
           // 비교 모드일 때는 '점수 (Ver1)' 기준으로 정렬
+          // 단일 모드일 때는 '점수' 기준으로 정렬
           const sortKey = isCompareMode ? '점수 (Ver1)' : '점수';
           const sortMode = isCompareMode ? 'value1' : 'value'; // 비교 모드일 때는 value1 모드로 정렬
           const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
@@ -582,8 +528,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (rankChangeValue < 0) { rankChangeText = `▼${absChange}`; rankChangeClass = 'rank-change-down'; } // 순위 숫자 감소 (좋아짐)
                         else if (rankChangeValue > 0) { rankChangeText = `▲${absChange}`; rankChangeClass = 'rank-change-up'; } // 순위 숫자 증가 (나빠짐)
                         else { rankChangeText = `=`; rankChangeClass = 'rank-change-same'; }
-                   } else { rankChangeText = rankChangeValue || '-'; if (rankChangeValue === '신규 → ') rankChangeClass = 'rank-change-up'; else if (rankChangeValue === '→ 삭제') rankChangeClass = 'rank-change-down'; else rankChangeClass = 'rank-change-same'; }
-                   if (rankChangeText !== '') { rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`; }
+                   } else { // 문자열 ('신규 → ', '→ 삭제', '-')
+                        if (rankChangeValue === '신규 → ') { rankChangeText = '신규'; rankChangeClass = 'rank-change-up'; }
+                        else if (rankChangeValue === '→ 삭제') { rankChangeText = '삭제'; rankChangeClass = 'rank-change-down'; }
+                        else { rankChangeText = '-'; rankChangeClass = 'rank-change-same'; } // '-' 또는 예상치 못한 값
+                   }
+                   // 텍스트가 '신규', '삭제', '=' 등 의미 있는 변화를 나타낼 때만 오버레이 표시
+                   if (rankChangeText !== '-' && rankChangeText !== '') {
+                        rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
+                   }
               }
               // -------------------------------------------------
 
@@ -617,7 +570,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // --- 색상 강조 적용 로직 제거 (기존 유지) ---
     }
 
-    // --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 ---
+    // --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 --- - 기존 유지
     // 이 함수는 테이블이 렌더링된 후에 호출되며, 로드된 데이터와 비교 모드 상태를 인자로 받습니다.
     function setupTooltipPositioning(characterData, isCompareMode) {
         // 단 하나의 툴팁 요소를 관리합니다.
@@ -637,8 +590,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const tooltipContainers = table.querySelectorAll('.tooltip-container[data-character-name]');
 
         tooltipContainers.forEach(container => {
+             // 기존 mouseover/mouseout 이벤트 리스너 제거 (중복 부착 방지)
+             const oldMouseoverHandler = container._mouseoverHandler;
+             const oldMouseoutHandler = container._mouseoutHandler;
+             if (oldMouseoverHandler) {
+                 container.removeEventListener('mouseover', oldMouseoverHandler);
+             }
+             if (oldMouseoutHandler) {
+                 container.removeEventListener('mouseout', oldMouseoutHandler);
+             }
+
+
             // 마우스 이벤트 리스너를 추가합니다.
-            container.addEventListener('mouseover', () => {
+            const mouseoverHandler = () => {
                 const characterName = container.dataset.characterName;
                 const character = characterDataMap.get(characterName); // 캐릭터 데이터 찾기
 
@@ -652,6 +616,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 툴팁 내용 동적 생성 (단일/비교 모드에 따라 다르게)
                 let tooltipContent;
                 if (isCompareMode) {
+                     // 비교 모드 툴팁 내용 형식 (요청대로: 값2 → 값1)
                      const pr1 = character['픽률 (Ver1)'] !== null && character['픽률 (Ver1)'] !== undefined ? (character['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
                      const pr2 = character['픽률 (Ver2)'] !== null && character['픽률 (Ver2)'] !== undefined ? (character['픽률 (Ver2)'] || 0).toFixed(2) + '%' : '-';
                      const rp1 = character['RP 획득 (Ver1)'] !== null && character['RP 획득 (Ver1)'] !== undefined ? (character['RP 획득 (Ver1)'] || 0).toFixed(1) : '-';
@@ -730,23 +695,18 @@ document.addEventListener('DOMContentLoaded', function () {
                       tooltipBox.style.top = `${window.scrollY + 5}px`;
                  }
 
-            });
+            };
 
-            container.addEventListener('mouseout', () => {
+            const mouseoutHandler = () => {
                 // 툴팁 숨김
                 tooltipBox.style.opacity = '0';
                 // CSS transition 시간(0.3s) 후에 완전히 숨기도록 visibility를 변경합니다.
-                // transitionend 이벤트는 opacity가 0으로 되었을 때 발생합니다.
-                // 이벤트 리스너를 한 번만 실행되도록 설정합니다.
                 tooltipBox.addEventListener('transitionend', function handler() {
                      if (tooltipBox.style.opacity === '0') {
                           tooltipBox.style.visibility = 'hidden';
-                          // 이벤트 리스너 제거
-                          tooltipBox.removeEventListener('transitionend', handler);
+                          // 이벤트 리스너 제거 (once: true 옵션 사용)
                      }
                 }, { once: true }); // once: true 옵션을 사용하여 한 번만 실행 후 자동 제거
-                 // 이전에는 removeEventListener를 수동으로 호출했지만, once: true가 더 간결합니다.
-
 
                  // 마우스 아웃 시 동적으로 설정된 위치 스타일을 제거하여 다음 마우스 오버 시 정확히 다시 계산되도록 합니다.
                  // CSS에 설정된 기본값 (position: fixed, z-index: 9999)은 유지됩니다.
@@ -755,7 +715,14 @@ document.addEventListener('DOMContentLoaded', function () {
                  tooltipBox.style.bottom = ''; // 기본값 auto
                  tooltipBox.style.right = '';   // 기본값 auto
                  tooltipBox.style.transform = ''; // 기본값 none
-            });
+            };
+
+            container.addEventListener('mouseover', mouseoverHandler);
+            container.addEventListener('mouseout', mouseoutHandler);
+
+             // 나중에 제거할 수 있도록 이벤트 리스너 참조 저장
+             container._mouseoverHandler = mouseoverHandler;
+             container._mouseoutHandler = mouseoutHandler;
         });
     }
     // -----------------------------------------------------
@@ -766,21 +733,52 @@ document.addEventListener('DOMContentLoaded', function () {
         const popup = document.getElementById('image-popup');
         const popupImg = document.getElementById('popup-image');
         const popupTableButton = document.getElementById('popup-table-button');
-        if (popupTableButton) { // 요소가 존재하는지 확인
-             popupTableButton.onclick = () => {
-                html2canvas(document.getElementById('tier-table'), { // Use getElementById for clarity
-                     backgroundColor: null // 배경 투명하게 캡처 (필요시)
-                })
-                  .then(canvas => {
-                    popup.style.display = 'block';
-                    popupImg.src = canvas.toDataURL();
-                  });
-              };
-        } else {
-             console.error("Popup table button not found."); // 디버그용
+        const targetTable = document.getElementById('tier-table'); // Use getElementById for clarity
+
+        // 요소가 모두 존재하는지 확인
+        if (!popupTableButton || !popup || !popupImg || !targetTable) {
+             // console.error("Popup elements or target table not found."); // 디버그용
+             // 테이블이 로드되기 전이나 에러 시에는 targetTable이 없을 수 있습니다.
+             // 버튼만이라도 존재하면 이벤트 리스너를 붙입니다.
+              if (popupTableButton && popup && popupImg) {
+                   setupButtonListener(popupTableButton, popup, popupImg, container); // container 전체를 캡처 대상으로
+              }
+             return;
         }
-        document.querySelector('.image-popup-close')
-          .onclick = () => { popup.style.display = 'none'; };
+
+        // targetTable이 로드된 경우에만 테이블 캡처 리스너를 붙입니다.
+        setupButtonListener(popupTableButton, popup, popupImg, targetTable);
+
+         // 팝업 닫기 버튼 이벤트 리스너 (한 번만 설정)
+         const closeButton = popup.querySelector('.image-popup-close');
+         if (closeButton && !closeButton.onclick) { // 이미 리스너가 없으면 추가
+              closeButton.onclick = () => { popup.style.display = 'none'; };
+         }
+    }
+
+    // 팝업 버튼 리스너 설정 헬퍼 함수 (targetElement를 캡처)
+    function setupButtonListener(button, popup, popupImg, targetElement) {
+         // 기존 클릭 이벤트 리스너가 있다면 제거 (중복 부착 방지)
+         if (button.onclick) {
+              button.onclick = null;
+         }
+
+         button.onclick = () => {
+              // targetElement를 캡처 대상으로 지정
+              html2canvas(targetElement, {
+                   backgroundColor: null, // 배경 투명하게 캡처 (필요시)
+                   // scale: 2 // 고해상도 캡처를 원하면 주석 해제
+              })
+                .then(canvas => {
+                  popup.style.display = 'block';
+                  popupImg.src = canvas.toDataURL();
+                })
+                .catch(err => {
+                     console.error("Error capturing element:", err);
+                     alert("이미지 캡처 중 오류가 발생했습니다.");
+                     popup.style.display = 'none'; // 팝업 숨김
+                });
+         };
     }
 
     // 7) 페이지 특화 헬퍼: 이름→이미지 변환 (기존 함수 유지)
@@ -803,187 +801,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- 추가: common.js의 extractPeriodEntries 함수를 로컬 변수로 저장 (기존 유지) ---
-    // 티어 테이블의 단일 모드에서는 로컬 extractPeriodEntries (변화량 계산) 사용
-    // 티어 테이블의 비교 모드에서는 common.js의 extractPeriodEntries (스냅샷 추출) 사용
+    // 티어 테이블의 단일 모드에서는 common.js의 extractPeriodEntries (스냅샷 추출) 사용
+    // 티어 테이블의 비교 모드에서는 common.js의 extractPeriodEntries 또는 extractDeltaEntries 사용
     // 이 변수는 스크립트 파일 최상위 스코프에 한 번만 선언됩니다.
     const commonExtractPeriodEntries = window.extractPeriodEntries;
+    // common.js에 새로 추가된 extractDeltaEntries 함수도 전역에서 접근 가능합니다.
+    const commonExtractDeltaEntries = window.extractDeltaEntries;
     // -------------------------------------------------------------------
 
-// --- 수정: loadAndRender 함수 끝에 setupTooltipPositioning 호출 추가 ---
-function loadAndRender() {
-    // --- 수정: currentIsCompareMode 업데이트 ---
-    currentIsCompareMode = isCompareMode;
-    // -----------------------------------------
-
-    if (isCompareMode) {
-        const version1 = versionSelect.value;
-        const tier1 = tierSelect.value;
-        const period1 = periodSelect.value;
-
-        const version2 = versionSelectCompare.value;
-        const tier2 = tierSelectCompare.value;
-        const period2 = periodSelectCompare.value;
-
-        if (version1 === version2 && tier1 === tier2 && period1 === period2) {
-             table.innerHTML = '<tr><td colspan="15">데이터 1과 데이터 2가 동일합니다.</td></tr>'; // colspan 조정 필요
-             // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-             currentCharacterData = []; // 데이터 비어있음
-             setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-             // -------------------------------------------------
-             return;
-        }
-
-        // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
-        const url1 = `/stats/${version1}/${tier1}.json`;
-        const url2 = `/stats/${version2}/${tier2}.json`;
-        // >>> 수정 끝
-
-        Promise.all([
-            fetch(url1).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url1}`);
-                return res.json();
-            }).catch(err => { console.error(`Failed to fetch ${url1}:`, err); return null; }), // 에러 발생 시 null 반환
-            fetch(url2).then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status} for ${url2}`);
-                return res.json();
-            }).catch(err => { console.error(`Failed to fetch ${url2}:`, err); return null; }) // 에러 발생 시 null 반환
-        ])
-        .then(([json1, json2]) => {
-            if (!json1 && !json2) {
-                 table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                 // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                 currentCharacterData = []; // 데이터 비어있음
-                 setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                 // -------------------------------------------------
-                 return;
-            }
-
-            // common.js의 extractPeriodEntries 사용 (기간별 스냅샷 추출)
-            const history1 = json1 ? json1['통계'] : {};
-            const history2 = json2 ? json2['통계'] : {};
-
-            // commonExtractPeriodEntries 함수는 common.js에서 선언된 전역(또는 스크립트) 함수를 사용
-            const entries1 = commonExtractPeriodEntries(history1, period1);
-            const entries2 = commonExtractPeriodEntries(history2, period2);
-
-            // 데이터가 하나라도 없으면 비교 불가 (혹은 해당 기간 데이터가 없으면)
-            // mergeDataForComparison 결과가 비어있는지로 판단합니다.
-            // mergeDataForComparison는 한쪽에만 데이터가 있어도 결과를 반환하므로,
-            // 최소한 한쪽 데이터는 있어야 테이블을 그릴 수 있습니다.
-
-            // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
-            const avgScore1 = calculateAverageScore(entries1);
-            const stddev1 = calculateStandardDeviation(entries1, avgScore1);
-            const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal);
-
-            const avgScore2 = calculateAverageScore(entries2);
-            const stddev2 = calculateStandardDeviation(entries2, avgScore2);
-            const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal);
-
-
-            // 두 데이터셋 병합 및 차이 계산 (common.js 함수 사용)
-            const comparisonData = mergeDataForComparison(scored1, scored2);
-            // --- 수정: currentCharacterData 업데이트 ---
-            currentCharacterData = comparisonData;
-            // -----------------------------------------
-
-            // 병합 결과가 없으면 표시할 데이터가 없는 것임
-            if (comparisonData.length === 0) {
-                table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                // -------------------------------------------------
-                return;
-            }
-
-
-            // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
-            displayTierTable(comparisonData, isCompareMode);
-            setupTablePopup();
-            // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
-            setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
-            // --------------------------------------------------
-
-        })
-        .catch(err => {
-            console.error('비교 데이터 처리 실패:', err);
-            table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
-            // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-            currentCharacterData = []; // 데이터 비어있음
-            setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-            // -------------------------------------------------
-        });
-
-    } else {
-        // --- 기존 단일 모드 로직 ---
-        const version = versionSelect.value;
-        const tier    = tierSelect.value;
-        const period  = periodSelect.value;
-
-        // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
-        fetch(`/stats/${version}/${tier}.json`)
-        // >>> 수정 끝
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                return res.json();
-            })
-            .then(json => {
-                const history = json['통계'];
-                // 로컬 extractPeriodEntries 함수 호출 (기간별 변화량 계산)
-                // 이 파일의 상단에 정의된 extractPeriodEntries 함수를 사용
-                const entries = extractPeriodEntries(history, period);
-
-                const avgScore = calculateAverageScore(entries);
-                const stddev   = calculateStandardDeviation(entries, avgScore);
-                const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
-
-                // --- 수정: currentCharacterData 업데이트 ---
-                currentCharacterData = scored;
-                // -----------------------------------------
-
-
-                if (entries.length === 0 && period !== 'latest') {
-                     table.innerHTML = '<tr><td colspan="15">선택한 기간에 해당하는 데이터가 부족합니다.</td></tr>'; // colspan 조정 필요
-                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                     currentCharacterData = []; // 데이터 비어있음
-                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                     // -------------------------------------------------
-                     return;
-                } else if (entries.length === 0 && period === 'latest') {
-                     table.innerHTML = '<tr><td colspan="15">데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                     currentCharacterData = []; // 데이터 비어있음
-                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                     // -------------------------------------------------
-                     return;
-                }
-
-
-                // displayTierTable에 단일 데이터와 비교 모드 플래그 전달
-                displayTierTable(scored, isCompareMode);
-                setupTablePopup();
-                // --- 추가: 툴팁 위치 설정 함수 호출 (데이터와 모드를 인자로 전달) ---
-                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
-                // --------------------------------------------------
-            })
-            .catch(err => {
-                console.error('데이터 로드 실패:', err);
-                table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                 // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                currentCharacterData = []; // 데이터 비어있음
-                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                // -------------------------------------------------
-            });
-        // --------------------------
-    }
-    // ---------------------------------
-}
-
 }); // DOMContentLoaded 끝
-
-// --- 추가: common.js의 extractPeriodEntries 함수를 로컬 변수로 저장 (기존 유지) ---
-// 티어 테이블의 단일 모드에서는 로컬 extractPeriodEntries (변화량 계산) 사용
-// 티어 테이블의 비교 모드에서는 common.js의 extractPeriodEntries (스냅샷 추출) 사용
-// 이 변수는 스크립트 파일 최상위 스코프에 한 번만 선언됩니다.
-const commonExtractPeriodEntries = window.extractPeriodEntries;
-// -------------------------------------------------------------------
