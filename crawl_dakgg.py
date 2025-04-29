@@ -116,6 +116,15 @@ def crawl_tier_data(tier_key: str, display_name: str):
                     print(f"[{tier_key}] 로우 파싱 오류 발생: {e} - 실험체: {cols[1].get_text(strip=True) if len(cols)>1 else 'unknown'}, RP raw: {cols[3].get_text(strip=True) if len(cols)>3 else 'unknown'}")
                     continue # 해당 로우만 건너뛰고 다음 로우 처리
 
+            # --- 픽률 계산 및 데이터 추가 로직 시작 ---
+            total_sample = sum(item["표본수"] for item in data)
+            for item in data:
+                # 총 표본수가 0이 아니면 픽률 계산, 0이면 0으로 설정
+                pick_rate = (item["표본수"] / total_sample) if total_sample > 0 else 0.0
+                item["픽률"] = round(pick_rate, 4) # 소수점 넷째 자리까지 반올림
+            # --- 픽률 계산 및 데이터 추가 로직 끝 ---
+
+
             # 실험체명 기준으로 정렬 (1단계: 실험체명, 2단계: 무기명)
             data.sort(key=lambda x: (clean_and_sort_name(x["실험체"]), x["실험체"]))
 
@@ -170,144 +179,6 @@ def crawl_tier_data(tier_key: str, display_name: str):
             # 오류 발생 여부와 상관없이 브라우저 닫기
             if browser:
                 browser.close()
-    with sync_playwright() as p:
-        browser = None # 초기화
-        try:
-            browser = p.chromium.launch() # headless=False for debugging
-            page = browser.new_page()
-
-            url = f"https://dak.gg/er/statistics?period=currentPatch&tier={tier_key}"
-
-            page.goto(url, timeout=60000) # 페이지 로드 타임아웃 (60초)
-
-            # 1. 고정 대기 시간 대신, 특정 요소가 나타날 때까지 기다리도록 수정 (이전 수정 유지)
-            page.wait_for_selector("table.w-full.text-\\[12px\\] tbody tr", timeout=30000)
-
-            html = page.content()
-            soup = BeautifulSoup(html, "html.parser")
-
-            version_elem = soup.select_one("details:nth-of-type(1) summary span")
-            version = version_elem.get_text(strip=True) if version_elem else "unknown"
-            if version == "unknown":
-                print(f"[{tier_key}] 버전 정보를 찾을 수 없습니다.")
-                # 버전 정보를 찾지 못했으면 이 티어의 크롤링을 건너뛰거나 오류 처리 (여기서는 계속 진행)
-
-            # 현재 시각을 한국 표준시(KST)로 가져오기
-            now = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
-
-            rows = soup.select("table.w-full.text-\\[12px\\] tbody tr")
-            if not rows:
-                 print(f"[{tier_key}] 통계 테이블 로우를 찾을 수 없습니다. 페이지 구조가 변경되었거나 데이터가 없습니다.")
-                 browser.close()
-                 return
-
-            data = []
-            for row in rows:
-                cols = row.select("td")
-                if len(cols) < 8:
-                    continue
-                try:
-                    name = cols[1].select_one("a").get_text(strip=True)
-
-                    # --- RP 획득량 파싱 로직 수정 시작 (최소화) ---
-                    rp_col = cols[3] # RP 획득량 셀 선택
-
-                    # 원본 코드와 동일하게 셀의 텍스트 콘텐츠를 가져오고 쉼표 제거
-                    # 이렇게 하면 이미지의 alt 텍스트는 포함되지 않고 순수 텍스트(숫자)만 가져와집니다.
-                    rp_text_numeric = rp_col.get_text(strip=True).replace(",", "")
-
-                    # 아래 화살표 이미지가 있는지 확인 (alt 속성 사용)
-                    down_arrow_img = rp_col.find('img', alt='down-arrow')
-
-                    try:
-                         # 원본 코드와 동일하게 float으로 변환
-                         rp_value = float(rp_text_numeric)
-
-                         # 아래 화살표 이미지 존재 여부에 따라 부호 결정
-                         if down_arrow_img:
-                             rp = -rp_value
-                         else:
-                             rp = rp_value # 위 화살표나 화살표 없으면 양수 또는 0
-
-                    except ValueError:
-                         # 숫자로 변환할 수 없는 경우 오류 처리
-                         print(f"[{tier_key}] RP 값 파싱 오류: '{rp_text_numeric}'를 숫자로 변환할 수 없습니다.")
-                         rp = 0.0 # 오류 발생 시 기본값 설정
-                    # --- RP 획득량 파싱 로직 수정 끝 ---
-
-
-                    sample = int(cols[4].select_one("span").get_text(strip=True).replace(",", ""))
-                    win = round(parse_percentage(cols[5].get_text()), 4)
-                    top3 = round(parse_percentage(cols[6].get_text()), 4)
-                    rank = float(cols[7].get_text(strip=True).replace("#", ""))
-
-                    data.append({
-                        "실험체": name,
-                        "RP 획득": rp, # 수정된 rp 값 사용
-                        "표본수": sample,
-                        "승률": win,
-                        "TOP 3": top3,
-                        "평균 순위": rank
-                    })
-                except Exception as e:
-                    # 특정 로우 파싱 중 발생한 일반적인 오류
-                    # 오류 메시지에 어떤 로우에서 문제가 났는지 좀 더 자세한 정보를 출력
-                    print(f"[{tier_key}] 로우 파싱 오류 발생: {e} - 실험체: {cols[1].get_text(strip=True) if len(cols)>1 else 'unknown'}, RP raw: {cols[3].get_text(strip=True) if len(cols)>3 else 'unknown'}")
-                    continue # 해당 로우만 건너뛰고 다음 로우 처리
-
-            # 실험체명 기준으로 정렬 (1단계: 실험체명, 2단계: 무기명)
-            data.sort(key=lambda x: (clean_and_sort_name(x["실험체"]), x["실험체"]))
-
-            # 파일 경로 생성
-            os.makedirs(f"data/{version}", exist_ok=True)
-            file_path = f"data/{version}/{tier_key}.json"
-
-            # 기존 파일 불러오기
-            if os.path.exists(file_path):
-                with open(file_path, "r", encoding="utf-8") as f:
-                    try:
-                        existing = json.load(f)
-                        # 기존 데이터 구조가 예상과 다르면 초기화
-                        if not isinstance(existing, dict) or "통계" not in existing or not isinstance(existing["통계"], dict):
-                            print(f"경고: {file_path} 파일 구조가 예상과 다릅니다. 초기화합니다.")
-                            existing = {
-                                "버전": version,
-                                "티어": display_name,
-                                "통계": {}
-                            }
-                    except json.JSONDecodeError:
-                        print(f"경고: {file_path} 파일이 손상되어 초기화합니다.")
-                        existing = {
-                            "버전": version,
-                            "티어": display_name,
-                            "통계": {}
-                        }
-            else:
-                existing = {
-                    "버전": version,
-                    "티어": display_name,
-                    "통계": {}
-                }
-
-            # 2. 현재 시각 데이터 추가 - 같은 시각에 실행되면 최신 데이터로 덮어쓰도록 수정 (이전 수정 유지)
-            existing["통계"][now] = data
-
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(existing, f, ensure_ascii=False, indent=2)
-
-            # versions.json 자동 갱신
-            update_versions_json(version)
-
-            print(f"[{tier_key}] {len(data)}개 실험체 데이터 저장 완료.")
-
-        except Exception as e:
-            # Playwright나 페이지 로딩/대기 중 발생한 치명적인 오류 처리
-            print(f"[{tier_key}] 크롤링 중 치명적인 오류 발생: {e}")
-        finally:
-            # 오류 발생 여부와 상관없이 브라우저 닫기
-            if browser:
-                browser.close()
-
 
 # 버전 목록 갱신 함수 (이전 수정 유지)
 def update_versions_json(version):
