@@ -32,16 +32,43 @@ document.addEventListener('DOMContentLoaded', function () {
     // 탭 파라미터로 초기화
     let currentTab   = getParam('tab', 'pick-rp');
 
-    // Chart.js 플러그인 등록 (페이지 로드 시 한 번만)
-    // Chart.register는 누적되므로, 이곳에 정의하면 script_graph.js 로드 시 한 번만 실행됩니다.
-    myChart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']);
+    // --- 오류 수정: Chart.js 라이브러리 로드 확인 및 플러그인 등록 ---
+    // Chart 객체가 window에 정의되어 있고 null이 아닌지 확인합니다.
+    if (typeof window.Chart === 'undefined' || window.Chart === null) {
+        console.error("Chart.js library (global 'Chart' variable) not found or not initialized. Cannot register plugins.");
+        // canvas를 비우고 오류 메시지 표시
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'red';
+        ctx.fillText('Chart.js 라이브러리 로드 실패.', canvas.width / 2, canvas.height / 2);
+
+        // 그래프 관련 UI 요소 비활성화
+        if (popupButton) popupButton.disabled = true;
+        versionSelect.disabled = true;
+        tierSelect.disabled = true;
+        periodSelect.disabled = true;
+        lowPickrateCheckbox.disabled = true;
+        highPickrateCheckbox.disabled = true;
+        document.querySelectorAll('.graph-tab').forEach(btn => btn.disabled = true);
+
+        // 이후 초기화 및 데이터 로드 로직을 중단합니다.
+        return;
+    }
+
+    // Chart.js 플러그인 등록 (페이지 로드 시 Chart가 유효한 것이 확인된 후 한 번만)
+    // 'window.Chart' 대신 'Chart'로 접근해도 무방하지만, 명확성을 위해 'window.Chart'를 사용했습니다.
+    // 원본 코드에서는 'Chart'를 사용했으므로 'Chart'로 되돌립니다.
+    Chart.register(labelPlugin, cornerTextPlugin, window['chartjs-plugin-annotation']); // Line 37
+
+    // -------------------------------------------------------------
 
 
     // 초기화
     Promise.all([
-        // >>> 수정 시작: config.ini 로드 추가
-        fetch('/config.ini').then(r => r.text()).then(iniText => parseINI(iniText).tiers), // config.ini 파싱 및 tiers 부분만 가져옴
-        // >>> 수정 끝
+        // config.ini 로드 추가 (calculateFinalStatsForPeriod 호출에 필요)
+        fetch('/config.ini').then(r => r.text()).then(iniText => parseINI(iniText).tiers), // common.js의 parseINI 사용
         fetch('/versions.json').then(r => r.json())
     ])
       .then(([loadedTierConfig, versions]) => { // Promise.all 결과 받기
@@ -49,12 +76,12 @@ document.addEventListener('DOMContentLoaded', function () {
         tierConfig = loadedTierConfig; // 전역 tierConfig에 할당
 
         // 드롭다운 채우기 (common.js 함수 사용)
-        populateVersionDropdown(versionSelect, versions);
-        populateTierDropdown(tierSelect);
-        populatePeriodDropdown(periodSelect);
+        populateVersionDropdown(versionSelect, versions); // common.js 함수
+        populateTierDropdown(tierSelect);         // common.js 함수
+        populatePeriodDropdown(periodSelect);       // common.js 함수
 
         // URL → 초기 상태
-        versionSelect.value = getParam('version', versions.sort().reverse()[0]);
+        versionSelect.value = getParam('version', versions.length > 0 ? versions.sort().reverse()[0] : ''); // versionList 비어있을 경우 대비
         tierSelect.value    = getParam('tier', 'diamond_plus');
         periodSelect.value  = getParam('period', 'latest');
         lowPickrateCheckbox.checked  = getParam('lowPickrate', 'false') === 'true';
@@ -102,7 +129,23 @@ document.addEventListener('DOMContentLoaded', function () {
         // 최초 로드
         loadData();
       })
-      .catch(err => console.error('초기화 실패:', err));
+      .catch(err => {
+          console.error('초기 설정 로드 실패:', err);
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.font = '20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'red';
+          ctx.fillText('초기 설정 로드 실패.', canvas.width / 2, canvas.height / 2);
+          // UI 비활성화
+          if (popupButton) popupButton.disabled = true;
+          versionSelect.disabled = true;
+          tierSelect.disabled = true;
+          periodSelect.disabled = true;
+          lowPickrateCheckbox.disabled = true;
+          highPickrateCheckbox.disabled = true;
+          document.querySelectorAll('.graph-tab').forEach(btn => btn.disabled = true);
+      });
 
     // 탭 클릭 처리 & URL 반영
     function setupGraphTabs() {
@@ -119,12 +162,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 데이터 로드 → 가공 → 필터 → 차트
     function loadData() {
+      // tierConfig가 아직 로드되지 않았으면 대기
+      if (!tierConfig) {
+          console.warn("tierConfig not loaded yet, waiting...");
+          // tierConfig 로드 완료 후 loadData 재실행하도록 로직 수정 필요 (현재는 초기 로드 시에만 Promise.all 내부에서 호출)
+          // 또는 Promise.all 체인 안으로 loadData 호출을 옮겨야 함. 현재 구조는 이미 Promise.all 안에 loadData 호출이 있습니다.
+          // 따라서 이 경고는 발생하지 않아야 하지만, 혹시 다른 경로로 loadData가 호출될 경우를 대비합니다.
+          // 실제로는 Promise.all .then 블록 안에서만 호출되므로 tierConfig는 보장됩니다.
+      }
+
       const version = versionSelect.value;
       const tier    = tierSelect.value;
       const period  = periodSelect.value;
-
-      // 데이터 컨테이너 비우고 로딩 메시지 표시 (필요시)
-      // canvas는 그대로 두므로 로딩 메시지는 생략
 
       // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
       fetch(`/stats/${version}/${tier}.json`)
@@ -138,14 +187,12 @@ document.addEventListener('DOMContentLoaded', function () {
           // common.js에서 calculateFinalStatsForPeriod 함수를 사용하여 최종 데이터셋 계산
           // 이 함수가 period에 따라 누적 스냅샷 또는 기간 역산 데이터를 가져와 calculateTiers까지 수행합니다.
           // tierConfig는 초기화 시 로드된 것을 사용합니다.
-          chartData = calculateFinalStatsForPeriod(history, period, tierConfig);
+          chartData = calculateFinalStatsForPeriod(history, period, tierConfig); // common.js 함수
 
           // 데이터가 없는 경우 (calculateFinalStatsForPeriod 결과 빈 배열) 처리
           if (!chartData || chartData.length === 0) {
                console.warn("No data found for selected period.");
                if (myChart) myChart.destroy(); // 기존 그래프 파괴
-               // 데이터 없다는 메시지를 canvas 위에 표시하는 로직 추가 가능
-               // 아니면 canvas 자체를 숨기고 메시지 div를 표시
                const ctx = canvas.getContext('2d');
                ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
                ctx.font = '20px sans-serif';
@@ -167,7 +214,8 @@ document.addEventListener('DOMContentLoaded', function () {
           } else {
             // 기본 탭 ('pick-rp') 클릭
             currentTab = 'pick-rp'; // currentTab 상태 업데이트
-            document.querySelector(`.graph-tab[data-type="${currentTab}"]`).click();
+            const defaultTabBtn = document.querySelector(`.graph-tab[data-type="${currentTab}"]`);
+            if(defaultTabBtn) defaultTabBtn.click();
           }
         })
         .catch(err => {
@@ -189,19 +237,16 @@ document.addEventListener('DOMContentLoaded', function () {
              filteredData = [];
              return;
         }
-      // 픽률 필터는 chartData (전체 기간 데이터) 기준으로 평균 픽률을 계산해야 합니다.
-      // filteredData는 필터링될 대상입니다.
+      // 픽률 필터 기준은 chartData (calculateFinalStatsForPeriod 결과)의 픽률 평균입니다.
       // calculateFinalStatsForPeriod 결과에는 '픽률' 필드가 이미 0-100% 값으로 포함되어 있습니다.
-      const totalSamplesInChartData = chartData.reduce((s, d) => s + (d['표본수'] || 0), 0); // chartData의 모든 표본수 합계
-      // 평균 픽률을 calculateFinalStatsForPeriod 결과 내 '픽률' 값들의 평균으로 계산하는 것이 더 정확합니다.
       const pickRateValuesInChartData = chartData.map(d => d['픽률']).filter(pr => typeof pr === 'number' && pr >= 0); // 0 이상인 픽률 값만
       const avgPickRateChartData = pickRateValuesInChartData.length === 0 ? 0 : pickRateValuesInChartData.reduce((s, pr) => s + pr, 0) / pickRateValuesInChartData.length; // 0-100% 평균 픽률
 
       filteredData = chartData.filter(d => {
         const pr = d['픽률'] || 0; // 캐릭터의 픽률 (0-100%)
         // 픽률 기준은 전체 데이터셋 (chartData)의 평균 픽률을 사용합니다.
-        if (lowPickrateCheckbox.checked  && pr < avgPickRateChartData / 4) return false;
-        if (highPickrateCheckbox.checked && pr > avgPickRateChartData * 5) return false;
+        if (lowPickrateCheckbox.checked  && avgPickRateChartData > 0 && pr < avgPickRateChartData / 4) return false; // 평균 픽률이 0보다 클 때만 필터 적용
+        if (highPickrateCheckbox.checked && avgPickRateChartData > 0 && pr > avgPickRateChartData * 5) return false; // 평균 픽률이 0보다 클 때만 필터 적용
         return true;
       });
     }
@@ -227,13 +272,11 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       const { xKey,yKey,radiusKey,title } = maps[type];
 
-      // 평균값 계산 (ChartData 기준)
+      // 평균값 계산 (ChartData 기준, annotation 라인에 사용)
       // calculateFinalStatsForPeriod 결과에는 'RP 획득', '승률', 'TOP 3', '픽률' 필드가 있습니다.
       // 이 값들은 이미 calculateFinalStatsForPeriod 계산 시 해당 기간/스냅샷의 평균값입니다.
-      // Chart.js annotation에서 사용하는 '평균'은 아마도 그래프에 표시되는 데이터셋(filteredData)의 평균을 의미할 것입니다.
-      // 그러나 기존 코드는 chartData 기준으로 평균을 계산하고 있습니다. (wRP, wWin 등)
-      // avgPickRate도 chartData 기준입니다.
-      // let's keep the original logic of calculating average from chartData for annotation lines.
+      // calculateAverageScore 결과 (이 데이터셋의 평균 점수) 와는 다릅니다.
+      // 이전 코드의 가중 평균 RP/승률 계산 로직을 유지하되, chartData (calculateFinalStatsForPeriod 결과)를 사용합니다.
       const totalSamplesInChartData = chartData.reduce((s, d) => s + (d['표본수'] || 0), 0);
        // 평균 픽률 (0-100%)
       const pickRateValuesInChartData = chartData.map(d => d['픽률']).filter(pr => typeof pr === 'number' && pr >= 0); // 0 이상인 픽률 값만
@@ -242,41 +285,39 @@ document.addEventListener('DOMContentLoaded', function () {
        // 가중 평균 RP 획득, 승률 계산 (chartData 기준, 표본수 가중치 사용)
        let wRP_sum = 0, wWin_sum = 0, totalWeight_chartData = 0;
        chartData.forEach(d => {
-           const weight = d['표본수'] || 0; // 표본수를 가중치로 사용
+           const weight = d['표본수'] || 0; // calculateFinalStatsForPeriod 결과에 포함된 표본수를 가중치로 사용
            if (weight > 0) {
-               wRP_sum += (d['RP 획득'] || 0) * weight;
-               wWin_sum += (d['승률'] || 0) * weight;
+               wRP_sum += (d['RP 획득'] || 0) * weight; // calculateFinalStatsForPeriod 결과의 RP 획득 값 사용
+               wWin_sum += (d['승률'] || 0) * weight;   // calculateFinalStatsForPeriod 결과의 승률 값 사용
                totalWeight_chartData += weight;
            }
        });
        const wRP_chartData = totalWeight_chartData === 0 ? 0 : wRP_sum / totalWeight_chartData;
-       const wWin_chartData = totalWeight_chartData === 0 ? 0 : wWin_sum / totalWeight_chartData;
-
+       const wWin_chartData = totalWeight_chartData === 0 ? 0 : wWin_sum / totalWeight_chartData; // 0-1 스케일
 
       const labels  = filteredData.map(d => d['실험체']);
-      // >>> 수정 시작: 픽률 및 승률 값은 100으로 나누어 0-1 스케일로 플로팅
+      // 픽률 및 승률 값은 100으로 나누어 0-1 스케일로 플로팅
       const xValues = filteredData.map(d => {
-           const val = d[xKey] || 0; // 값이 없을 경우 0 처리
+           const val = d[xKey] || 0; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            if (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') return val / 100; // 0-100% 값을 0-1 스케일로
-           return val; // 그 외 값 (RP 획득, 평균 순위, 점수, 표본수 등)은 그대로
+           return val; // 그 외 값 (RP 획득 등)은 그대로
       });
       const yValues = filteredData.map(d => {
-           const val = d[yKey] || 0; // 값이 없을 경우 0 처리
+           const val = d[yKey] || 0; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            if (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') return val / 100; // 0-100% 값을 0-1 스케일로
            return val; // 그 외 값은 그대로
       });
-       // 반지름 기준 값도 100으로 나누어 0-1 스케일로 변환하여 사용
+       // 반지름 기준 값도 100으로 나누어 0-1 스케일로 변환하여 사용 (픽률, 승률, TOP 3만 해당)
       const rValues = filteredData.map(d => {
-           const val = d[radiusKey] || 0; // 값이 없을 경우 0 처리
+           const val = d[radiusKey] || 0; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            if (radiusKey === '픽률' || radiusKey === '승률' || radiusKey === 'TOP 3') return val / 100; // 0-100% 값을 0-1 스케일로
            return val; // 그 외 값은 그대로
       });
-      // >>> 수정 끝
 
-      if (myChart) myChart.destroy();
-      const ctx = canvas.getContext('2d');
 
-      // Chart.register는 이미 DOMContentLoaded 시점에 한 번 실행되었습니다.
+      if (myChart) myChart.destroy(); // 기존 차트 인스턴스 파괴
+
+      // ctx는 DOMContentLoaded 시작 시 canvas가 존재하는 것이 보장되므로 문제 없습니다.
 
       myChart = new Chart(ctx, {
         type: 'scatter',
@@ -294,13 +335,14 @@ document.addEventListener('DOMContentLoaded', function () {
               // rValues가 모두 동일한 값일 경우 (예: 데이터가 1개) 반지름 15 고정
               // 아니면 6 ~ 30 사이 스케일링
               const mn = Math.min(...rValues), mx = Math.max(...rValues);
+              // min/max가 같으면 나누기 0 되므로 예외 처리
               return mn === mx ? 15 : 6 + ((v - mn) / (mx - mn)) * 24;
             },
             pointHoverRadius: ctx => {
               const v = rValues[ctx.dataIndex]; // 이미 0-1 스케일 값
               // rValues가 모두 동일한 값일 경우 (예: 데이터가 1개) 반지름 15 고정
               // 아니면 6 ~ 30 사이 스케일링 (마우스 오버 시 반지름 동일하게 유지)
-              const mn = Math.min(...rValues), mx = Math.max(...rValues);
+               const mn = Math.min(...rValues), mx = Math.max(...rValues);
               return mn === mx ? 15 : 6 + ((v - mn) / (mx - mn)) * 24;
             }
           }]
@@ -314,14 +356,13 @@ document.addEventListener('DOMContentLoaded', function () {
               callbacks:{
                 title:()=>'', // 툴팁 제목 없음
                 label:ctx=>{
-                  const d = filteredData[ctx.dataIndex]; // 해당 데이터 포인트 원본 객체
+                  const d = filteredData[ctx.dataIndex]; // 해당 데이터 포인트 원본 객체 (calculateFinalStatsForPeriod 결과)
                   return [
                     d['실험체'], // 실험체 이름
-                    // >>> 수정 시작: 툴팁에서 % 값 표시 수정 (이미 0-100% 값이 저장되어 있음)
+                    // 툴팁에서 % 값 표시 수정 (calculateFinalStatsForPeriod 결과 값은 이미 0-100% 또는 RP/평균순위 등 형태)
                     `픽률: ${d['픽률'] !== undefined && d['픽률'] !== null ? d['픽률'].toFixed(2) + '%' : '-'}`,
-                    `RP 획득: ${d['RP 획득'] !== undefined && d['RP 획득'] !== null ? d['RP 획득'].toFixed(2) : '-'}`,
-                    `승률: ${d['승률'] !== undefined && d['승률'] !== null ? d['승률'].toFixed(2) + '%' : '-'}`
-                    // >>> 수정 끝
+                    `RP 획득: ${d['RP 획득'] !== undefined && d['RP 획득'] !== null ? d['RP 획득'].toFixed(2) : '-'}`, // RP는 % 아님
+                    `승률: ${d['승률'] !== undefined && d['승률'] !== null ? (d['승률'] * 100).toFixed(2) + '%' : '-'}` // 승률은 0-1 비율로 저장되었을 수 있으므로 100 곱함 (calculateTiers에서 0-1 비율 저장)
                   ];
                 }
               }
@@ -330,18 +371,16 @@ document.addEventListener('DOMContentLoaded', function () {
               annotations:[
                 {
                   type:'line', scaleID:'x',
-                  // >>> 수정 시작: 평균 픽률 및 승률도 100으로 나누어 0-1 스케일로 annotation 라인 표시
-                  value: xKey==='픽률' ? avgPickRateChartData / 100 : (xKey==='승률' ? wWin_chartData / 100 : wRP_chartData),
-                   // RP 획득은 그대로 사용 (wRP_chartData)
-                  // >>> 수정 끝
+                  // 평균 픽률 및 승률도 100으로 나누어 0-1 스케일로 annotation 라인 표시
+                  value: xKey==='픽률' ? avgPickRateChartData / 100 : (xKey==='승률' || xKey === 'TOP 3' ? wWin_chartData : wRP_chartData), // 승률/TOP3는 wWin_chartData (0-1)
+                   // RP 획득은 wRP_chartData (값 그대로)
                   borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 },
                 {
                   type:'line', scaleID:'y',
-                   // >>> 수정 시작: 평균 픽률 및 승률도 100으로 나누어 0-1 스케일로 annotation 라인 표시
-                  value: yKey==='픽률' ? avgPickRateChartData / 100 : (yKey==='승률' ? wWin_chartData / 100 : wRP_chartData),
-                   // RP 획득은 그대로 사용 (wRP_chartData)
-                   // >>> 수정 끝
+                   // 평균 픽률 및 승률도 100으로 나누어 0-1 스케일로 annotation 라인 표시
+                  value: yKey==='픽률' ? avgPickRateChartData / 100 : (yKey==='승률' || yKey === 'TOP 3' ? wWin_chartData : wRP_chartData), // 승률/TOP3는 wWin_chartData (0-1)
+                   // RP 획득은 wRP_chartData (값 그대로)
                   borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 }
               ]
@@ -350,15 +389,12 @@ document.addEventListener('DOMContentLoaded', function () {
           scales:{
             x:{
               title:{display:true,text:xKey}, // x축 제목
-              // --- 수정: RP 획득 축의 단계와 픽률/승률 축의 콜백 형식 변경 ---
-              // 픽률과 승률 축의 min/max 설정 (0-1 스케일)
-              min: (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') ? 0 : undefined, // 픽률, 승률, TOP 3는 최소값 0
-              // 최대값은 데이터의 최대값 + 약간 여유
-              // Chart.js가 적절히 자동 스케일링하도록 max는 undefined로 두는 것이 일반적입니다.
-              // max: (xKey === '픽률' || xKey === '승률') ? Math.ceil(Math.max(...xValues)*100*1.1)/1000 : undefined, // 이전 로직의 최대값 계산 참고
+              // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일)
+              min: (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') ? 0 : undefined,
+              // 최대값은 데이터의 최대값 + 약간 여유 (Chart.js가 적절히 자동 스케일링하도록 max는 undefined로 두는 것이 일반적입니다.)
               ticks:{
                 callback: v => {
-                  // v는 Chart.js의 스케일 값 (0-1)
+                  // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등)
                   if (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') {
                       // 0-1 스케일 값을 100 곱하여 %로 표시, 소수점 첫째 자리까지
                       return `${(v * 100).toFixed(1)}%`;
@@ -367,23 +403,21 @@ document.addEventListener('DOMContentLoaded', function () {
                        // RP 획득은 값 그대로 표시 (calculateFinalStatsForPeriod에서 이미 평균)
                        return v.toFixed(1); // 소수점 첫째 자리까지 표시 유지
                    }
-                  // 그 외는 기본값
-                  return v;
+                  // 그 외는 기본값 (평균 순위 등)
+                  return v.toFixed(1); // 다른 숫자 값도 소수점 첫째 자리까지 표시
                 },
                 // stepSize 설정 (Chart.js가 자동 계산하도록 undefined가 보통 좋음)
                 // stepSize: xKey === 'RP 획득' ? 1 : (xKey === '픽률' ? 0.002 : undefined) // 이전 로직 유지
               }
-              // ---------------------------------------------------------
             },
             y:{
               title:{display:true,text:yKey}, // y축 제목
-               // --- 수정: RP 획득 축의 단계와 픽률/승률 축의 콜백 형식 변경 ---
-              // 픽률과 승률 축의 min/max 설정 (0-1 스케일)
-              min: (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') ? 0 : undefined, // 픽률, 승률, TOP 3는 최소값 0
+               // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일)
+              min: (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') ? 0 : undefined,
               // max: (yKey === '픽률' || yKey === '승률') ? Math.ceil(Math.max(...yValues)*100*1.1)/1000 : undefined, // 이전 로직의 최대값 계산 참고
               ticks:{
                 callback: v => {
-                   // v는 Chart.js의 스케일 값 (0-1)
+                   // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등)
                    if (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') {
                        // 0-1 스케일 값을 100 곱하여 %로 표시, 소수점 첫째 자리까지
                        return `${(v * 100).toFixed(1)}%`;
@@ -392,28 +426,26 @@ document.addEventListener('DOMContentLoaded', function () {
                         // RP 획득은 값 그대로 표시
                         return v.toFixed(1); // 소수점 첫째 자리까지 표시 유지
                     }
-                   // 그 외는 기본값
-                   return v;
+                   // 그 외는 기본값 (평균 순위 등)
+                   return v.toFixed(1); // 다른 숫자 값도 소수점 첫째 자리까지 표시
                  },
                  // stepSize 설정
                  // stepSize: yKey === 'RP 획률' ? 1 : (yKey === '픽률' ? 0.002 : undefined) // 이전 로직 유지
               }
-              // ---------------------------------------------------------
             }
           }
         }
       });
 
-      // 메타데이터 (common.js의 tierLabels 사용)
+      // 메타데이터 (common.js의 tierMap 사용)
       myChart.config._제목        = title;
       myChart.config._평균픽률    = avgPickRateChartData; // 0-100%
       myChart.config._가중평균RP  = wRP_chartData;
-      myChart.config._가중평균승률 = wWin_chartData; // 0-100%
+      myChart.config._가중평균승률 = wWin_chartData * 100; // 0-1 비율이므로 100 곱해서 저장
       myChart.config._version     = versionSelect.value;
       myChart.config._tier        = tierSelect.value; // 코드 (예: diamond_plus)
     }
 
-    // NOTE: extractPeriodEntries 함수는 calculateFinalStatsForPeriod 등의 함수로 대체되어 제거되었습니다.
 
     // 레이블 플러그인 (기존 플러그인 정의 유지)
     const labelPlugin = {
@@ -433,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     };
 
-    // 코너 텍스트 플러그인 (common.js의 tierLabels 사용)
+    // 코너 텍스트 플러그인 (common.js의 tierMap 사용)
     const cornerTextPlugin = {
         id: 'cornerTextPlugin',
         afterDraw(chart) {
@@ -450,9 +482,8 @@ document.addEventListener('DOMContentLoaded', function () {
           ctx.fillText(chart.config._제목 || '', centerX, chartArea.top + 8);
 
           ctx.font = '14px sans-serif';
-          // >>> 수정 시작: common.js의 tierMap 사용
+          // common.js의 tierMap 사용
           const humanTier    = tierMap[chart.config._tier] || chart.config._tier; // tierMap은 common.js에서 가져옴
-          // >>> 수정 끝
           const versionTier  = `${chart.config._version} | ${humanTier}`;
           ctx.fillText(versionTier, centerX, chartArea.top + 28);
 
