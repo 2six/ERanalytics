@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
           // typeof check에 isNaN 체크 추가하여 유효한 숫자만 표시
           if (typeof avgPick === 'number' && !isNaN(avgPick)) {
             ctx.fillText(
-              `평균 픽률: ${(avgPick * 100).toFixed(2)}%`, // 0-1 스케일 평균에 100 곱해서 표시
+              `평균 픽률: ${(avgPick).toFixed(2)}%`, // 0-1 스케일 평균에 100 곱해서 표시
               chartArea.right - 10,
               chartArea.top + 8
             );
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
           }
           if (typeof avgWin === 'number' && !isNaN(avgWin)) {
             ctx.fillText(
-              `평균 승률: ${(avgWin * 100).toFixed(2)}%`, // 0-1 스케일 평균에 100 곱해서 표시
+              `평균 승률: ${(avgWin).toFixed(2)}%`, // 0-1 스케일 평균에 100 곱해서 표시
               chartArea.right - 10,
               chartArea.top + 48
             );
