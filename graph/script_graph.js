@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 상태
-    let chartData    = []; // calculateFinalStatsForPeriod 결과 저장
+    let chartData    = []; // calculateFinalStatsForPeriod 결과 저장 (승률/TOP3 0-1, 픽률 0-100)
     let filteredData = []; // 필터링된 데이터
     let myChart      = null;
     let tierConfig   = null; // config.ini에서 로드된 티어 설정
@@ -417,14 +417,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
       const labels  = filteredData.map(d => d['실험체']);
-      // 픽률 및 승률 값은 100으로 나누어 0-1 스케일로 플로팅
+      // 픽률 및 승률 값은 Chart.js가 기대하는 0-1 스케일로 변환하여 플로팅
       const xValues = filteredData.map(d => {
            const val = d[xKey]; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            // '픽률'은 0-100%, '승률', 'TOP 3'는 0-1 스케일로 넘어온다고 가정합니다.
            // 플로팅 시에는 0-1 스케일로 변환해야 합니다.
            if (xKey === '픽률') return (val || 0) / 100; // 0-100% 값을 0-1 스케일로
            // '승률', 'TOP 3'는 이미 0-1 스케일이라고 가정합니다.
-           // 만약 '승률'이나 'TOP 3'가 xKey라면, 값 자체를 그대로 사용합니다.
+           // 만약 '승률'이나 'TOP 3'가 xKey라면, 값 자체를 그대로 사용합니다 (0-1 스케일).
            return (val || 0); // RP 획득 등은 값 그대로
       });
       const yValues = filteredData.map(d => {
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
            // 플로팅 시에는 0-1 스케일로 변환해야 합니다.
            if (yKey === '픽률') return (val || 0) / 100; // 0-100% 값을 0-1 스케일로
            // '승률', 'TOP 3'는 이미 0-1 스케일이라고 가정합니다.
-           // 만약 '승률'이나 'TOP 3'가 yKey라면, 값 자체를 그대로 사용합니다.
+           // 만약 '승률'이나 'TOP 3'가 yKey라면, 값 자체를 그대로 사용합니다 (0-1 스케일).
            return (val || 0); // RP 획득 등은 값 그대로
       });
        // 반지름 기준 값도 100으로 나누어 0-1 스케일로 변환하여 사용 (픽률만 해당)
@@ -441,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const rValues = filteredData.map(d => {
            const val = d[radiusKey]; // calculateFinalStatsForPeriod 결과에서 해당 키 값 가져옴
            if (radiusKey === '픽률') return (val || 0) / 100; // 0-100% 픽률을 0-1 스케일로
-           // '승률', 'TOP 3'가 반지름 기준이라면 이미 0-1 스케일이므로 그대로 사용합니다.
+           // '승률', 'TOP 3'가 반지름 기준이라면 이미 0-1 스케일이므로 그대로 사용합니다。
            return (val || 0); // 그 외 값은 그대로
       });
 
@@ -480,14 +480,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
           }]
         },
+        // --- Chart options 복원 ---
         options: {
-          responsive:false, // canvas 엘리먼트 자체 크기 조절은 하지 않음
-          maintainAspectRatio:false, // 비율 유지 안 함 (width/height 속성 사용)
+          responsive:false,
+          maintainAspectRatio:false,
           plugins:{
-            legend:{display:false}, // 범례 숨김
+            legend:{display:false},
             tooltip:{
               callbacks:{
-                title:()=>'', // 툴팁 제목 없음
+                title:()=>'',
                 label:ctx=>{
                   // ctx.dataIndex가 undefined일 경우를 대비한 안전 장치 추가
                   const dataIndex = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : 0; // Default to 0
@@ -496,6 +497,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                   return [
                     d['실험체'], // 실험체 이름
+                    // ツールチップで % の値を表示を修正 (calculateFinalStatsForPeriodの結果値はすでに0-100%またはRP/平均順位などの形式)
                     // 툴팁에서 % 값 표시 수정 (calculateFinalStatsForPeriod 결과 값은 이미 0-100% 또는 RP/평균순위 등 형태)
                     `픽률: ${d['픽률'] !== undefined && d['픽률'] !== null ? d['픽률'].toFixed(2) + '%' : '-'}`, // 픽률은 0-100% 스케일
                     `RP 획득: ${d['RP 획득'] !== undefined && d['RP 획득'] !== null ? d['RP 획득'].toFixed(2) : '-'}`, // RP는 % 아님
@@ -508,17 +510,14 @@ document.addEventListener('DOMContentLoaded', function () {
               annotations:[
                 {
                   type:'line', scaleID:'x',
-                  // 평균값 (chartData 기준)을 annotation 라인 위치로 사용
-                  // '픽률' 축이면 0-100% 평균을 100으로 나눔
-                  // '승률', 'TOP 3' 축이면 0-1 평균을 그대로 사용
-                  // 'RP 획득' 축이면 값 그대로 사용
-                  value: xKey==='픽률' ? avgPickRateChartData / 100 : (xKey==='승률' || xKey === 'TOP 3' ? wWin_chartData : wRP_chartData),
+                  // annotation 라인 값은 ChartData에서 가져온 평균값의 원래 스케일을 사용합니다.
+                  value: xKey==='픽률' ? avgPickRateChartData : (xKey==='승률' || xKey === 'TOP 3' ? wWin_chartData * 100 : wRP_chartData), // 픽률/승률/TOP3는 0-100%로 가정, RP는 값 그대로
                   borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 },
                 {
                   type:'line', scaleID:'y',
-                   // 평균값 (chartData 기준)을 annotation 라인 위치로 사용
-                   value: yKey==='픽률' ? avgPickRateChartData / 100 : (yKey==='승률' || yKey === 'TOP 3' ? wWin_chartData : wRP_chartData),
+                   // annotation 라인 값은 ChartData에서 가져온 평균값의 원래 스케일을 사용합니다.
+                   value: yKey==='픽률' ? avgPickRateChartData : (yKey==='승률' || yKey === 'TOP 3' ? wWin_chartData * 100 : wRP_chartData), // 픽률/승률/TOP3는 0-100%로 가정, RP는 값 그대로
                   borderColor:'#ffac2b', borderWidth:2, borderDash:[5,5]
                 }
               ]
@@ -526,45 +525,52 @@ document.addEventListener('DOMContentLoaded', function () {
           },
           scales:{
             x:{
-              title:{display:true,text:xKey}, // x축 제목
-              // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일)
+              title:{display:true,text:xKey},
+              // 픽률, 승률 축의 min 설정 (0-1 스케일) - plotting data와 맞춰야 함
               min: (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') ? 0 : undefined,
-              // 최대값은 데이터의 최대값 + 약간 여유 (Chart.js가 적절히 자동 스케일링하도록 max는 undefined가 보통 좋음입니다.)
+              max: (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') ? Math.ceil(Math.max(...xValues) * 100 * 1.1) / 1000 : undefined, // 원본 로직 유지 (픽률/승률 축)
               ticks:{
                 callback: v => {
-                  if (xKey === '픽률' || xKey === '승률') {
-                    return `${(v*100).toFixed(1)}%`; // 픽률과 승률은 백분율로 표시, 소수점 첫째 자리까지
+                  // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등). 여기서 표시될 텍스트 포맷팅.
+                  if (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') {
+                      // v가 0-1 스케일로 들어오므로 100 곱해서 %로 표시
+                      return `${(v * 100).toFixed(1)}%`;
                   }
-                  if (xKey === 'RP 획득') {
-                      // RP 획득은 소수점 첫째 자리까지 표시
-                      return v.toFixed(1);
-                  }
-                  return v; // 그 외는 기본값
+                   if (xKey === 'RP 획득') {
+                       // v는 값 그대로 들어옴
+                       return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-';
+                   }
+                  // 평균 순위 등 다른 값
+                  return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-';
                 },
-                stepSize: xKey === 'RP 획득' ? 1 : (xKey === '픽률' ? 0.002 : undefined) // RP 획득 단계 1, 픽률 단계 0.002 유지
+                 stepSize: xKey === 'RP 획득' ? 1 : (xKey === '픽률' ? 0.002 : undefined) // 원본 로직 유지
               }
             },
             y:{
-              title:{display:true,text:yKey}, // y축 제목
-               // 픽률, 승률, TOP 3 축의 min 설정 (0-1 스케일)
+              title:{display:true,text:yKey},
+               // 픽률, 승률 축의 min 설정 (0-1 스케일) - plotting data와 맞춰야 함
               min: (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') ? 0 : undefined,
-              // max: (yKey === '픽률' || yKey === '승률') ? Math.ceil(Math.max(...yValues)*100*1.1)/1000 : undefined, // 이전 로직의 최대값 계산 참고
+              max: (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') ? Math.ceil(Math.max(...yValues) * 100 * 1.1) / 1000 : undefined, // 원본 로직 유지 (픽률/승률 축)
               ticks:{
                 callback: v => {
-                  if (yKey === '픽률' || yKey === '승률') {
-                   return `${(v*100).toFixed(1)}%`; // 픽률과 승률은 백분율로 표시, 소수점 첫째 자리까지
-                  }
-                  if (yKey === 'RP 획득') {
-                      // RP 획득은 소수점 첫째 자리까지 표시
-                      return v.toFixed(1);
-                  }
-                  return v; // 그 외는 기본값
-                },
-                stepSize: yKey === 'RP 획득' ? 1 : (yKey === '픽률' ? 0.002 : undefined) // RP 획득 단계 1, 픽률 단계 0.002 유지
+                   // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등). 여기서 표시될 텍스트 포맷팅.
+                   if (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') {
+                       // v가 0-1 스케일로 들어오므로 100 곱해서 %로 표시
+                       return `${(v * 100).toFixed(1)}%`;
+                   }
+                    if (yKey === 'RP 획득') {
+                        // v는 값 그대로 들어옴
+                        return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-';
+                    }
+                   // 평균 순위 등 다른 값
+                   return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-';
+                 },
+                  stepSize: yKey === 'RP 획득' ? 1 : (yKey === '픽률' ? 0.002 : undefined) // 원본 로직 유지
               }
             }
           }
         }
+        // --- Chart options 복원 끝 ---
       });
 
       // 메타데이터 (common.js의 tierMap 사용)
@@ -580,6 +586,5 @@ document.addEventListener('DOMContentLoaded', function () {
     // 레이블 플러그인 정의 (위로 이동)
     // 코너 텍스트 플러그인 정의 (위로 이동)
 
-    // NOTE: extractPeriodEntries 함수는 calculateFinalStatsForPeriod 등의 함수로 대체되어 제거되었습니다.
+    // NOTE: extractPeriodEntries 함수는 calculateFinalStatsForPeriod 등의 함수로 대체되어 제거되었습니다。
 });
-//END OF FILE script_graph.js

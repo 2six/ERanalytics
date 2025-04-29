@@ -1,4 +1,4 @@
-// START OF FILE script_common.js
+//START OF FILE script_common.js
 // 필요한 함수들을 전역 스코프에 둡니다.
 
 function parseINI(iniString) {
@@ -87,13 +87,13 @@ function calculateTier(score, avgScore, stddev, config) {
 
 function calculateAverageScore(data) {
     const validData = data.filter(item => (item['표본수'] || 0) > 0);
-    const total = validData.reduce((sum, item) => sum + (item['표본수'] || 0), 0); // Ensure 표본수 is treated as 0 if null/undefined
+    const total = validData.reduce((sum, item) => sum + (item['표本数'] || 0), 0); // Ensure 표본수 is treated as 0 if null/undefined
 
     if (total === 0) return 0;
 
     let sumRP = 0, sumWin = 0, sumTop3 = 0;
     validData.forEach(i => {
-        const w = (i['표본수'] || 0) / total; // Ensure 표본수 is treated as 0 if null/undefined
+        const w = (i['표本数'] || 0) / total; // Ensure 표본수 is treated as 0 if null/undefined
         // 승률, TOP 3는 0-1 스케일로 입력된다고 가정합니다. calculateFinalStatsForPeriod에서 이 스케일을 보장해야 합니다.
         sumRP += (i['RP 획득'] || 0) * w; // Ensure stat values are treated as 0 if null/undefined
         sumWin += (i['승률'] || 0) * w;
@@ -300,17 +300,15 @@ function getTimestampKeyForPeriodEnd(history, period) {
  *                          표본 증가가 있는 기존 캐릭터 및 기간 내 신규 캐릭터가 포함됩니다.
  */
 function calculatePeriodStatsForNewSamples(snapshotLatest, snapshotPast) {
-    // 입력 스냅샷 배열이 비어있으면 빈 배열 반환
-    if (!snapshotLatest || snapshotLatest.length === 0) {
-        // 과거 스냅샷이 비어있고 최신 스냅샷에 데이터가 있다면, 최신 스냅샷의 모든 표본이 이 기간에 유입된 것으로 간주
-        // 이 경우, calculatePeriodStatsForNewSamples는 최신 스냅샷 데이터를 기반으로 계산합니다.
-        // 하지만 명확성을 위해, 과거 스냅샷이 없으면 역산이 불가능하다고 보고 빈 배열 반환
-        if (!snapshotPast || snapshotPast.length === 0) {
-             return []; // 둘 다 비어있으면 빈 배열
-        }
-        // 최신 스냅샷만 비어있으면 역산 불가
+    // 입력 스냅샷 배열이 유효하지 않거나 비어있으면 빈 배열 반환
+    if (!Array.isArray(snapshotLatest) || snapshotLatest.length === 0) {
+        console.warn("calculatePeriodStatsForNewSamples: snapshotLatest is invalid or empty.");
         return [];
     }
+    if (!Array.isArray(snapshotPast)) { // past는 비어있을 수 있습니다.
+         console.warn("calculatePeriodStatsForNewSamples: snapshotPast is invalid, treating as empty.");
+    }
+
 
     const pastMap = Object.fromEntries((snapshotPast || []).map(d => [d.실험체, d])); // 과거 스냅샷이 null일 경우 빈 맵
 
@@ -320,42 +318,24 @@ function calculatePeriodStatsForNewSamples(snapshotLatest, snapshotPast) {
 
     for (const latestItem of snapshotLatest) {
         const charName = latestItem.실험체;
-        const pastItem = pastMap[charName];
-
         const latestSample = latestItem['표본수'] || 0;
 
-        if (!pastItem) {
-             // Character is brand new in the latest snapshot (not in past)
-             if (latestSample > 0) {
-                 totalSampleDiffPositive += latestSample; // Include new character's sample in total diff
-                 // Store their latest stats directly as sums for the period (since past is 0)
-                 // Assume original Win/TOP3/Pick are 0-100% scale in snapshotLatest
-                 characterDeltaSums[charName] = {
-                      sampleDiff: latestSample,
-                      rpSumDiff: (latestItem['RP 획득'] || 0) * latestSample,
-                      winSumDiff: ((latestItem['승률'] || 0) / 100) * latestSample, // Convert 0-100% to 0-1 for sum diff
-                      top3SumDiff: ((latestItem['TOP 3'] || 0) / 100) * latestSample, // Convert 0-100% to 0-1 for sum diff
-                      avgRankSumDiff: (latestItem['평균 순위'] || 0) * latestSample // Assume AvgRank is original scale
-                 };
-             }
-             continue; // Process next character in snapshotLatest
-        }
+        const pastItem = pastMap[charName];
+        const pastSample = pastItem ? (pastItem['표본수'] || 0) : 0; // 과거 데이터 없으면 표본수 0
 
 
-        // Character exists in both snapshots - calculate difference
-        const pastSample = pastItem['표본수'] || 0;
         const sampleDiff = latestSample - pastSample;
 
-        // Only process characters with positive sample increase
+        // Only process characters with positive sample increase OR new characters (sampleDiff > 0)
         if (sampleDiff > 0) {
              totalSampleDiffPositive += sampleDiff; // Sum up positive sample differences
 
              // Calculate total stat sum changes (diffs) for this character
              // Assume original Win/TOP3/Pick are 0-100% scale in snapshotLatest and snapshotPast
-             const rpSumDiff = (latestItem['RP 획득'] || 0) * latestSample - (pastItem['RP 획득'] || 0) * pastSample;
-             const winSumDiff = ((latestItem['승률'] || 0) / 100 * latestSample) - ((pastItem['승률'] || 0) / 100 * pastSample); // Convert 0-100% to 0-1 for sum diff
-             const top3SumDiff = ((latestItem['TOP 3'] || 0) / 100 * latestSample) - ((pastItem['TOP 3'] || 0) / 100 * pastSample); // Convert 0-100% to 0-1 for sum diff
-             const avgRankSumDiff = (latestItem['평균 순위'] || 0) * latestSample - (pastItem['평균 순위'] || 0) * pastSample; // Assume AvgRank is original scale
+             const rpSumDiff = (latestItem['RP 획득'] || 0) * latestSample - (pastItem?.['RP 획득'] || 0) * pastSample; // Use optional chaining for pastItem
+             const winSumDiff = ((latestItem['승률'] || 0) / 100 * latestSample) - ((pastItem?.['승률'] || 0) / 100 * pastSample); // Convert 0-100% to 0-1 for sum diff
+             const top3SumDiff = ((latestItem['TOP 3'] || 0) / 100 * latestSample) - ((pastItem?.['TOP 3'] || 0) / 100 * pastSample); // Convert 0-100% to 0-1 for sum diff
+             const avgRankSumDiff = (latestItem['평균 순위'] || 0) * latestSample - (pastItem?.['평균 순위'] || 0) * pastSample; // Assume AvgRank is original scale
 
              characterDeltaSums[charName] = {
                  sampleDiff: sampleDiff,
@@ -369,6 +349,10 @@ function calculatePeriodStatsForNewSamples(snapshotLatest, snapshotPast) {
 
     // Now, iterate through characters with positive sample diffs or new characters and calculate their average stats for the period
     // and their pick rate based on the totalSampleDiffPositive
+    // >>> 오류 수정: delta 변수 선언이 여기서 이루어지도록 함 (ReferenceError 방지)
+    const delta = []; // Declare delta here before using it in the loop
+    // >>> 수정 끝
+
     for (const charName in characterDeltaSums) {
          const sums = characterDeltaSums[charName];
 
@@ -378,17 +362,25 @@ function calculatePeriodStatsForNewSamples(snapshotLatest, snapshotPast) {
               // Pick rate of this character's new samples relative to the total new samples (from characters with increase + new)
               pickRateForPeriod = (sums.sampleDiff / totalSampleDiffPositive) * 100; // Calculate as percentage
          }
-         // Pick rate should not be negative
+         // Pick rate should not be negative (safety)
          pickRateForPeriod = Math.max(0, pickRateForPeriod);
 
+         // Ensure sampleDiff is positive when dividing
+         const currentSampleDiff = sums.sampleDiff || 0; // Use 0 if null/undefined
+         if (currentSampleDiff <= 0) {
+              // This case should ideally not be reached due to the filtering above,
+              // but as a safety, prevent division by zero/negative.
+              console.warn(`calculatePeriodStatsForNewSamples: SampleDiff is not positive for character ${charName}.`);
+              continue; // Skip this character if sample diff is not positive
+         }
 
          delta.push({
              '실험체': charName,
-             '표본수': sums.sampleDiff, // 표본수는 이 기간에 새로 유입된 표본 수
-             'RP 획득': sums.sampleDiff > 0 ? sums.rpSumDiff / sums.sampleDiff : 0, // 평균 스탯 (값 그대로), sampleDiff > 0 보장됨
-             '승률':    sums.sampleDiff > 0 ? sums.winSumDiff / sums.sampleDiff : 0, // 평균 스탯 (0-1 스케일), sampleDiff > 0 보장됨
-             'TOP 3':   sums.sampleDiff > 0 ? sums.top3SumDiff / sums.sampleDiff : 0, // 평균 스탯 (0-1 스케일), sampleDiff > 0 보장됨
-             '평균 순위': sums.sampleDiff > 0 ? sums.avgRankSumDiff / sums.sampleDiff : 0, // 평균 스탯 (값 그대로), sampleDiff > 0 보장됨
+             '표본수': sums.sampleDiff, // 표본수는 이 기간에 새로 유입된 표본 수 (양수)
+             'RP 획득': sums.rpSumDiff / currentSampleDiff, // 평균 스탯 (값 그대로)
+             '승률':    sums.winSumDiff / currentSampleDiff, // 평균 스탯 (0-1 스케일)
+             'TOP 3':   sums.top3SumDiff / currentSampleDiff, // 평균 스탯 (0-1 스케일)
+             '평균 순위': sums.avgRankSumDiff / currentSampleDiff, // 평균 스탯 (값 그대로)
              '픽률': pickRateForPeriod // 이 기간 유입 표본 기준 픽률 (0-100% 스케일)
              // Note: '점수' and '티어' will be calculated later by calculateTiers based on these delta stats
          });
@@ -422,7 +414,7 @@ function calculateFinalStatsForPeriod(history, period, tierConfig) {
         return []; // 최신 데이터 없으면 계산 불가
     }
 
-    let dataToProcess; // calculateAverageScore, calculateStandardDeviation, calculateTiers에 전달할 데이터
+    let dataToProcess; // calculateAverageScore, calculateStandardDeviation, calculateTiers에 전달할 데이터 (승률/TOP3 0-1, 픽률 0-100)
 
     if (period === 'latest') {
         // 'latest' 기간: 최신 누적 스냅샷 데이터를 가져옵니다.
@@ -448,9 +440,12 @@ function calculateFinalStatsForPeriod(history, period, tierConfig) {
         // 또는, history 시작 시점 이전 기간을 선택했을 경우.
         // calculatePeriodStatsForNewSamples는 pastItem이 없는 신규 캐릭터도 포함하여 반환하도록 수정되었습니다.
         // 만약 과거 스냅샷 자체가 없으면 역산 불가.
-        if (!pastKey || pastKey === latestKey) {
-             console.warn(`calculateFinalStatsForPeriod: Past data key not found for period '${period}' or same as latest. No period stats (sample increase).`);
+        if (!pastKey) {
+             console.warn(`calculateFinalStatsForPeriod: Past data key not found for period '${period}'. Cannot calculate period stats.`);
              dataToProcess = []; // 해당 기간 데이터 없음 (역산 결과 빈 데이터)
+        } else if (pastKey === latestKey) {
+             console.warn(`calculateFinalStatsForPeriod: Past data key for period '${period}' is same as latest. No period stats (sample increase).`);
+             dataToProcess = []; // 키가 같으면 역산 결과는 당연히 0 또는 빈 데이터
         } else {
             const snapshotLatest = getSnapshotAtTimestampKey(history, latestKey);
             const snapshotPast = getSnapshotAtTimestampKey(history, pastKey);
@@ -473,10 +468,10 @@ function calculateFinalStatsForPeriod(history, period, tierConfig) {
     const stddev = calculateStandardDeviation(dataToProcess, avgScore); // 이 데이터셋의 표준 편차 계산 (승률/TOP3 0-1 가정)
 
     // 최종 점수, 티어, 픽률 등을 계산하여 반환
-    // calculateTiers는 dataToProcess (승률/TOP3 0-1, 픽률 0-100 스케일)을 입력받습니다.
+    // calculateTiers는 dataToProcess (승률/TOP3 0-1, 픽률 0-100 스케일)을 입력받습니다。
     const finalScoredData = calculateTiers(dataToProcess, avgScore, stddev, tierConfig);
 
-    // calculateTiers 결과의 '승률', 'TOP 3' 필드는 0-1 스케일로 저장되어 있습니다. '픽률'은 0-100% 스케일입니다.
+    // calculateTiers 결과의 '승률', 'TOP 3' 필드는 0-1 スケール로 저장되어 있습니다. '픽률'은 0-100% 스케일입니다.
     // 이대로 반환하여 각 페이지에서 표시할 때 변환하도록 합니다.
 
     return finalScoredData;
@@ -484,7 +479,7 @@ function calculateFinalStatsForPeriod(history, period, tierConfig) {
 // ------------------------------------------------------------------------
 
 
-// 8. 데이터 정렬 (mode 인자 추가 및 로직 수정)
+// 8. データ 정렬 (mode 인자 추가 및 로직 수정)
 // mode: 'value' (단일), 'value1' (비교 Ver1), 'value2' (비교 Ver2), 'delta' (비교 변화량)
 function sortData(data, column, asc, mode = 'value') {
     if (!data || data.length === 0) return [];
@@ -635,7 +630,7 @@ function sortData(data, column, asc, mode = 'value') {
 }
 
 
-// 10. 색상 보간 헬퍼 함수 (기존 함수 유지)
+// 10. 色상 보간 헬퍼 함수 (기존 함수 유지)
 function interpolateColor(start, end, ratio) {
     const t = Math.max(0, Math.min(1, ratio));
     const rgb = start.map((s,i) => Math.round(s + (end[i] - s) * t));
@@ -707,7 +702,7 @@ function applyGradientColorsSingle(table) {
                        const pickRateCell = r.children[pickRateColIndex];
                        // 픽률 값 자체를 가져와서 사용 (이미 퍼센트 형태, 0-100% 스케일)
                        const prText = pickRateCell.textContent.replace('%','');
-                       // 가중치로 사용하려면 0-1 스케일이 필요합니다.
+                       // 가중치로 사용하려면 0-1 스케일이 필요합니다。
                        pickRate = parseFloat(prText) / 100; // 0~1 사이 값으로 변환
                   } else {
                        // 만약 픽률 컬럼이 없는데 가중평균이 필요하다면 다른 가중치 기준 필요
@@ -721,7 +716,7 @@ function applyGradientColorsSingle(table) {
 
 
              let totalPickRate = valuesWithPickRate.reduce((sum, item) => sum + item.pickRate, 0); // 픽률 합 (0-1 스케일)
-             // weightedSum은 스탯 값(표시될 스케일) * 픽률 가중치(0-1 스케일) 의 합
+             // weightedSum은 스탯 값(다양한 스케일) * 픽률 가중치(0-1 스케일) 의 합
              let weightedSum = valuesWithPickRate.reduce((sum, item) => sum + item.value * item.pickRate, 0);
 
              // 平均はweightedSum / totalPickRate. この平均のスケールはステータス値のスケールを追跡します。
@@ -731,7 +726,7 @@ function applyGradientColorsSingle(table) {
 
         rows.forEach((r) => {
             const cell = r.children[i];
-            // 셀 텍스트에서 % 제거 후 파싱 (표시될 스케일의 값)
+            // セルテキストから % を取り除いてパース (表示されるスケールの値)
             const cellText = cell.textContent.replace('%','');
             const v = parseFloat(cellText); // 이 v의 스케일은 컬럼에 따라 다릅니다. (승률/TOP3 0-100%, 픽률 0-100%, 나머지는 값 그대로)
 
@@ -743,7 +738,7 @@ function applyGradientColorsSingle(table) {
             let ratio;
             const isBad = badCols.includes(col);
 
-            // 평균값(avg)을 기준으로 스케일링
+            // 平均値(avg)を基準にスケーリング
             // v와 avg는 동일한 스케일 (컬럼에 따라 다름)
              if (max === min) {
                  ratio = 0.5;
@@ -802,7 +797,9 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 
     headers.forEach((th, i) => {
         const col = th.dataset.col;
-        // '실험체' 컬럼은 그라디언트 적용 제외
+        if (![...goodCols, ...badCols].includes(col)) return;
+
+        // '실험체' 컬럼은 그라디언트 적용 제외 (이미 위에서 처리)
         if (col === '실험체') {
              rows.forEach(tr => tr.children[i].style.backgroundColor = '');
              return;
@@ -909,19 +906,19 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
              let v;
              if (typeof val === 'number') {
                   // 픽률, 승률, TOP 3 컬럼은 표시될 때 %가 붙으며, 승률/TOP3는 100이 곱해집니다.
-                  // 예를 들어 승률이 0.51이면 표시될 때 "51.00%"가 되고, 여기서 파싱하면 51이 됩니다.
-                  // 픽률이 1.5%이면 표시될 때 "1.50%"가 되고, 여기서 파싱하면 1.5가 됩니다.
-                  // RP, 점수, 평균 순위, 표본수는 값 그대로 표시됩니다.
+                  // 예를 들어 승률이 0.51이면 표시될 때 "51.00%"가 되고, 여기서 파싱하면 51이 됩니다。
+                  // 픽률이 1.5%이면 표시될 때 "1.50%"가 되고, 여기서 파싱하면 1.5가 됩니다。
+                  // RP, 점수, 평균 순위, 표본수는 값 그대로 표시됩니다。
                   if (col === '승률' || col === 'TOP 3') v = val * 100; // 0-1 -> 0-100 (가정)
                   else if (col === '픽률') v = val; // 0-100 그대로 (가정)
                   else v = val; // 다른 값 그대로
              } else { // 문자열 ('신규', '삭제', '-', 변화량 문자열 등)
-                  // 델타 컬럼 중 문자열 값은 숫자 비교에서 제외되어야 합니다.
+                  // 델타 컬럼 중 문자열 값은 숫자 비교에서 제외되어야 합니다。
                   if (mode === 'delta' && (col === '티어' || col === '실험체' || col === '표본수' || col === '평균 순위')) { // 순위 변화값, 표본수 변화량, 평균 순위 변화량 등이 문자열일 수 있음
                        return null;
                   }
-                  // 다른 숫자 변화량 컬럼('점수 변화량', '픽률 변화량', 'RP 변화량' 등)의 문자열 ('▲2.50', '▼10')은 파싱 가능.
-                  // applyGradientColorsComparison은 cell.textContent에서 파싱한 v를 사용하므로, valuesOnly도 파싱 가능한 숫자 문자열을 포함해야 합니다.
+                  // 다른 숫자 변화량 컬럼('점수 변화량', '픽률 변화량', 'RP 변화량' 등)의 문자열 ('▲2.50', '▼10')은 파싱 가능。
+                  // applyGradientColorsComparison은 cell.textContentからパースしたvを使用するため、valuesOnlyもパース可能な数値文字列を含む必要があります。
                   v = parseFloat(String(val).replace(/[+%▲▼]/g, '')); // 기호 제거 후 파싱
              }
 
@@ -946,14 +943,14 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
             // Weight should be based on 0-1 scale pick rate.
             const pickRateKey = mode === 'value1' ? '픽률 (Ver1)' : '픽률 (Ver2)';
             const tuples = data.map(d => {
-                const v = d[valueKey]; // 스탯 값 (점수, RP 등 - 다양한 스케일, calculateFinalStatsForPeriod 결과)
+                const v = d[valueKey]; // ス탯 값 (점수, RP 등 - 다양한 스케일, calculateFinalStatsForPeriod 결과)
                 const pr = d[pickRateKey]; // 픽률 값 (0-100% 스케일, calculateFinalStatsForPeriod 결과)
                 // Ensure value and pick rate are numbers, and pick rate is positive for weighting
                  // applyGradientColorsComparison은 표시될 스케일의 v와 0-1 스케일의 픽률 가중치로 가중평균을 계산해야 합니다.
                 let statValueForAvg;
                 if (typeof v === 'number') {
-                     if (col === '승률' || col === 'TOP 3') statValueForAvg = v * 100; // 0-1 -> 0-100 (가정)
-                     else if (col === '픽률') statValueForAvg = v; // 0-100 그대로 (가정)
+                     if (col === '勝率' || col === 'TOP 3') statValueForAvg = v * 100; // 0-1 -> 0-100 (가정)
+                     else if (col === 'ピック率') statValueForAvg = v; // 0-100 그대로 (가정)
                      else statValueForAvg = v; // 다른 값 그대로
                 } else { // 비숫자 값 (가중평균에서 제외)
                      return null;
@@ -975,14 +972,14 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
         // Apply color to each cell in the column
         rows.forEach((r, idx) => {
             const cell = r.children[i];
-            // 셀 텍스트에서 % 제거 후 파싱 (표시될 스케일의 값)
+            // セルテキストから % を取り除いてパース (表示されるスケールの値)
             // 이 v의 스케일은 renderComparisonTable에서 표시될 스케일입니다.
             const cellText = cell.textContent.replace('%','');
             const v = parseFloat(cellText);
 
             if (isNaN(v) || v === null) {
                  cell.style.backgroundColor = ''; // Clear any previous inline style
-                 // CSS rules will handle non-numeric states like '신규'/'삭제' if defined.
+                 // CSS rules will handle non-numeric states like '新규'/'削除' if defined.
                  return;
             }
 
@@ -1023,7 +1020,7 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
 // 두 데이터셋 병합 및 변화량 계산 (common.js로 이동)
 function mergeDataForComparison(data1, data2) {
     // data1과 data2는 이미 calculateFinalStatsForPeriod를 거친 최종 데이터셋입니다.
-    // calculateFinalStatsForPeriod 결과의 '승률', 'TOP 3'는 0-1 스케일, '픽률', '표본수', '점수', 'RP 획득', '평균 순위'는 값 그대로 (표시될 스케일)입니다.
+    // calculateFinalStatsForPeriod 결과의 '승률', 'TOP 3'는 0-1 스케일, '픽률', '표본수', '점수', 'RP 획득', '평균 순위'는 값 그대로 (표시될 스케일)입니다。
 
     const map1 = Object.fromEntries(data1.map(d => [d['실험체'], d]));
     const map2 = Object.fromEntries(data2.map(d => [d['실험체'], d]));
@@ -1135,7 +1132,7 @@ function mergeDataForComparison(data1, data2) {
              result['순위 변화값'] = '-'; // string
         }
 
-        // 평균 순위 변화량 계산 (숫자)
+        // 平均順位 변화량 계산 (숫자)
         // d1, d2는 calculateFinalStatsForPeriod 결과이므로 '평균 순위' 필드가 있을 것입니다.
         // 해당 기간에 표본이 없었으면 '평균 순위' 값이 null/undefined일 수 있습니다.
         const avgRank1 = d1 ? d1['평균 순위'] : null;
@@ -1153,5 +1150,3 @@ function mergeDataForComparison(data1, data2) {
 
     return comparisonResult;
 }
-
-// NOTE: extractPeriodEntries 함수는 위 calculateFinalStatsForPeriod 등의 함수로 대체되어 제거되었습니다.
