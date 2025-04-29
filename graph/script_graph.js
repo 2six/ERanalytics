@@ -532,20 +532,16 @@ document.addEventListener('DOMContentLoaded', function () {
               // 최대값은 데이터의 최대값 + 약간 여유 (Chart.js가 적절히 자동 스케일링하도록 max는 undefined가 보통 좋음입니다.)
               ticks:{
                 callback: v => {
-                  // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등)
-                  if (xKey === '픽률' || xKey === '승률' || xKey === 'TOP 3') {
-                      // 0-1 스케일 값을 100 곱하여 %로 표시, 소수점 첫째 자리까지
-                      return `${(v * 100).toFixed(1)}%`;
+                  if (xKey === '픽률' || xKey === '승률') {
+                    return `${(v*100).toFixed(1)}%`; // 픽률과 승률은 백분율로 표시, 소수점 첫째 자리까지
                   }
-                   if (xKey === 'RP 획득') {
-                       // RP 획득은 값 그대로 표시 (calculateFinalStatsForPeriod에서 이미 평균)
-                       return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 유효한 숫자만 표시
-                   }
-                  // 그 외는 기본값 (평균 순위 등)
-                  // 다른 숫자 값도 소수점 첫째 자리까지 표시하도록 변경
-                  return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-';
+                  if (xKey === 'RP 획득') {
+                      // RP 획득은 소수점 첫째 자리까지 표시
+                      return v.toFixed(1);
+                  }
+                  return v; // 그 외는 기본값
                 },
-                // stepSize 설정 (Chart.js가 자동 계산하도록 undefined가 보통 좋음)
+                stepSize: xKey === 'RP 획득' ? 1 : (xKey === '픽률' ? 0.002 : undefined) // RP 획득 단계 1, 픽률 단계 0.002 유지
               }
             },
             y:{
@@ -555,20 +551,16 @@ document.addEventListener('DOMContentLoaded', function () {
               // max: (yKey === '픽률' || yKey === '승률') ? Math.ceil(Math.max(...yValues)*100*1.1)/1000 : undefined, // 이전 로직의 최대값 계산 참고
               ticks:{
                 callback: v => {
-                   // v는 Chart.js의 스케일 값 (0-1 또는 RP 값 등)
-                   if (yKey === '픽률' || yKey === '승률' || yKey === 'TOP 3') {
-                       // 0-1 스케일 값을 100 곱하여 %로 표시, 소수점 첫째 자리까지
-                       return `${(v * 100).toFixed(1)}%`;
-                   }
-                    if (yKey === 'RP 획득') {
-                        // RP 획득은 값 그대로 표시
-                        return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-'; // 유효한 숫자만 표시
-                    }
-                   // 그 외는 기본값 (평균 순위 등)
-                   // 다른 숫자 값도 소수점 첫째 자리까지 표시하도록 변경
-                   return typeof v === 'number' && !isNaN(v) ? v.toFixed(1) : '-';
-                 },
-                 // stepSize 설정
+                  if (yKey === '픽률' || yKey === '승률') {
+                   return `${(v*100).toFixed(1)}%`; // 픽률과 승률은 백분율로 표시, 소수점 첫째 자리까지
+                  }
+                  if (yKey === 'RP 획득') {
+                      // RP 획득은 소수점 첫째 자리까지 표시
+                      return v.toFixed(1);
+                  }
+                  return v; // 그 외는 기본값
+                },
+                stepSize: yKey === 'RP 획득' ? 1 : (yKey === '픽률' ? 0.002 : undefined) // RP 획득 단계 1, 픽률 단계 0.002 유지
               }
             }
           }
