@@ -111,7 +111,20 @@ document.addEventListener('DOMContentLoaded', function () {
       // >>> 수정 끝
         .then(r => r.json())
         .then(json => {
-          chartData = extractPeriodEntries(json['통계'], period);
+          const history = json['통계'];
+          let entries;
+
+          // --- 수정 시작: 기간에 따라 common.js의 함수 호출 ---
+          if (period === 'latest') {
+            // 'latest' 기간은 스냅샷 사용 (common.js의 extractPeriodEntries)
+            entries = extractPeriodEntries(history, period);
+          } else {
+            // '3day' 또는 '7day' 기간은 델타 통계 사용 (common.js의 extractDeltaEntries)
+            entries = extractDeltaEntries(history, period);
+          }
+          // --- 수정 끝
+
+          chartData = entries; // 추출된 데이터를 chartData에 할당
           applyFilters();
           // URL 파라미터에 있는 탭 클릭
           const initialBtn = document.querySelector(`.graph-tab[data-type="${currentTab}"]`);
@@ -265,39 +278,6 @@ document.addEventListener('DOMContentLoaded', function () {
       myChart.config._가중평균승률 = wWin;
       myChart.config._version     = versionSelect.value;
       myChart.config._tier        = tierSelect.value;
-    }
-
-    // 기간 delta 계산
-    function extractPeriodEntries(history, period) {
-      const keys = Object.keys(history).sort();
-      const latestKey = keys[keys.length-1];
-      const latest = history[latestKey];
-      if(period==='latest') return latest;
-      const days = period==='3day'?3:7;
-      const dt = new Date(latestKey.replace(/_/g,':').replace(/-/g,'/'));
-      const cutoff=new Date(dt); cutoff.setDate(cutoff.getDate()-days);
-      const pastKey = keys.slice().reverse()
-        .find(k=>new Date(k.replace(/_/g,':').replace(/-/g,'/'))<=cutoff);
-      if(!pastKey) return latest;
-      const prev=history[pastKey];
-      const currMap=Object.fromEntries(latest.map(d=>[d.실험체,d]));
-      const prevMap=Object.fromEntries(prev.map(d=>[d.실험체,d]));
-      const delta=[];
-      for(const name in currMap){
-        const c=currMap[name], p=prevMap[name];
-        if(!p) continue;
-        const diff=c['표본수']-p['표본수'];
-        if(diff<=0) continue;
-        delta.push({
-          '실험체':name,
-          '표본수':diff,
-          'RP 획득':(c['RP 획득']*c['표본수']-p['RP 획득']*p['표본수'])/diff,
-          '승률':   (c['승률']   *c['표본수']-p['승률']   *p['표본수'])/diff,
-          'TOP 3': (c['TOP 3']  *c['표본수']-p['TOP 3']  *p['표본수'])/diff,
-          '평균 순위':(c['평균 순위']*c['표본수']-p['평균 순위']*p['표본수'])/diff
-        });
-      }
-      return delta;
     }
 
     // 레이블 플러그인
