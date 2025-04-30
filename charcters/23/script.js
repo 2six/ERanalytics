@@ -57,10 +57,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     function populateWeaponSelect(character) {
         weaponSelect.innerHTML = '';
         const mastery = character.weaponMastery;
-        if (!mastery) {
+        if (!mastery || Object.keys(mastery).length === 0) {
              const option = document.createElement('option');
              option.value = '';
-             option.textContent = '무기 없음';
+             option.textContent = '사용 가능 무기 없음';
              weaponSelect.appendChild(option);
              weaponSelect.disabled = true;
              return;
@@ -94,24 +94,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Generate Skill Level Inputs
     function generateSkillLevelInputs(character) {
         skillLevelInputsDiv.innerHTML = '';
-        const skillKeys = ['P', 'Q', 'W', 'E', 'R'];
+        // Determine unique skill keys (P, Q, W, E, R) from the character's skills
+        const skillKeys = new Set();
+        Object.values(character.skills).forEach(skill => {
+             skillKeys.add(skill.skillKey.replace(/\d+/g, '')); // Add base key (P, Q, W, E, R)
+        });
+        const sortedSkillKeys = Array.from(skillKeys).sort((a, b) => {
+             const order = ['P', 'Q', 'W', 'E', 'R'];
+             return order.indexOf(a) - order.indexOf(b);
+        });
+
+
         const skillMaxLevels = { 'Q': 5, 'W': 5, 'E': 5, 'R': 3, 'P': 3 }; // Max levels based on rules
 
-        skillKeys.forEach(key => {
-             // Find a skill with this key to get its name
-             const skill = Object.values(character.skills).find(s => s.skillKey.startsWith(key));
-             const skillName = skill ? skill.skillName : key; // Use key if name not found
+        sortedSkillKeys.forEach(key => {
+             // Find a skill with this base key to get its name (e.g., Q for Q and Q2)
+             const skill = Object.values(character.skills).find(s => s.skillKey.replace(/\d+/g, '') === key);
+             const skillName = skill ? skill.skillName.replace(/&꿰뚫기|&처형식/g, '').trim() : key; // Use key if name not found, basic cleaning
+
 
             const div = document.createElement('div');
             div.classList.add('input-group');
             div.innerHTML = `
-                <label for="skill-${key.toLowerCase()}-level">${skillName} 레벨:</label>
+                <label for="skill-${key.toLowerCase()}-level">${skillName} (${key}) 레벨:</label>
                 <input type="number" id="skill-${key.toLowerCase()}-level" value="1" min="1" max="${skillMaxLevels[key] || 1}">
             `;
             skillLevelInputsDiv.appendChild(div);
         });
          // Add event listeners to new skill level inputs
-         skillKeys.forEach(key => {
+         sortedSkillKeys.forEach(key => {
              const input = document.getElementById(`skill-${key.toLowerCase()}-level`);
              if (input) {
                  input.addEventListener('change', updateUI);
@@ -130,18 +141,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedWeaponType = weaponTypeData[weaponType]; // Get weapon type data from the second JSON
 
         const charLevel = parseInt(charLevelInput.value, 10) || 1;
+        // Ensure level is within bounds (1-20)
+        const clampedCharLevel = Math.max(1, Math.min(20, charLevel));
+        charLevelInput.value = clampedCharLevel; // Update input field if it was out of bounds
+
         const weaponMasteryLevel = parseInt(weaponMasteryLevelInput.value, 10) || 1;
         const defenseMasteryLevel = parseInt(defenseMasteryLevelInput.value, 10) || 1;
         const moveMasteryLevel = parseInt(moveMasteryLevelInput.value, 10) || 1;
 
         const skillLevels = {};
-        const skillKeys = ['P', 'Q', 'W', 'E', 'R'];
+        const skillKeys = ['P', 'Q', 'W', 'E', 'R']; // Base keys
+        const skillMaxLevels = { 'Q': 5, 'W': 5, 'E': 5, 'R': 3, 'P': 3 };
+
         skillKeys.forEach(key => {
             const input = document.getElementById(`skill-${key.toLowerCase()}-level`);
             if (input) {
-                 skillLevels[key] = parseInt(input.value, 10) || 1;
+                 const level = parseInt(input.value, 10) || 1;
+                 // Ensure skill level is within bounds (1-max)
+                 const clampedLevel = Math.max(1, Math.min(skillMaxLevels[key] || 1, level));
+                 skillLevels[key] = clampedLevel;
+                 input.value = clampedLevel; // Update input field
              } else {
-                 skillLevels[key] = 1; // Default to 1 if input not found (shouldn't happen after generation)
+                 skillLevels[key] = 1; // Default to 1 if input not found
              }
         });
 
@@ -155,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return {
             character: selectedCharacter,
             weaponType: selectedWeaponType, // Pass the weapon type data object
-            charLevel,
+            charLevel: clampedCharLevel, // Use clamped level
             weaponMasteryLevel,
             defenseMasteryLevel,
             moveMasteryLevel,
@@ -171,23 +192,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!character) return null;
 
         // 1. Calculate rawStats based on baseStats and levelUpStats
-        const rawStats = { ...character.baseStats };
-        if (charLevel > 1 && character.levelUpStats) {
+        // Start with a deep copy of baseStats to avoid modifying the original data
+        const rawStats = JSON.parse(JSON.stringify(character.baseStats));
+
+        if (charLevel > 0 && character.levelUpStats) {
             Object.keys(character.levelUpStats).forEach(statKey => {
                 if (rawStats[statKey] !== undefined) { // Only update stats that exist in baseStats
-                     rawStats[statKey] += character.levelUpStats[statKey] * (charLevel - 1);
+                     // --- MODIFICATION 1: Change level calculation ---
+                     rawStats[statKey] += character.levelUpStats[statKey] * charLevel;
                 }
             });
         }
 
-        // Ensure ratio stats exist in rawStats, initialize to 0 if not
-        const ratioStats = ['attackSpeedRatio', 'skillAmpRatio', 'increaseBasicAttackDamageRatio', 'preventBasicAttackDamagedRatio', 'preventSkillDamagedRatio'];
-         ratioStats.forEach(statKey => {
+        // Ensure ratio stats and moveSpeed exist in rawStats, initialize to 0 if not
+        // These might not be in baseStats but added by masteries
+        const statsToAddIfMissing = ['attackSpeedRatio', 'skillAmpRatio', 'increaseBasicAttackDamageRatio', 'preventBasicAttackDamagedRatio', 'preventSkillDamagedRatio', 'moveSpeed'];
+         statsToAddIfMissing.forEach(statKey => {
              if (rawStats[statKey] === undefined) {
                  rawStats[statKey] = 0;
              }
          });
-         if (rawStats.moveSpeed === undefined) rawStats.moveSpeed = character.baseStats.moveSpeed; // Ensure moveSpeed exists
 
 
         // 2. Apply Masteries to rawStats (ratios and moveSpeed)
@@ -208,15 +232,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
         // 3. Calculate finalStats from rawStats (itemStats = 0)
-        const finalStats = { ...rawStats };
+        // Start with a deep copy of rawStats
+        const finalStats = JSON.parse(JSON.stringify(rawStats));
 
         // Special calculations for skillAmp and attackSpeed
         finalStats.skillAmp = rawStats.skillAmp * (1 + rawStats.skillAmpRatio);
         // weaponType.attackSpeed comes from weapon_type_info.json
         finalStats.attackSpeed = (rawStats.attackSpeed + (weaponType ? weaponType.attackSpeed : 0)) * (1 + rawStats.attackSpeedRatio);
 
-        // itemStats are zero, so most finalStats are just rawStats
-        // However, ensure all baseStats are present, even if not in levelUpStats
+        // itemStats are zero, so most finalStats are just rawStats at this point.
+        // Ensure all baseStats are present, even if they weren't in levelUpStats and were 0 in rawStats initially
          Object.keys(character.baseStats).forEach(statKey => {
              if (finalStats[statKey] === undefined) {
                  finalStats[statKey] = character.baseStats[statKey];
@@ -234,37 +259,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Evaluate a mathematical expression string
     // This is a simplified evaluator assuming only basic arithmetic and specific variable names
     function evaluateExpression(expression, context) {
-        if (typeof expression !== 'string') {
-            // If the placeholder value is not a string (e.g., a number directly), return it
+        if (typeof expression !== 'string' || expression.trim() === "") {
+            // If the placeholder value is not a string, is null/undefined, or empty, return it directly
             return expression;
         }
 
         // Define the variables available in the expression context
         // Use explicit names like finalStats.skillAmp, enemyStats.MaxHp etc.
+        // Ensure all potential variables used in expressions are defined here
         const variables = {
             skillLevel: context.skillLevel,
             finalStats: context.finalStats,
             enemyStats: context.enemyStats,
             currentHp: context.currentHp, // Character's current HP (assumed max/2)
-            enemyCurrentHp: context.enemyStats.MaxHp / 2 // Assume enemy current HP is also max/2 for calculations if needed
-             // Add other potential variables like attackPower, defense, etc. directly from finalStats if needed
-             // Or allow accessing them via finalStats.statName
+            enemyCurrentHp: context.enemyStats.MaxHp / 2, // Assume enemy current HP is also max/2 for calculations if needed
+            // Add other potential variables directly from finalStats if needed
+            // e.g., attackPower: context.finalStats.attackPower, defense: context.finalStats.defense, etc.
+            // Accessing via finalStats.statName is supported by Function.
         };
 
         let executableExpression = expression;
 
-        // Basic variable replacement (be careful with variable names that are substrings of others)
-        // This approach is fragile for complex expressions or unexpected variable names
-        // A safer approach would involve tokenizing and parsing the expression tree
-        // But for the specified format, simple replacement *might* work for demonstration
-        // Let's use the Function constructor approach which is safer than eval()
-         const paramNames = Object.keys(variables);
-         const paramValues = Object.values(variables);
-
+        // Basic replacement for percentage strings like "40%" -> 0.4
+        // This assumes percentages are only used as raw values in coef or desc, not within complex expressions
+        // A more robust parser would handle percentages within expressions
          try {
+             if (typeof expression === 'string' && expression.endsWith('%')) {
+                 // Treat simple percentage strings like "40%" as the number 0.4
+                 executableExpression = parseFloat(expression) / 100;
+                 // If it was just a percentage string, return the number directly
+                 if (String(parseFloat(expression) + '%') === expression) {
+                      return executableExpression;
+                 }
+                  // Otherwise, it's a percentage within a larger expression, proceed with Function
+             }
+         } catch (e) {
+             console.warn(`Could not parse potential percentage string: ${expression}`, e);
+             // Continue trying to evaluate as a full expression
+         }
+
+
+        try {
              // Create a function that takes the context variables as arguments and returns the expression result
-             const evaluator = new Function(...paramNames, `"use strict"; return (${executableExpression});`);
-             return evaluator(...paramValues);
+             // The expression string becomes the function body.
+             // Accessing nested properties like finalStats.skillAmp works directly.
+             const evaluator = new Function(...Object.keys(variables), `"use strict"; return (${executableExpression});`);
+             return evaluator(...Object.values(variables));
 
          } catch (e) {
              console.error(`Error evaluating expression: "${expression}" with context`, context, e);
@@ -274,40 +314,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
      // Format skill description text with calculated values
     function formatSkillText(text, placeholderData, calculationContext) {
-        if (!text || !placeholderData) return text;
+        if (typeof text !== 'string' || !placeholderData) return text || ''; // Handle null/undefined text
 
         let formattedText = text;
-        const placeholders = formattedText.match(/\{(\d+)\}/g); // Find all {n} placeholders
+        // --- MODIFICATION 3: Revised placeholder replacement logic ---
+        // Iterate through defined placeholders and replace them in the text.
+        // Sort keys by descending index to replace e.g., {10} before {1}.
+        const placeholderKeys = Object.keys(placeholderData).sort((a, b) => {
+            const indexA = parseInt(a.replace(/[{}]/g, ''), 10);
+            const indexB = parseInt(b.replace(/[{}]/g, ''), 10);
+            return indexB - indexA; // Descending sort
+        });
 
-        if (placeholders) {
-            placeholders.forEach(placeholder => {
-                const index = parseInt(placeholder.replace(/[{}]/g, ''), 10);
-                const placeholderKey = `{${index}}`;
-                const expression = placeholderData[placeholderKey]; // Get the expression string
 
-                if (expression !== undefined) {
-                    const calculatedValue = evaluateExpression(expression, calculationContext);
+        placeholderKeys.forEach(placeholderKey => {
+            const expression = placeholderData[placeholderKey]; // e.g., "{0}" -> "4" or "{1}" -> "finalStats.skillAmp*0.2"
 
-                    // Format the calculated value (e.g., round numbers)
-                    let displayValue;
-                    if (typeof calculatedValue === 'number') {
-                        // Simple rounding for display
-                        displayValue = Math.round(calculatedValue * 100) / 100; // Round to 2 decimal places
-                    } else {
-                        displayValue = calculatedValue; // Display as is if not a number (e.g., ERROR)
-                    }
+             // Only attempt evaluation/replacement if the expression exists and is not null/undefined
+             // Empty string expressions "" might be valid data, so check specifically against undefined/null
+             if (expression !== undefined && expression !== null) {
+                 let displayValue;
 
-                    // Replace the placeholder in the text
-                    // Use a regex with global flag to replace all occurrences
-                    const regex = new RegExp(placeholder.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
-                    formattedText = formattedText.replace(regex, displayValue);
+                 // Check if this placeholderData object is the 'coef' object for the skill
+                 // Need to find the actual skill object using the base skill key from context
+                 const baseSkillKey = calculationContext.skillKeyBase;
+                 const skillForContext = Object.values(calculationContext.character.skills).find(s => s.skillKey.replace(/\d+/g, '') === baseSkillKey);
 
-                } else {
-                    // If placeholder key is not found in data
-                    formattedText = formattedText.replace(placeholder, `[${placeholder} 데이터 없음]`);
-                }
-            });
-        }
+
+                 if (skillForContext && placeholderData === skillForContext.placeholder.coef) {
+                     // If this is coef text, just use the expression value (string or number) as the display value
+                     displayValue = expression;
+                 } else {
+                     // If this is desc text, evaluate the expression
+                     const calculatedValue = evaluateExpression(expression, calculationContext);
+
+                      // Format the calculated value
+                      if (typeof calculatedValue === 'number') {
+                          // Round to 2 decimal places for numbers
+                          displayValue = Math.round(calculatedValue * 100) / 100;
+                      } else {
+                          // Use the raw value or error string
+                          displayValue = calculatedValue;
+                      }
+                 }
+
+
+                // Replace the placeholder in the text globally
+                // Ensure the placeholder key itself is treated as a literal string for replacement
+                const regex = new RegExp(placeholderKey.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+                formattedText = formattedText.replace(regex, displayValue);
+
+            } else if (text.includes(placeholderKey)) {
+                 // If placeholder exists in text but data is missing or empty, replace with a marker
+                 const regex = new RegExp(placeholderKey.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+                 formattedText = formattedText.replace(regex, `[${placeholderKey} 데이터 없음]`);
+            }
+        });
 
         return formattedText;
     }
@@ -329,12 +391,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Display Calculated Stats
         calculatedStatsDiv.innerHTML = '<h3>최종 스탯</h3>';
         if (finalStats) {
+             // --- MODIFICATION 2: Define stats to hide ---
+             const statsToHide = [
+                 'strLearnStartSkill',
+                 'strUsePointLearnStartSkill',
+                 'initExtraPoint',
+                 'maxExtraPoint',
+                 'attackSpeedLimit',
+                 'attackSpeedMin',
+                 'radius', // 충돌 반경
+                 'pathingRadius', // 경로 탐색 반경
+                 'uiHeight', // UI 높이
+                 'initStateDisplayIndex',
+                 // Add any other keys from baseStats/levelUpStats that should be hidden
+             ];
+
             Object.keys(finalStats).forEach(statKey => {
+                 // --- MODIFICATION 2: Skip hidden stats ---
+                 if (statsToHide.includes(statKey)) {
+                     return; // Skip this iteration
+                 }
+
                 let displayValue = finalStats[statKey];
                 // Apply basic formatting/rounding for common stats
                 if (typeof displayValue === 'number') {
-                     // Round percentages, speeds, regens differently? Basic rounding for now.
-                     displayValue = Math.round(displayValue * 100) / 100; // Round to 2 decimal places
+                     // Round to 2 decimal places
+                     displayValue = Math.round(displayValue * 100) / 100;
+                     // Optional: Add percentage sign for ratio stats?
+                     // if (statKey.toLowerCase().includes('ratio') || statKey.toLowerCase().includes('chance')) {
+                     //      displayValue = (displayValue * 100).toFixed(1) + '%'; // Display as percentage
+                     // }
                 }
 
                 // Map internal keys to display names (optional but good for UI)
@@ -348,26 +434,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     criticalStrikeChance: '치명타 확률',
                     hpRegen: '체력 재생',
                     spRegen: 'SP 재생',
-                    attackSpeed: '공격 속도',
-                    attackSpeedRatio: '공격 속도 비율',
-                    increaseBasicAttackDamageRatio: '기본 공격 증폭',
-                    skillAmpRatio: '스킬 증폭 비율',
-                    preventBasicAttackDamagedRatio: '기본 공격 피해 감소',
-                    preventSkillDamagedRatio: '스킬 피해 감소',
+                    attackSpeed: '공격 속도', // This is final calculated AS
+                    attackSpeedRatio: '공격 속도 비율 (합산)', // This is the final ratio
+                    increaseBasicAttackDamageRatio: '기본 공격 증폭 (합산)',
+                    skillAmpRatio: '스킬 증폭 비율 (합산)',
+                    preventBasicAttackDamagedRatio: '기본 공격 피해 감소 (합산)',
+                    preventSkillDamagedRatio: '스킬 피해 감소 (합산)',
                     moveSpeed: '이동 속도',
                     sightRange: '시야 범위',
-                    radius: '충돌 반경',
-                    pathingRadius: '경로 탐색 반경',
-                    uiHeight: 'UI 높이'
-                     // Add more mappings as needed
+                     // Removed radius, pathingRadius, uiHeight etc.
                 };
                  const displayName = statNameMap[statKey] || statKey;
 
-
                 calculatedStatsDiv.innerHTML += `<div><strong>${displayName}:</strong> ${displayValue}</div>`;
             });
-             // Add current HP
-             calculatedStatsDiv.innerHTML += `<div><strong>현재 체력 (가정: 최대체력의 절반):</strong> ${Math.round(currentHp * 100) / 100}</div>`;
+             // --- MODIFICATION 2: Hide current HP display ---
+             // calculatedStatsDiv.innerHTML += `<div><strong>현재 체력 (가정: 최대체력의 절반):</strong> ${Math.round(currentHp * 100) / 100}</div>`;
 
         } else {
             calculatedStatsDiv.innerHTML += '<p>스탯 계산 오류.</p>';
@@ -376,7 +458,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Display Skill Info
         skillInfoDiv.innerHTML = '<h3>스킬 목록</h3>';
         if (character && character.skills) {
-            // Sort skills by key P, Q, W, E, R, then Q2, R2 etc.
+            // Sort skills by code (ascending) or key (P, Q, W, E, R, then Q2, R2 etc.)
+            // Sorting by key family then number is better for display order
             const sortedSkillCodes = Object.keys(character.skills).sort((a, b) => {
                  const skillA = character.skills[a];
                  const skillB = character.skills[b];
@@ -386,13 +469,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                  const indexA = keyOrder.indexOf(keyA);
                  const indexB = keyOrder.indexOf(keyB);
                  if (indexA !== indexB) return indexA - indexB;
-                 return skillA.skillKey.localeCompare(skillB.skillKey); // Secondary sort by full key
+                 // Handle P, Q, W, E, R vs P2, Q2, etc.
+                 const numA = parseInt(skillA.skillKey.substring(1)) || 1; // Get number part, default to 1 for keys like P, Q, R etc.
+                 const numB = parseInt(skillB.skillKey.substring(1)) || 1;
+                 return numA - numB; // Secondary sort by number (Q before Q2)
             });
 
 
             sortedSkillCodes.forEach(skillCode => {
                 const skill = character.skills[skillCode];
-                const skillLevel = skillLevels[skill.skillKey.replace(/\d+/g, '')]; // Get level based on base key (Q level applies to Q, Q2)
+                // Get level based on the base skill key (Q level applies to Q, Q2)
+                 const skillKeyBase = skill.skillKey.replace(/\d+/g, '');
+                const skillLevel = skillLevels[skillKeyBase];
 
                 // Context for skill text calculation
                  const calculationContext = {
@@ -400,11 +488,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                      finalStats: finalStats,
                      enemyStats: enemyStats,
                      currentHp: currentHp, // Character's current HP
-                     enemyCurrentHp: enemyStats.MaxHp / 2 // Enemy current HP (assumed max/2)
+                     enemyCurrentHp: enemyStats.MaxHp / 2, // Enemy current HP (assumed max/2)
+                     skillKeyBase: skillKeyBase, // Pass the base skill key for context
+                     character: character // Pass the character object for context
                      // Add any other context variables needed for expressions here
                  };
 
-
+                 // --- MODIFICATION 3: Pass correct placeholder data and context ---
                 const formattedCoefText = formatSkillText(skill.l10nCoefText, skill.placeholder.coef, calculationContext);
                 const formattedDescText = formatSkillText(skill.l10nDescText, skill.placeholder.desc, calculationContext);
 
@@ -412,8 +502,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 skillInfoDiv.innerHTML += `
                     <div class="skill">
                         <h3>${skill.skillName} (${skill.skillKey})</h3>
-                        <p class="coef-text">${formattedCoefText}</p>
-                        <p class="desc-text">${formattedDescText}</p>
+                        <h4>${skill.l10nCoefText ? '계수 정보 (Coef Text)' : ''}</h4>
+                        <p class="coef-text">${formattedCoefText || '정보 없음'}</p>
+                        <h4>${skill.l10nDescText ? '계산된 정보 (Desc Text)' : ''}</h4>
+                        <p class="desc-text">${formattedDescText || '정보 없음'}</p>
                          ${skill.l10nExpansionTipText ? `<p class="expansion-tip">${skill.l10nExpansionTipText}</p>` : ''}
                     </div>
                 `;
@@ -423,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle character selection change
     function handleCharacterChange() {
-        const inputs = getInputs();
+        const inputs = getInputs(); // Use getInputs to get the character and other current values
         const character = inputs.character;
         if (character) {
             populateWeaponSelect(character);
