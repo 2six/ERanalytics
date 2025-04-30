@@ -301,22 +301,15 @@ layout: none
         position: absolute;
         top: 50%; /* 이미지 세로 중앙에 위치 */
         left: 50%; /* 이미지 가로 중앙에 위치 */
-        /* transform: translate(-50%, -50%); /* 요소 자체 크기의 절반만큼 이동하여 정확히 중앙에 맞춤 */
-        /* --- 수정: transform에 가로 늘리는 scaleX 추가 --- */
         transform: translate(-50%, -50%) scaleX(1.5); /* 예시 배율 1.5, 필요시 조정 */
-        /* --- 수정 끝 --- */
         padding: 0; /* 패딩 제거 */
-        font-size: 1.5em; /* 기호 크기 */
+        font-size: 4em; /* 기호 크기 */
         font-weight: bold;
         line-height: 1; /* 세로 정렬 */
         white-space: nowrap;
-        z-index: 7; /* 다른 오버레이보다 위에 */
+        z-index: 10; /* 다른 오버레이보다 위에 */
         opacity: 0.7; /* 반투명도 */
-        /* --- 추가: 기본 텍스트 색상 투명 (::before 사용 위함) --- */
         color: transparent;
-        /* --- 기존 text-shadow 제거 --- */
-        /* text-shadow: ... */
-        /* --- 추가 끝 --- */
     }
 
     /* --- 추가: ::before를 사용한 그림자 구현 --- */
@@ -330,7 +323,7 @@ layout: none
         text-align: center; /* 중앙 정렬 (필요시) */
         line-height: inherit; /* 부모의 line-height 상속 */
         z-index: -1; /* 뒤로 보내기 */
-        -webkit-text-stroke: 0.03em #000000; /* 검은색 외곽선 (두께 조정) */
+        -webkit-text-stroke: 0.01em #fff; /* 검은색 외곽선 (두께 조정) */
         /* --- 수정: text-stroke 두께를 font-size에 비례하도록 em 단위 사용 --- */
         /* -webkit-text-stroke: 0.3em #000000; // 이전에 rank-change-overlay에 사용된 두꺼운 외곽선 */
         /* ------------------------------------------------------------- */
@@ -340,7 +333,7 @@ layout: none
 
     /* 버프 (⬆) - 빨간색 */
     .patch-change-indicator.is-buff {
-        color: red;
+        color: red;        
     }
 
     /* 너프 (⬇) - 파란색 */
@@ -351,6 +344,7 @@ layout: none
     /* 조정 (⟳) - 주황색 */
     .patch-change-indicator.is-adjusted {
         color: orange; /* 또는 #ffac2b 등 사용된 주황색 */
+        transform: scaleX(1); /* 예시 배율 1.5, 필요시 조정 */
     }
     /* --- 수정 끝 --- */
 
