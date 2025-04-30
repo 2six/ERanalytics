@@ -519,18 +519,42 @@ document.addEventListener('DOMContentLoaded', function () {
               // --- 추가 시작: 패치 변화 오버레이 생성 (체크박스 상태 확인) ---
               let patchChangeOverlayHtml = '';
               if (isPatchIndicatorVisible) { // 패치 표시 체크박스가 켜져 있을 때만 오버레이 생성
-                  // 무기 타입이 붙은 이름 (예: "쌍검 재키") 또는 기본 이름 (예: "재키")으로 검색
-                  const isBuffed = buffedChars.some(name => characterName === name || characterName.endsWith(` ${name}`) || characterName.startsWith(`${name} `) || name === characterName.split(' ')[0]); // 무기타입+이름, 이름+무기타입, 기본 이름 케이스 고려
-                  const isNerfed = nerfedChars.some(name => characterName === name || characterName.endsWith(` ${name}`) || characterName.startsWith(`${name} `) || name === characterName.split(' ')[0]);
-                  const isAdjusted = adjustedChars.some(name => characterName === name || characterName.endsWith(` ${name}`) || characterName.startsWith(`${name} `) || name === characterName.split(' ')[0]);
+                  let indicatorChar = '';
+                  let indicatorClass = '';
+
+                  // 사용자 배열에 정확히 일치하는 이름이 있는지 또는 무기 타입 포함 이름이 있는지 확인
+                  // "재키" -> 단검 재키, 쌍검 재키 등
+                  // "쌍검 재키" -> 쌍검 재키 만 해당
+                  // "리 다이린" -> 글러브 리 다이린, 쌍절곤 리 다이린 해당 (이름이 뒤에 오므로)
+                  // "아야" -> 돌격 소총 아야 해당 (이름이 뒤에 오므로)
+
+                  const baseName = characterName.split(' ').pop(); // 이름에서 무기 타입 제외 (뒤에 오는 이름)
+                  const fullName = characterName; // 무기 타입 포함 전체 이름
+
+                  // buffedChars, nerfedChars, adjustedChars 배열에
+                  // 1) 전체 이름 ("쌍검 재키")이 있는지
+                  // 2) 또는 기본 이름 ("재키")이 있는지 (이 경우 해당 기본 이름을 가진 모든 무기 타입에 적용)
+                  // 순서대로 확인하여 첫 번째 일치하는 타입의 기호만 사용합니다.
+                  const isBuffed = buffedChars.includes(fullName) || buffedChars.includes(baseName);
+                  const isNerfed = nerfedChars.includes(fullName) || nerfedChars.includes(baseName);
+                  const isAdjusted = adjustedChars.includes(fullName) || adjustedChars.includes(baseName);
 
 
                    if (isBuffed) {
-                       patchChangeOverlayHtml = '<div class="patch-change-indicator is-buff">⬆</div>';
+                       indicatorChar = '⬆';
+                       indicatorClass = 'is-buff';
                    } else if (isNerfed) {
-                       patchChangeOverlayHtml = '<div class="patch-change-indicator is-nerf">⬇</div>';
+                       indicatorChar = '⬇';
+                       indicatorClass = 'is-nerf';
                    } else if (isAdjusted) {
-                       patchChangeOverlayHtml = '<div class="patch-change-indicator is-adjusted">⟳</div>';
+                       indicatorChar = '⟳';
+                       indicatorClass = 'is-adjusted';
+                   }
+
+                   if (indicatorChar) { // 표시할 기호가 결정되었으면 오버레이 HTML 생성
+                        // --- 수정: data-text 속성에 기호 문자 추가 ---
+                        patchChangeOverlayHtml = `<div class="patch-change-indicator ${indicatorClass}" data-text="${indicatorChar}">${indicatorChar}</div>`;
+                        // --- 수정 끝 ---
                    }
               }
               // --- 추가 끝
