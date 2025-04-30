@@ -296,6 +296,40 @@ layout: none
     .tier-row:nth-child(5) th:first-child { background-color: rgb(191,255,127); }
     .tier-row:nth-child(6) th:first-child { background-color: rgb(127,255,127); }
     .tier-row:nth-child(7) th:first-child { background-color: rgb(127,255,255); }
+
+    /* 패치 변화 표시 오버레이 */
+    .patch-change-indicator {
+        position: absolute;
+        top: 0; /* 이미지 상단에 위치 */
+        left: 50%; /* 좌우 중앙 정렬을 위해 left 50% */
+        transform: translateX(-50%); /* 중앙 정렬 보정 */
+        padding: 2px 0; /* 상하 패딩 */
+        font-size: 1.2em; /* 기호 크기 */
+        font-weight: bold;
+        line-height: 1; /* 세로 중앙 정렬을 위해 line-height를 1로 설정 */
+        white-space: nowrap;
+        z-index: 7; /* 순위 변화 오버레이 (z-index: 6) 보다 위에 표시 */
+        opacity: 0.7; /* 반투명도 설정 (0.0 투명 ~ 1.0 불투명) */
+        /* 텍스트 외곽선 추가 (가독성 향상) */
+        text-shadow:
+            -1px -1px 0 #000, 1px -1px 0 #000,
+            -1px  1px 0 #000, 1px  1px 0 #000;
+    }
+
+    /* 버프 (⬆) - 빨간색 */
+    .patch-change-indicator.is-buff {
+        color: red;
+    }
+
+    /* 너프 (⬇) - 파란색 */
+    .patch-change-indicator.is-nerf {
+        color: blue; /* 또는 #2e54ff 등 사용된 파란색 */
+    }
+
+    /* 조정 (⟳) - 주황색 */
+    .patch-change-indicator.is-adjusted {
+        color: orange; /* 또는 #ffac2b 등 사용된 주황색 */
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>

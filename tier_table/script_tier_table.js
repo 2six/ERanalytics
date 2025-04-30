@@ -1,3 +1,12 @@
+// script_tier_table.js
+// --- 추가: 패치 변화 표시용 실험체 목록 (사용자께서 직접 편집하세요) ---
+// 각 배열 안에 표시하고 싶은 실험체의 이름을 "실험체이름" 형태로 추가하거나 제거하세요.
+// 예: const buffedChars = ["아야", "현우"];
+const buffedChars = [];
+const nerfedChars = ["카메라 나타폰", "톤파 알렉스", "레이피어 엘레나", "양손검 데비&마를렌", "방망이 루크", "아르카나 샬럿", "채찍 마이", "글러브 니키"];
+const adjustedChars = [];
+// -------------------------------------------------------------
+
 document.addEventListener('DOMContentLoaded', function () {
     const versionSelect = document.getElementById('version-select');
     const tierSelect    = document.getElementById('tier-select');
@@ -158,41 +167,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 변경 시 URL 갱신 + 재렌더 /* 기존 유지 */
         versionSelect.addEventListener('change', () => { /* 기존 유지 */
-            // --- 수정: 비교 모드 여부에 따라 비교 파라미터 삭제 --- /* 기존 유지 */
             // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
-            // if (!compareCheckbox.checked) { // 체크박스가 꺼져있으면 (단일 모드 상태로 변경됐으면) /* 기존 유지 */
-            //      params.delete('version2'); /* 기존 유지 */
-            //      params.delete('tier2'); /* 기존 유지 */
-            //      params.delete('period2'); /* 기존 유지 */
-            //      params.delete('compare'); /* 기존 유지 */
-            // } /* 기존 유지 */
-            // ------------------------------------ /* 기존 유지 */
             setParam('version', versionSelect.value); /* 기존 유지 */
             loadAndRender(); /* 기존 유지 */
         }); /* 기존 유지 */
         tierSelect.addEventListener('change', () => { /* 기존 유지 */
-            // --- 수정: 비교 모드 여부에 따라 비교 파라미터 삭제 --- /* 기존 유지 */
             // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
-            // if (!compareCheckbox.checked) { /* 기존 유지 */
-            //      params.delete('version2'); /* 기존 유지 */
-            //      params.delete('tier2'); /* 기존 유지 */
-            //      params.delete('period2'); /* 기존 유지 */
-            //      params.delete('compare'); /* 기존 유지 */
-            // } /* 기존 유지 */
-            // ------------------------------------ /* 기존 유지 */
             setParam('tier', tierSelect.value); /* 기존 유지 */
             loadAndRender(); /* 기존 유지 */
         }); /* 기존 유지 */
         periodSelect.addEventListener('change', () => { /* 기존 유지 */
-            // --- 수정: 비교 모드 여부에 따라 비교 파라미터 삭제 --- /* 기존 유지 */
             // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
-            // if (!compareCheckbox.checked) { /* 기존 유지 */
-            //      params.delete('version2'); /* 기존 유지 */
-            //      params.delete('tier2'); /* 기존 유지 */
-            //      params.delete('period2'); /* 기존 유지 */
-            //      params.delete('compare'); /* 기존 유지 */
-            // } /* 기존 유지 */
-            // ------------------------------------ /* 기존 유지 */
             setParam('period', periodSelect.value); /* 기존 유지 */
             loadAndRender(); /* 기존 유지 */
         }); /* 기존 유지 */
@@ -431,10 +416,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // ---------------------------------
     }
 
-    // 4) 기간별 데이터 추출 (기존 로컬 함수 삭제됨)
-    // 이 위치에 있던 extractPeriodEntries 함수는 삭제되었습니다.
 
-    // 5) 티어별 테이블 렌더링 (기존 함수 유지하되 툴팁 생성 로직 제거) - 기존 유지
+    // 5) 티어별 테이블 렌더링
     // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
     function displayTierTable(data, isCompareMode) {
         const tierLabels = {
@@ -524,12 +507,21 @@ document.addEventListener('DOMContentLoaded', function () {
              }
 
           } else {
-            entries.forEach((e) => { // i 변수 사용되지 않아 제거
+            entries.forEach((e) => {
               const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
-              // --- 수정: 툴팁 박스 div 생성 코드 제거. 툴팁 내용은 data 속성에 저장 ---
-              // 툴팁 내용은 setupTooltipPositioning 함수에서 동적으로 생성하므로 여기서 HTML을 만들지 않습니다.
-              // const tooltip = `<div class="tooltip-box">${tooltipContent}</div>`; // 이 줄 제거
-              // -------------------------------------------------------------------
+
+              // --- 추가 시작: 패치 변화 오버레이 생성 ---
+              let patchChangeOverlayHtml = '';
+              const characterName = e.실험체;
+
+              if (buffedChars.includes(characterName)) {
+                patchChangeOverlayHtml = '<div class="patch-change-indicator is-buff">⬆</div>';
+              } else if (nerfedChars.includes(characterName)) {
+                patchChangeOverlayHtml = '<div class="patch-change-indicator is-nerf">⬇</div>';
+              } else if (adjustedChars.includes(characterName)) {
+                patchChangeOverlayHtml = '<div class="patch-change-indicator is-adjusted">⟳</div>';
+              }
+              // --- 추가 끝
 
               // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
               let rankChangeOverlayHtml = '';
@@ -568,7 +560,8 @@ document.addEventListener('DOMContentLoaded', function () {
               // 툴팁 내용은 JS에서 데이터를 찾아 동적으로 생성합니다.
               html += `<span class="tooltip-container" data-character-name="${e.실험체}">
                          <img src="/image/tier_table/${imgName}.png" alt="${e.실험체}">
-                         ${rankChangeOverlayHtml}
+                         ${patchChangeOverlayHtml} <!-- 추가: 패치 변화 오버레이 삽입 -->
+                         ${rankChangeOverlayHtml} <!-- 기존: 순위 변화 오버레이 삽입 -->
                        </span>`;
               // -----------------------------------------------------------
             });
@@ -659,8 +652,8 @@ document.addEventListener('DOMContentLoaded', function () {
                      // --- 단일 모드 툴팁 내용 형식 (요청대로) ---
                      // 단일 모드에서는 totalSample 대신 해당 캐릭터의 픽률 값을 사용합니다.
                      const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) : '-';
-                     const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(2) : '-';
-                     const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(2) : '-';
+                     const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(1) : '-';
+                     const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) : '-';
                      tooltipContent = `
                          ${character.실험체}<br>
                          픽률: ${pickRate}%<br>
@@ -805,6 +798,7 @@ document.addEventListener('DOMContentLoaded', function () {
          };
     }
 
+
     // 7) 페이지 특화 헬퍼: 이름→이미지 변환 (기존 함수 유지)
     function convertExperimentNameToImageName(name) {
         if (name==="글러브 리 다이린") return "리다이린-글러브";
@@ -831,6 +825,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const commonExtractPeriodEntries = window.extractPeriodEntries;
     // common.js에 새로 추가된 extractDeltaEntries 함수도 전역에서 접근 가능합니다.
     const commonExtractDeltaEntries = window.extractDeltaEntries;
-    // -------------------------------------------------------------------
+    // ----------------------------------------------------------------------
 
 }); // DOMContentLoaded 끝
