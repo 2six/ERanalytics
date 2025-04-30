@@ -1470,7 +1470,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -2942,7 +2942,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -4230,7 +4230,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -5426,7 +5426,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -7082,7 +7082,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -8462,7 +8462,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -9842,7 +9842,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -10854,7 +10854,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -12602,7 +12602,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -13798,7 +13798,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -14385,7 +14385,7 @@
             "attackPowerByLv": 0,
             "defense": 0,
             "defenseByLv": 0,
-            "skillAmp": 63,
+            "skillAmp": 65,
             "skillAmpByLevel": 0,
             "skillAmpRatio": 0,
             "skillAmpRatioByLevel": 0,
@@ -14937,7 +14937,7 @@
             "attackPowerByLv": 0,
             "defense": 0,
             "defenseByLv": 0,
-            "skillAmp": 77,
+            "skillAmp": 79,
             "skillAmpByLevel": 0,
             "skillAmpRatio": 0,
             "skillAmpRatioByLevel": 0,
@@ -15213,7 +15213,7 @@
             "attackPowerByLv": 0,
             "defense": 0,
             "defenseByLv": 0,
-            "skillAmp": 88,
+            "skillAmp": 90,
             "skillAmpByLevel": 0,
             "skillAmpRatio": 0,
             "skillAmpRatioByLevel": 0,
@@ -15397,7 +15397,7 @@
             "attackPowerByLv": 0,
             "defense": 0,
             "defenseByLv": 0,
-            "skillAmp": 88,
+            "skillAmp": 90,
             "skillAmpByLevel": 0,
             "skillAmpRatio": 0,
             "skillAmpRatioByLevel": 0,
@@ -15546,7 +15546,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -17386,7 +17386,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -18490,7 +18490,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -19901,7 +19901,7 @@
             "consumable": false,
             "isCanMonsterAreaItemDrop": false,
             "manufacturableType": 0,
-            "attackPower": 82,
+            "attackPower": 84,
             "attackPowerByLv": 0,
             "defense": 0,
             "defenseByLv": 0,
@@ -20054,7 +20054,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -20102,7 +20102,7 @@
             "maxSP": 0,
             "spRegenRatio": 0,
             "spRegen": 0,
-            "attackSpeedRatio": 0.45,
+            "attackSpeedRatio": 0.48,
             "attackSpeedRatioByLv": 0,
             "criticalStrikeChance": 0,
             "criticalStrikeDamage": 0,
@@ -21710,7 +21710,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -22906,7 +22906,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -24378,7 +24378,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -25298,7 +25298,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -26862,7 +26862,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -28518,7 +28518,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -29407,7 +29407,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -29683,7 +29683,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -29775,7 +29775,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -29806,7 +29806,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -29867,7 +29867,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -29959,7 +29959,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -31278,7 +31278,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -32474,7 +32474,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -32750,7 +32750,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -33026,7 +33026,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -33302,7 +33302,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -33578,7 +33578,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -33854,7 +33854,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -33946,7 +33946,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34038,7 +34038,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34130,7 +34130,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34222,7 +34222,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34314,7 +34314,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34406,7 +34406,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34498,7 +34498,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34590,7 +34590,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34682,7 +34682,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34774,7 +34774,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34866,7 +34866,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -34958,7 +34958,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35050,7 +35050,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35142,7 +35142,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35234,7 +35234,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35326,7 +35326,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35418,7 +35418,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35510,7 +35510,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35602,7 +35602,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35694,7 +35694,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35786,7 +35786,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35878,7 +35878,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -35970,7 +35970,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36062,7 +36062,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36154,7 +36154,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36246,7 +36246,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36338,7 +36338,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36430,7 +36430,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36522,7 +36522,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36614,7 +36614,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36706,7 +36706,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36798,7 +36798,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36890,7 +36890,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -36982,7 +36982,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37074,7 +37074,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37166,7 +37166,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37258,7 +37258,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37350,7 +37350,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37442,7 +37442,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37534,7 +37534,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37626,7 +37626,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37718,7 +37718,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37779,7 +37779,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -37810,7 +37810,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         },
@@ -37871,7 +37871,7 @@
             "moveSpeed": 0,
             "moveSpeedRatio": 0,
             "moveSpeedOutOfCombat": 0,
-            "sightRange": 1.5,
+            "sightRange": 1,
             "attackRange": 0,
             "increaseBasicAttackDamage": 0,
             "increaseBasicAttackDamageByLv": 0,
@@ -37902,7 +37902,7 @@
             "uniqueLifeSteal": 0,
             "uniqueSkillAmpRatio": 0,
             "restoreItemWhenResurrected": true,
-            "creditValueWhenConvertedToBounty": 45,
+            "creditValueWhenConvertedToBounty": 35,
             "autoDisappear": false,
             "showInItemBook": true
         }
