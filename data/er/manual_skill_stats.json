@@ -3898,7 +3898,7 @@
                 "{9}": "2",
                 "{10}": "skillLevel*50+finalStats.skillAmp*0.5",
                 "{12}": "finalStats.moveSpeed*skillLevel*0.05",
-                "{16}": "0.6"
+                "{16}": "60%"
             }
         },
         "cooldown": [],
