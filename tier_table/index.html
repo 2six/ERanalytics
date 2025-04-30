@@ -300,17 +300,19 @@ layout: none
     /* 패치 변화 표시 오버레이 */
     .patch-change-indicator {
         position: absolute;
-        top: 0; /* 이미지 상단에 위치 */
-        left: 50%; /* 좌우 중앙 정렬을 위해 left 50% */
-        transform: translateX(-50%); /* 중앙 정렬 보정 */
-        padding: 2px 0; /* 상하 패딩 */
-        font-size: 1.2em; /* 기호 크기 */
+        /* --- 수정 시작: 이미지 정 가운데 위치 --- */
+        top: 50%; /* 이미지 세로 중앙에 위치 */
+        left: 50%; /* 이미지 가로 중앙에 위치 */
+        transform: translate(-50%, -50%); /* 요소 자체 크기의 절반만큼 이동하여 정확히 중앙에 맞춤 */
+        /* --- 수정 끝 --- */
+        padding: 0; /* 패딩 제거 (필요시 조정) */
+        font-size: 5em; /* 기호 크기 키움 (필요시 조정) */
         font-weight: bold;
-        line-height: 1; /* 세로 중앙 정렬을 위해 line-height를 1로 설정 */
+        line-height: 1; /* 세로 중앙 정렬 유지에 도움 */
         white-space: nowrap;
-        z-index: 7; /* 순위 변화 오버레이 (z-index: 6) 보다 위에 표시 */
-        opacity: 0.7; /* 반투명도 설정 (0.0 투명 ~ 1.0 불투명) */
-        /* 텍스트 외곽선 추가 (가독성 향상) */
+        z-index: 7; /* 다른 오버레이 (순위 변화: 6) 보다 위에 표시 */
+        opacity: 0.8; /* 반투명도 */
+        /* 텍스트 외곽선 (가독성 향상) */
         text-shadow:
             -1px -1px 0 #000, 1px -1px 0 #000,
             -1px  1px 0 #000, 1px  1px 0 #000;
@@ -361,10 +363,15 @@ layout: none
               </div>
             </div>
           </td>
-          <td class="checkbox-cell"> <!-- 1행 2열: 비교 모드 체크박스 -->
+          <td class="checkbox-cell"> <!-- 1행 2열: 체크박스들 -->
             <label>
-              <input type="checkbox" id="compare-checkbox"> 비교 모드 <!-- ID 유지 -->
+              <input type="checkbox" id="compare-checkbox"> 비교 모드
             </label>
+            <!-- --- 추가 시작: 패치 변화 표시 체크박스 --- -->
+            <label>
+              <input type="checkbox" id="patch-indicator-checkbox"> 패치 표시
+            </label>
+            <!-- --- 추가 끝 --- -->
           </td>
         </tr>
       </table>

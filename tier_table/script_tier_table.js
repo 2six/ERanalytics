@@ -2,26 +2,31 @@
 // --- 추가: 패치 변화 표시용 실험체 목록 (사용자께서 직접 편집하세요) ---
 // 각 배열 안에 표시하고 싶은 실험체의 이름을 "실험체이름" 형태로 추가하거나 제거하세요.
 // 예: const buffedChars = ["아야", "현우"];
-const buffedChars = [];
+// 무기 타입 포함 이름 (예: "쌍검 재키") 또는 실험체 기본 이름 (예: "재키") 모두 지원됩니다.
+const buffedChars = ["투척 자히르", "권총 로지", "권총 제니", "단검 캐시", "아르카나 바냐", "투척 이렘", "쌍절곤 피올로", "망치 일레븐", "권총 아야", "망치 매그너스", "기타 르노어", "창 이슈트반", "암기 시셀라", "글러브 현우", "단검 다니엘", "도끼 아비게일", "석궁 나딘", "투척 아드리아나", "카메라 마르티나", "양손검 히스이", "석궁 칼라", "암기 자히르", "권총 바바라", "방망이 다르코", "활 나딘", "도끼 케네스", "암기 츠바메", "암기 혜진", "저격 아야", "단검 재키", "암기 엠마", "기타 프리야", "기타 하트", "활 혜진", "방망이 가넷", "VF 의수 에키온", "투척 이바", "권총 아이솔", "투척 셀린", "방망이 매그너스", "글러브 알론소", "돌격 소총 헤이즈", "쌍절곤 리 다이린", "아르카나 엠마", "쌍검 캐새", "투척 시셀라", "톤파 현우", "레이피어 키아라"];
 const nerfedChars = ["카메라 나타폰", "톤파 알렉스", "레이피어 엘레나", "양손검 데비&마를렌", "방망이 루크", "아르카나 샬럿", "채찍 마이", "글러브 니키"];
-const adjustedChars = [];
+const adjustedChars = ["단검 쇼우", "양손검 유키", "쌍검 유키", "창 쇼우"];
 // -------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', function () {
+    // DOM 요소
     const versionSelect = document.getElementById('version-select');
     const tierSelect    = document.getElementById('tier-select');
     const periodSelect  = document.getElementById('period-select');
     const table         = document.getElementById('tier-table');
     const container     = document.getElementById('tier-table-container');
 
-    // --- 수정: 비교 모드 관련 DOM 요소 ---
+    // 비교 모드 관련 DOM 요소
     const comparisonControlsDiv = document.getElementById('comparison-controls');
     const versionSelectCompare = document.getElementById('version-select-compare');
     const tierSelectCompare = document.getElementById('tier-select-compare');
     const periodSelectCompare = document.getElementById('period-select-compare');
     const compareModeLabel = document.getElementById('compare-mode-label');
     const compareCheckbox = document.getElementById('compare-checkbox'); // 비교 모드 체크박스 ID 변경
-    // ------------------------------------
+
+    // --- 추가: 패치 변화 표시 체크박스 DOM 요소 ---
+    const patchIndicatorCheckbox = document.getElementById('patch-indicator-checkbox');
+    // -----------------------------------------
 
 
     // URL 파라미터 헬퍼
@@ -43,12 +48,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- 수정: 비교 모드 상태 변수 (초기 로드 시 URL 파라미터로 설정) ---
-    let isCompareMode = params.get('compare') === '1';
-    // ---------------------------------
-
-    // --- 수정: 현재 모드에 따라 body 클래스 추가/제거 (initDropdowns에서 처리) ---
-    // 초기 body 클래스 설정은 initDropdowns 내부로 이동
-    // -------------------------------------------------
+    let isCompareMode = getParam('compare', '0') === '1'; // URL 파라미터로 초기화
+    // --- 추가: 패치 변화 표시 상태 변수 (초기 로드 시 URL 파라미터로 설정) ---
+    let isPatchIndicatorVisible = getParam('patchIndicator', '0') === '1'; // URL 파라미터로 초기화
+    // -------------------------------------------------------------
 
 
     // 1) 설정 로드 & 드롭다운 초기화
@@ -68,155 +71,157 @@ document.addEventListener('DOMContentLoaded', function () {
     // 2) 드롭다운 초기화
     // --- 수정: versionList 인자 추가 ---
     function initDropdowns(versionList) {
-        // 현재 비교 모드 상태에 따라 body 클래스 업데이트 /* 기존 유지 */
-        if (isCompareMode) { /* 기존 유지 */
-            document.body.classList.add('is-compare-mode'); /* 기존 유지 */
-        } else { /* 기존 유지 */
-            document.body.classList.remove('is-compare-mode'); /* 기존 유지 */
-        } /* 기존 유지 */
+        // 현재 비교 모드 상태에 따라 body 클래스 업데이트
+        if (isCompareMode) {
+            document.body.classList.add('is-compare-mode');
+        } else {
+            document.body.classList.remove('is-compare-mode');
+        }
 
+        // 버전
+        versionSelect.innerHTML = '';
+        versionList.sort().reverse().forEach(v => {
+            versionSelect.insertAdjacentHTML(
+              'beforeend',
+              `<option value="${v}">${v}</option>`
+            );
+        });
+        // 티어
+        const tierMap = {
+            platinum_plus: "플래티넘+",
+            diamond_plus:  "다이아몬드+",
+            meteorite_plus:"메테오라이트+",
+            mithril_plus:  "미스릴+",
+            in1000:        "in1000"
+        };
+        tierSelect.innerHTML = '';
+        Object.entries(tierMap).forEach(([key,name]) => {
+            tierSelect.insertAdjacentHTML(
+              'beforeend',
+              `<option value="${key}">${name}</option>`
+            );
+        });
+        // 구간
+        periodSelect.innerHTML = `
+          <option value="latest">전체</option>
+          <option value="3day">최근 3일</option>
+          <option value="7day">최근 7일</option>
+        `;
 
-        // 버전 /* 기존 유지 */
-        versionSelect.innerHTML = ''; /* 기존 유지 */
-        versionList.sort().reverse().forEach(v => { /* 기존 유지 */
-            versionSelect.insertAdjacentHTML( /* 기존 유지 */
-              'beforeend', /* 기존 유지 */
-              `<option value="${v}">${v}</option>` /* 기존 유지 */
-            ); /* 기존 유지 */
-        }); /* 기존 유지 */
-        // 티어 /* 기존 유지 */
-        const tierMap = { /* 기존 유지 */
-            platinum_plus: "플래티넘+", /* 기존 유지 */
-            diamond_plus:  "다이아몬드+", /* 기존 유지 */
-            meteorite_plus:"메테오라이트+", /* 기존 유지 */
-            mithril_plus:  "미스릴+", /* 기존 유지 */
-            in1000:        "in1000" /* 기존 유지 */
-        }; /* 기존 유지 */
-        tierSelect.innerHTML = ''; /* 기존 유지 */
-        Object.entries(tierMap).forEach(([key,name]) => { /* 기존 유지 */
-            tierSelect.insertAdjacentHTML( /* 기존 유지 */
-              'beforeend', /* 기존 유지 */
-              `<option value="${key}">${name}</option>` /* 기존 유지 */
-            ); /* 기존 유지 */
-        }); /* 기존 유지 */
-        // 구간 /* 기존 유지 */
-        periodSelect.innerHTML = ` /* 기존 유지 */
-          <option value="latest">전체</option> /* 기존 유지 */
-          <option value="3day">최근 3일</option> /* 기존 유지 */
-          <option value="7day">최근 7일</option> /* 기존 유지 */
-        `; /* 기존 유지 */
+        // --- 수정: 비교 드롭다운 및 UI 초기화 ---
+        // 비교 모드 체크박스 초기 상태 설정
+        compareCheckbox.checked = isCompareMode;
 
-        // --- 수정: 비교 드롭다운 및 UI 초기화 --- /* 기존 유지 */
-        // 비교 모드 체크박스 초기 상태 설정 /* 기존 유지 */
-        compareCheckbox.checked = isCompareMode; /* 기존 유지 */
+        if (isCompareMode) {
+             // 비교 드롭다운도 채우기
+             versionSelectCompare.innerHTML = ''; // Clear before populating
+             versionList.sort().reverse().forEach(v => {
+                 versionSelectCompare.insertAdjacentHTML(
+                   'beforeend',
+                   `<option value="${v}">${v}</option>`
+                 );
+             });
+             tierSelectCompare.innerHTML = ''; // Clear before populating
+             Object.entries(tierMap).forEach(([key,name]) => {
+                 tierSelectCompare.insertAdjacentHTML(
+                   'beforeend',
+                   `<option value="${key}">${name}</option>`
+                 );
+             });
+             periodSelectCompare.innerHTML = `
+               <option value="latest">전체</option>
+               <option value="3day">최근 3일</option>
+               <option value="7day">최근 7일</option>
+             `;
 
-        if (isCompareMode) { /* 기존 유지 */
-             // 비교 드롭다운도 채우기 /* 기존 유지 */
-             versionSelectCompare.innerHTML = ''; // Clear before populating /* 기존 유지 */
-             versionList.sort().reverse().forEach(v => { /* 기존 유지 */
-                 versionSelectCompare.insertAdjacentHTML( /* 기존 유지 */
-                   'beforeend', /* 기존 유지 */
-                   `<option value="${v}">${v}</option>` /* 기존 유지 */
-                 ); /* 기존 유지 */
-             }); /* 기존 유지 */
-             tierSelectCompare.innerHTML = ''; // Clear before populating /* 기존 유지 */
-             Object.entries(tierMap).forEach(([key,name]) => { /* 기존 유지 */
-                 tierSelectCompare.insertAdjacentHTML( /* 기존 유지 */
-                   'beforeend', /* 기존 유지 */
-                   `<option value="${key}">${name}</option>` /* 기존 유지 */
-                 ); /* 기존 유지 */
-             }); /* 기존 유지 */
-             periodSelectCompare.innerHTML = ` /* 기존 유지 */
-               <option value="latest">전체</option> /* 기존 유지 */
-               <option value="3day">최근 3일</option> /* 기존 유지 */
-               <option value="7day">최근 7일</option> /* 기존 유지 */
-             `; /* 기존 유지 */
-
-             // 비교 모드 UI 표시 /* 기존 유지 */
-             // --- 수정 제안: display 값을 'table-row'에서 'flex'로 변경 ---
+             // 비교 모드 UI 표시
              comparisonControlsDiv.style.display = 'flex'; // 'table-row' 대신 'flex' 사용
-             // ----------------------------------------------------
-             compareModeLabel.style.display = 'inline'; /* 기존 유지 */
+             compareModeLabel.style.display = 'inline';
+        } else {
+             // 단일 모드 UI 숨김
+             comparisonControlsDiv.style.display = 'none';
+             compareModeLabel.style.display = 'none';
+        }
+        // ------------------------------------
 
-             // 색상 강조 체크박스 관련 로직 제거 /* 기존 유지 */
+        // --- 추가 시작: 패치 표시 체크박스 초기 상태 설정 및 이벤트 리스너 ---
+        patchIndicatorCheckbox.checked = isPatchIndicatorVisible;
 
-        } else { /* 기존 유지 */
-             // 단일 모드 UI 숨김 /* 기존 유지 */
-             comparisonControlsDiv.style.display = 'none'; /* 기존 유지 */
-             compareModeLabel.style.display = 'none'; /* 기존 유지 */
+        // 패치 표시 체크박스 변경 시 URL 갱신 및 재렌더
+        patchIndicatorCheckbox.addEventListener('change', () => {
+            isPatchIndicatorVisible = patchIndicatorCheckbox.checked; // 상태 업데이트
+            setParam('patchIndicator', isPatchIndicatorVisible ? '1' : '0'); // URL 업데이트
+            // UI 변경만 필요한 경우 (표시/숨김)에는 데이터 재로드 없이 display 함수만 호출 가능
+            // 하지만 오버레이 추가/제거 로직이 render 함수 안에 있으므로 재렌더링이 간편
+            loadAndRender(); // 데이터 재로드 및 재렌더링
+        });
+        // --- 추가 끝 ---
 
-             // 색상 강조 체크박스 관련 로직 제거 /* 기존 유지 */
-        } /* 기존 유지 */
-        // ------------------------------------ /* 기존 유지 */
 
-
-        // URL → 드롭다운 값 복원 /* 기존 유지 */
+        // URL → 드롭다운 값 복원
         // versionList가 역순으로 정렬되어 있으므로 versionList[0]은 가장 최신 버전
-        versionSelect.value = getParam('version', versionList[0]); /* 기존 유지 */
-        tierSelect.value    = getParam('tier',    'diamond_plus'); /* 기존 유지 */
-        periodSelect.value  = getParam('period',  'latest'); /* 기존 유지 */
+        versionSelect.value = getParam('version', versionList[0]);
+        tierSelect.value    = getParam('tier',    'diamond_plus');
+        periodSelect.value  = getParam('period',  'latest');
 
-        // --- 추가: 비교 드롭다운 URL 값 복원 --- /* 기존 유지 */
-        if (isCompareMode) { /* 기존 유지 */
-             versionSelectCompare.value = getParam('version2', versionList[0]); /* 기존 유지 */
-             tierSelectCompare.value    = getParam('tier2',    'diamond_plus'); /* 기존 유지 */
-             periodSelectCompare.value  = getParam('period2',  'latest'); /* 기존 유지 */
-        } /* 기존 유지 */
-        // ------------------------------------ /* 기존 유지 */
+        // --- 추가: 비교 드롭다운 URL 값 복원 ---
+        if (isCompareMode) {
+             versionSelectCompare.value = getParam('version2', versionList[0]);
+             tierSelectCompare.value    = getParam('tier2',    'diamond_plus');
+             periodSelectCompare.value  = getParam('period2',  'latest');
+        }
+        // ------------------------------------
 
 
-        // 변경 시 URL 갱신 + 재렌더 /* 기존 유지 */
-        versionSelect.addEventListener('change', () => { /* 기존 유지 */
-            // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
-            setParam('version', versionSelect.value); /* 기존 유지 */
-            loadAndRender(); /* 기존 유지 */
-        }); /* 기존 유지 */
-        tierSelect.addEventListener('change', () => { /* 기존 유지 */
-            // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
-            setParam('tier', tierSelect.value); /* 기존 유지 */
-            loadAndRender(); /* 기존 유지 */
-        }); /* 기존 유지 */
-        periodSelect.addEventListener('change', () => { /* 기존 유지 */
-            // 이 로직은 compareCheckbox change 이벤트 리스너로 옮겨졌으므로 여기서는 삭제
-            setParam('period', periodSelect.value); /* 기존 유지 */
-            loadAndRender(); /* 기존 유지 */
-        }); /* 기존 유지 */
+        // 변경 시 URL 갱신 + 재렌더
+        versionSelect.addEventListener('change', () => {
+            setParam('version', versionSelect.value);
+            loadAndRender();
+        });
+        tierSelect.addEventListener('change', () => {
+            setParam('tier', tierSelect.value);
+            loadAndRender();
+        });
+        periodSelect.addEventListener('change', () => {
+            setParam('period', periodSelect.value);
+            loadAndRender();
+        });
 
-        // --- 추가: 비교 드롭다운 변경 이벤트 리스너 --- /* 기존 유지 */
+        // --- 추가: 비교 드롭다운 변경 이벤트 리스너 ---
         // 비교 모드 체크박스 상태와 상관없이 리스너는 항상 부착합니다.
         // loadAndRender 내부에서 isCompareMode에 따라 로직이 분기됩니다.
-        versionSelectCompare.addEventListener('change', () => { /* 기존 유지 */
-            setParam('version2', versionSelectCompare.value); /* 기존 유지 */
-            loadAndRender(); /* 기존 유지 */
-        }); /* 기존 유지 */
-        tierSelectCompare.addEventListener('change', () => { /* 기존 유지 */
-            setParam('tier2', tierSelectCompare.value); /* 기존 유지 */
-            loadAndRender(); /* 기존 유지 */
-        }); /* 기존 유지 */
-        periodSelectCompare.addEventListener('change', () => { /* 기존 유지 */
-            setParam('period2', periodSelectCompare.value); /* 기존 유지 */
-            loadAndRender(); /* 기존 유지 */
-        }); /* 기존 유지 */
-        // ---------------------------------------------------- /* 기존 유지 */
+        versionSelectCompare.addEventListener('change', () => {
+            setParam('version2', versionSelectCompare.value);
+            loadAndRender();
+        });
+        tierSelectCompare.addEventListener('change', () => {
+            setParam('tier2', tierSelectCompare.value);
+            loadAndRender();
+        });
+        periodSelectCompare.addEventListener('change', () => {
+            setParam('period2', periodSelectCompare.value);
+            loadAndRender();
+        });
+        // ----------------------------------------------------
 
-        // --- 추가: 비교 모드 체크박스 이벤트 리스너 --- /* 기존 유지 */
-        compareCheckbox.addEventListener('change', () => { /* 기존 유지 */
-             isCompareMode = compareCheckbox.checked; // 상태 업데이트 /* 기존 유지 */
-             setParam('compare', isCompareMode ? '1' : '0'); // URL 업데이트 /* 기존 유지 */
+        // --- 추가: 비교 모드 체크박스 이벤트 리스너 ---
+        compareCheckbox.addEventListener('change', () => {
+             isCompareMode = compareCheckbox.checked; // 상태 업데이트
+             setParam('compare', isCompareMode ? '1' : '0'); // URL 업데이트
 
-             // 비교 모드가 꺼지면 비교 관련 파라미터 삭제 /* 기존 유지 */
-             if (!isCompareMode) { /* 기존 유지 */
-                 params.delete('version2'); /* 기존 유지 */
-                 params.delete('tier2'); /* 기존 유지 */
-                 params.delete('period2'); /* 기존 유지 */
-             } /* 기존 유지 */
-             history.replaceState(null, '', '?' + params.toString()); // URL 바로 반영 /* 기존 유지 */
+             // 비교 모드가 꺼지면 비교 관련 파라미터 삭제
+             if (!isCompareMode) {
+                 params.delete('version2');
+                 params.delete('tier2');
+                 params.delete('period2');
+             }
+             history.replaceState(null, '', '?' + params.toString()); // URL 바로 반영
 
-             // UI 다시 초기화 및 데이터 재로드 /* 기존 유지 */
-             initDropdowns(versionList); // 비교 드롭다운 표시/숨김, body 클래스 등 업데이트 /* 기존 유지 */
-             loadAndRender(); // 데이터 재로드 /* 기존 유지 */
-        }); /* 기존 유지 */
-        // --------------------------------------------- /* 기존 유지 */
+             // UI 다시 초기화 및 데이터 재로드
+             initDropdowns(versionList); // 비교 드롭다운 표시/숨김, body 클래스 등 업데이트
+             loadAndRender(); // 데이터 재로드
+        });
+        // ---------------------------------------------
     }
 
     // 3) 데이터 로드 & 렌더
@@ -509,17 +514,24 @@ document.addEventListener('DOMContentLoaded', function () {
           } else {
             entries.forEach((e) => {
               const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
+              const characterName = e.실험체; // 데이터의 정확한 실험체 이름
 
-              // --- 추가 시작: 패치 변화 오버레이 생성 ---
+              // --- 추가 시작: 패치 변화 오버레이 생성 (체크박스 상태 확인) ---
               let patchChangeOverlayHtml = '';
-              const characterName = e.실험체;
+              if (isPatchIndicatorVisible) { // 패치 표시 체크박스가 켜져 있을 때만 오버레이 생성
+                  // 무기 타입이 붙은 이름 (예: "쌍검 재키") 또는 기본 이름 (예: "재키")으로 검색
+                  const isBuffed = buffedChars.some(name => characterName === name || characterName.endsWith(` ${name}`) || characterName.startsWith(`${name} `) || name === characterName.split(' ')[0]); // 무기타입+이름, 이름+무기타입, 기본 이름 케이스 고려
+                  const isNerfed = nerfedChars.some(name => characterName === name || characterName.endsWith(` ${name}`) || characterName.startsWith(`${name} `) || name === characterName.split(' ')[0]);
+                  const isAdjusted = adjustedChars.some(name => characterName === name || characterName.endsWith(` ${name}`) || characterName.startsWith(`${name} `) || name === characterName.split(' ')[0]);
 
-              if (buffedChars.includes(characterName)) {
-                patchChangeOverlayHtml = '<div class="patch-change-indicator is-buff">⬆</div>';
-              } else if (nerfedChars.includes(characterName)) {
-                patchChangeOverlayHtml = '<div class="patch-change-indicator is-nerf">⬇</div>';
-              } else if (adjustedChars.includes(characterName)) {
-                patchChangeOverlayHtml = '<div class="patch-change-indicator is-adjusted">⟳</div>';
+
+                   if (isBuffed) {
+                       patchChangeOverlayHtml = '<div class="patch-change-indicator is-buff">⬆</div>';
+                   } else if (isNerfed) {
+                       patchChangeOverlayHtml = '<div class="patch-change-indicator is-nerf">⬇</div>';
+                   } else if (isAdjusted) {
+                       patchChangeOverlayHtml = '<div class="patch-change-indicator is-adjusted">⟳</div>';
+                   }
               }
               // --- 추가 끝
 
@@ -532,7 +544,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
                    if (typeof rankChangeValue === 'number') {
                         const absChange = Math.abs(rankChangeValue);
-                        // --- 수정 시작: 순위 변화값 부호에 따른 ▲/▼ 기호 및 클래스 변경 ---
                         if (rankChangeValue < 0) { // 순위 숫자가 감소 (좋아짐): ▲
                             rankChangeText = `▲${absChange}`;
                             rankChangeClass = 'rank-change-down'; // 순위 번호는 내려감
@@ -543,7 +554,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             rankChangeText = `=`;
                             rankChangeClass = 'rank-change-same';
                         }
-                        // --- 수정 끝
                    } else { // 문자열 ('신규 → ', '→ 삭제', '-')
                         if (rankChangeValue === '신규 → ') { rankChangeText = '신규'; rankChangeClass = 'rank-change-up'; }
                         else if (rankChangeValue === '→ 삭제') { rankChangeText = '삭제'; rankChangeClass = 'rank-change-down'; }
@@ -558,8 +568,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
               // --- 수정: 툴팁 컨테이너에 data-character-name 속성만 추가 ---
               // 툴팁 내용은 JS에서 데이터를 찾아 동적으로 생성합니다.
-              html += `<span class="tooltip-container" data-character-name="${e.실험체}">
-                         <img src="/image/tier_table/${imgName}.png" alt="${e.실험체}">
+              html += `<span class="tooltip-container" data-character-name="${characterName}">
+                         <img src="/image/tier_table/${imgName}.png" alt="${characterName}">
                          ${patchChangeOverlayHtml} <!-- 추가: 패치 변화 오버레이 삽입 -->
                          ${rankChangeOverlayHtml} <!-- 기존: 순위 변화 오버레이 삽입 -->
                        </span>`;
