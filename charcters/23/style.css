@@ -1,0 +1,111 @@
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.input-section, .output-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.input-section {
+    flex: 1;
+    min-width: 300px;
+}
+
+.output-section {
+    flex: 2;
+    min-width: 400px;
+}
+
+h1, h2 {
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-group input[type="number"],
+.input-group select {
+    width: calc(100% - 22px); /* Adjust for padding and border */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.skill-levels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.skill-levels .input-group {
+    margin-bottom: 0;
+}
+
+#calculated-stats div {
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: #e9e9e9;
+    border-radius: 4px;
+}
+
+#skill-info .skill {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#skill-info .skill h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+#skill-info .skill p {
+    margin-bottom: 8px;
+    word-break: break-word; /* Prevent long text overflow */
+}
+
+#skill-info .skill .coef-text {
+    font-size: 0.9em;
+    color: #555;
+    white-space: pre-wrap; /* Preserve newlines */
+}
+
+#skill-info .skill .desc-text {
+     white-space: pre-wrap; /* Preserve newlines */
+}
+
+/* Basic colors for demonstration, based on common in-game colors */
+/* Note: This is a basic interpretation of <color> tags */
+#skill-info .skill .desc-text color[style*="color:#DDA0DD"] { color: #DDA0DD; } /* Skill Amp */
+#skill-info .skill .desc-text color[style*="color:#688A08"] { color: #688A08; } /* Max HP / Enemy Current HP etc */
+#skill-info .skill .desc-text color[style*="color:#ffff00"] { color: #ffff00; } /* Pain stacks etc. */
+#skill-info .skill .desc-text color[style*="color:white"] { color: white; } /* White text */
+#skill-info .skill .desc-text color[style*="color:green"] { color: green; } /* Passive/持續 효과 */

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이터널 리턴 스탯/스킬 계산기</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>이터널 리턴 스탯/스킬 계산기</h1>
+
+    <div class="container">
+        <div class="input-section">
+            <h2>캐릭터 및 레벨 설정</h2>
+            <div class="input-group">
+                <label for="character-select">캐릭터:</label>
+                <select id="character-select"></select>
+            </div>
+            <div class="input-group">
+                <label for="char-level">캐릭터 레벨:</label>
+                <input type="number" id="char-level" value="1" min="1" max="20">
+            </div>
+
+            <h2>숙련도 설정</h2>
+            <div class="input-group">
+                <label for="weapon-select">무기 종류:</label>
+                <select id="weapon-select"></select>
+            </div>
+             <div class="input-group">
+                <label for="weapon-mastery-level">무기 숙련도 레벨:</label>
+                <input type="number" id="weapon-mastery-level" value="1" min="1">
+            </div>
+            <div class="input-group">
+                <label for="defense-mastery-level">방어 숙련도 레벨:</label>
+                <input type="number" id="defense-mastery-level" value="1" min="1" max="20">
+            </div>
+            <div class="input-group">
+                <label for="move-mastery-level">이동 숙련도 레벨:</label>
+                <input type="number" id="move-mastery-level" value="1" min="1" max="20">
+            </div>
+
+            <h2>스킬 레벨 설정</h2>
+            <div class="skill-levels" id="skill-level-inputs">
+                <!-- Skill level inputs will be generated here -->
+            </div>
+
+             <h2>적 캐릭터 설정 (스킬 계산용)</h2>
+            <div class="input-group">
+                <label for="enemy-max-hp">적 최대 체력:</label>
+                <input type="number" id="enemy-max-hp" value="1000" min="1">
+            </div>
+            <div class="input-group">
+                <label for="enemy-defense">적 방어력:</label>
+                <input type="number" id="enemy-defense" value="50" min="0">
+            </div>
+            <div class="input-group">
+                <label for="enemy-defense-mastery">적 방어 숙련도 레벨:</label>
+                <input type="number" id="enemy-defense-mastery" value="1" min="1" max="20">
+            </div>
+
+        </div>
+
+        <div class="output-section">
+            <h2>계산된 스탯</h2>
+            <div id="calculated-stats">
+                <!-- Calculated stats will be displayed here -->
+            </div>
+
+            <h2>스킬 정보</h2>
+            <div id="skill-info">
+                 <!-- Skill info will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
