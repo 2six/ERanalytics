@@ -3898,7 +3898,7 @@
                 "{9}": "2",
                 "{10}": "skillLevel*50+finalStats.skillAmp*0.5",
                 "{12}": "finalStats.moveSpeed*skillLevel*0.05",
-                "{16}": "0.6"
+                "{16}": "60%"
             }
         },
         "cooldown": [],
@@ -4065,11 +4065,11 @@
             },
             "desc": {
                 "{0}": "5%",
-                "{1}": "15+skillLevel*75+skillAmp*0.65",
-                "{2}": "30+skillLevel*150+skillAmp*1.3",
+                "{1}": "15+skillLevel*75+finalStats.skillAmp*0.65",
+                "{2}": "30+skillLevel*150+finalStats.skillAmp*1.3",
                 "{10}": "4",
                 "{11}": "4",
-                "{14}": "skillAmp*0.04"
+                "{14}": "finalStats.skillAmp*0.04"
             }
         },
         "cooldown": [
@@ -7285,20 +7285,24 @@
         "l10nExpansionTipText": "",
         "placeholder": {
             "coef": {
-                "{0}": "",
-                "{3}": "",
-                "{4}": "",
-                "{5}": "",
-                "{6}": ""
+                "{0}": "15/25/35%",
+                "{3}": "50/100/150",
+                "{4}": "70%",
+                "{5}": "3",
+                "{6}": "3"
             },
             "desc": {
-                "{0}": "",
-                "{2}": "",
-                "{3}": "",
-                "{4}": ""
+                "{0}": "finalStats.attackSpeed*(0.05+skillLevel*0.1)",
+                "{2}": "3",
+                "{3}": "skillLevel*50+attackPower*0.7",
+                "{4}": "3"
             }
         },
-        "cooldown": [],
+        "cooldown": [
+            20,
+            18,
+            16
+        ],
         "costType": "",
         "cost": [],
         "range": []
