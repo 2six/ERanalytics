@@ -116,7 +116,6 @@ document.addEventListener('DOMContentLoaded', function () {
                          픽률: ${pr2} → ${pr1}<br>
                          RP 획득: ${rp2} → ${rp1}<br>
                          승률: ${win2} → ${win1}<br>
-                         점수: ${score2} → ${score1}
                      `;
                      // ----------------------------------------
                 } else {
@@ -133,7 +132,6 @@ document.addEventListener('DOMContentLoaded', function () {
                          픽률: ${pickRate}%<br>
                          RP: ${rp}<br>
                          승률: ${winRate}%<br>
-                         점수: ${score}
                      `;
                      // ---------------------------------------
                 }
