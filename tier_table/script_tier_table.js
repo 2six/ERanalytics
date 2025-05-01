@@ -106,25 +106,34 @@ document.addEventListener('DOMContentLoaded', function () {
                      const rp2 = character['RP 획득 (Ver2)'] !== null && character['RP 획득 (Ver2)'] !== undefined ? (character['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
                      const win1 = character['승률 (Ver1)'] !== null && character['승률 (Ver1)'] !== undefined ? ((character['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
                      const win2 = character['승률 (Ver2)'] !== null && character['승률 (Ver2)'] !== undefined ? ((character['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                     // --- 비교 모드 툴팁 내용 형식 (요청대로) ---
+                     // --- 추가 시작: 비교 모드 점수 정보 ---
+                     const score1 = character['점수 (Ver1)'] !== null && character['점수 (Ver1)'] !== undefined ? (character['점수 (Ver1)'] || 0).toFixed(2) : '-';
+                     const score2 = character['점수 (Ver2)'] !== null && character['점수 (Ver2)'] !== undefined ? (character['점수 (Ver2)'] || 0).toFixed(2) : '-';
+                     // --- 추가 끝
+                     // --- 비교 모드 툴팁 내용 형식 (요청대로 + 점수 추가) ---
                      tooltipContent = `
                          ${character.실험체}<br>
                          픽률: ${pr2} → ${pr1}<br>
                          RP 획득: ${rp2} → ${rp1}<br>
-                         승률: ${win2} → ${win1}
+                         승률: ${win2} → ${win1}<br>
+                         점수: ${score2} → ${score1}
                      `;
                      // ----------------------------------------
                 } else {
-                     // --- 단일 모드 툴팁 내용 형식 (요청대로) ---
+                     // --- 단일 모드 툴팁 내용 형식 (요청대로 + 점수 추가) ---
                      // 단일 모드에서는 totalSample 대신 해당 캐릭터의 픽률 값을 사용합니다.
                      const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) : '-';
                      const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(1) : '-';
                      const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) : '-';
+                      // --- 추가 시작: 단일 모드 점수 정보 ---
+                     const score = character['점수'] !== null && character['점수'] !== undefined ? (character['점수'] || 0).toFixed(2) : '-';
+                     // --- 추가 끝
                      tooltipContent = `
                          ${character.실험체}<br>
                          픽률: ${pickRate}%<br>
                          RP: ${rp}<br>
-                         승률: ${winRate}%
+                         승률: ${winRate}%<br>
+                         점수: ${score}
                      `;
                      // ---------------------------------------
                 }
