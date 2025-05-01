@@ -227,91 +227,82 @@ document.addEventListener('DOMContentLoaded', function () {
 // 3) 데이터 로드 & 렌더
     function loadAndRender() {
         // --- 수정: currentIsCompareMode 업데이트 ---
+        // 이 변수는 툴팁 위치 계산 함수에서 사용되므로, loadAndRender 시작 시의 실제 모드를 반영
         currentIsCompareMode = isCompareMode;
         // -----------------------------------------
 
-        // --- 수정 시작: 데이터 1/데이터 2 조건 동일 시 단일 모드 로직 실행 ---
         const version1 = versionSelect.value;
         const tier1 = tierSelect.value;
         const period1 = periodSelect.value;
-        const version2 = versionSelectCompare.value;
+        const version2 = versionSelectCompare.value; // 비교 드롭다운은 isCompareMode와 무관하게 접근 가능
         const tier2 = tierSelectCompare.value;
         const period2 = periodSelectCompare.value;
 
-        // 비교 모드가 켜져 있고, 데이터 1과 데이터 2의 조건이 모두 동일한 경우
+        // --- 수정 시작: 비교 모드가 켜져 있고 데이터 1/데이터 2 조건이 동일 시 단일 모드 로직 실행 ---
+        // 조건: 비교 모드 && 데이터 1과 데이터 2의 (버전, 티어, 기간) 선택이 모두 동일한 경우
         if (isCompareMode && version1 === version2 && tier1 === tier2 && period1 === period2) {
-             console.log("데이터 1과 데이터 2 조건 동일. 단일 모드 로직으로 처리.");
-             // 이 경우, isCompareMode 플래그를 잠시 false로 변경하고 단일 모드 로직을 실행
-             // 로직 실행 후 원래 isCompareMode 상태로 복원 (loadAndRender 함수 내에서만 영향)
-             const originalIsCompareMode = isCompareMode;
-             isCompareMode = false; // 단일 모드 로직을 타도록 변경
+            console.log("티어 테이블: 비교 모드이나 데이터 1과 데이터 2 조건 동일. 단일 모드 로직으로 처리.");
 
-             // 단일 모드 데이터 로딩 및 렌더링 로직을 여기에 복사하거나,
-             // 함수 호출을 통해 처리 (함수 분리 시)
-             // 여기서는 해당 로직을 그대로 inline으로 복사하여 처리합니다.
-             dataContainer.innerHTML = '데이터 로딩 중...'; // 단일 모드 로딩 메시지
+            // 데이터 로드 로직 (데이터 1 조건으로 단일 데이터 로드)
+            dataContainer.innerHTML = '데이터 로딩 중...';
 
-             // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
-             fetch(`/stats/${version1}/${tier1}.json`) // 데이터 1 (최신) 조건으로 로드
-             // >>> 수정 끝
-                 .then(res => {
-                     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                     return res.json();
-                 })
-                 .then(json => {
-                     const history = json['통계'];
-                     let entries;
+            // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+            fetch(`/stats/${version1}/${tier1}.json`)
+            // >>> 수정 끝
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(json => {
+                    const history = json['통계'];
+                    let entries;
 
-                     // 단일 모드 기간 처리 (latest는 스냅샷, 3day/7day는 델타)
-                     if (period1 === 'latest') {
-                          entries = commonExtractPeriodEntries(history, period1);
-                     } else {
-                          entries = commonExtractDeltaEntries(history, period1);
-                     }
+                    // 단일 모드 기간 처리 (latest는 스냅샷, 3day/7day는 델타)
+                    if (period1 === 'latest') { // 데이터 1의 period 사용
+                        entries = commonExtractPeriodEntries(history, period1);
+                    } else {
+                        entries = commonExtractDeltaEntries(history, period1);
+                    }
 
-                     const avgScore = calculateAverageScore(entries);
-                     const stddev = calculateStandardDeviation(entries, avgScore);
-                     const scored = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                    const avgScore = calculateAverageScore(entries);
+                    const stddev = calculateStandardDeviation(entries, avgScore);
+                    const scored = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
 
-                     currentCharacterData = scored; // 단일 모드 데이터로 업데이트
+                    currentCharacterData = scored; // 단일 모드 데이터로 업데이트
 
-                     if (entries.length === 0) {
-                         let message = '데이터가 없습니다.';
-                         if (period1 !== 'latest') {
-                              message = '선택한 기간에 해당하는 데이터가 부족합니다.';
-                         }
-                          table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`;
-                          currentCharacterData = []; // 데이터 비어있음
-                     } else {
-                        // displayTierTable 호출 시 isCompareMode=false 전달하여 단일 모드 렌더링
+                    if (entries.length === 0) {
+                        let message = '데이터가 없습니다.';
+                        if (period1 !== 'latest') {
+                            message = '선택한 기간에 해당하는 데이터가 부족합니다.';
+                        }
+                        table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
+                        currentCharacterData = []; // 데이터 비어있음
+                    } else {
+                        // displayTierTable 호출 시 isCompareMode=false 전달하여 단일 모드 렌더링 및 정렬 적용
                         displayTierTable(scored, false);
-                     }
+                    }
 
-                     setupTablePopup(); // 팝업 설정
-                     setupTooltipPositioning(currentCharacterData, false); // 단일 모드 툴팁 위치 설정
+                    setupTablePopup(); // 팝업 설정
+                    // 툴팁 위치 설정 시에도 isCompareMode=false 전달하여 단일 모드 툴팁 형식 적용
+                    setupTooltipPositioning(currentCharacterData, false);
 
-                 })
-                 .catch(err => {
-                     console.error('데이터 로드 실패:', err);
-                     table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>';
-                     currentCharacterData = []; // 데이터 비어있음
-                     setupTablePopup(); // 에러 시에도 팝업 설정
-                     setupTooltipPositioning(currentCharacterData, false); // 에러 시에도 툴팁 위치 설정
-                 })
-                 .finally(() => {
-                      isCompareMode = originalIsCompareMode; // 함수 끝날 때 원래 상태로 복원 (비동기 처리 완료 후)
-                      // 사실 loadAndRender는 새로운 데이터 로드 전에 항상 호출되므로 복원이 필수적이진 않지만,
-                      // 로직 상의 명확성을 위해 유지합니다.
-                 });
+                })
+                .catch(err => {
+                    console.error('데이터 로드 실패:', err);
+                    table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                    currentCharacterData = []; // 데이터 비어있음
+                    setupTablePopup(); // 에러 시에도 팝업 설정
+                    setupTooltipPositioning(currentCharacterData, false); // 에러 시에도 툴팁 위치 설정
+                });
 
-             return; // 동일 조건 처리 완료 후 비교 모드 로직 진입 방지
+            return; // 동일 조건 처리 완료 후 비교 모드 로직 진입 방지
         }
         // --- 수정 끝 ---
 
 
-        // --- 비교 모드 로직 (조건이 동일하지 않은 경우에만 실행) ---
+        // --- 비교 모드 로직 (isCompareMode === true 이고 조건이 동일하지 않은 경우에만 실행) ---
         if (isCompareMode) {
-            dataContainer.innerHTML = '비교 데이터 로딩 중...'; // 비교 모드 로딩 메시스
+            dataContainer.innerHTML = '비교 데이터 로딩 중...';
 
             // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
             const url1 = `/stats/${version1}/${tier1}.json`; // 데이터 1 조건
@@ -330,13 +321,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ])
             .then(([json1, json2]) => {
                 if (!json1 && !json2) {
-                     table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                     // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                     currentCharacterData = []; // 데이터 비어있음
-                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                     // -------------------------------------------------
-                     setupTablePopup(); // 팝업 설정
-                     return;
+                    table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                    currentCharacterData = []; // 데이터 비어있음
+                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달 (currentIsCompareMode는 이 경우 true)
+                    setupTablePopup(); // 팝업 설정
+                    return;
                 }
 
                 const history1 = json1 ? json1['통계'] : {};
@@ -353,12 +342,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 기간에 따라 common.js의 함수 호출 (데이터 2)
                 if (period2 === 'latest') {
-                     entries2 = commonExtractPeriodEntries(history2, period2);
+                    entries2 = commonExtractPeriodEntries(history2, period2);
                 } else {
-                     entries2 = commonExtractDeltaEntries(history2, period2);
+                    entries2 = commonExtractDeltaEntries(history2, period2);
                 }
 
                 // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
+                // calculateTiers는 common.js의 함수를 사용합니다.
+                // entries1/entries2가 델타 데이터인 경우, calculateTiers는 해당 델타 데이터의 특성을 반영한 점수/티어를 계산합니다.
                 const avgScore1 = calculateAverageScore(entries1);
                 const stddev1 = calculateStandardDeviation(entries1, avgScore1);
                 const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal);
@@ -370,16 +361,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 두 데이터셋 병합 및 차이 계산 (common.js 함수 사용)
                 const comparisonData = mergeDataForComparison(scored1, scored2);
-                // --- 수정: currentCharacterData 업데이트 ---
                 currentCharacterData = comparisonData;
-                // -----------------------------------------
 
                 // 병합 결과가 없으면 표시할 데이터가 없는 것임
                 if (comparisonData.length === 0) {
                     table.innerHTML = '<tr><td colspan="15">선택한 조건에 해당하는 비교 데이터가 없습니다.</td></tr>'; // colspan 조정 필요
-                    // --- 수정: 데이터 없을 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                    // -------------------------------------------------
+                    currentCharacterData = [];
+                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달 (currentIsCompareMode는 이 경우 true)
                     setupTablePopup(); // 팝업 설정
                     return;
                 }
@@ -387,33 +375,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 // displayTierTable에 병합된 데이터와 비교 모드 플래그 전달
                 displayTierTable(comparisonData, isCompareMode); // isCompareMode는 true 상태
                 setupTablePopup(); // 팝업 설정
-                // --- 추가: 툴팁 위치 설정 함수 호출 (데이터를 인자로 전달) ---
-                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 데이터와 모드를 인자로 전달
-                // --------------------------------------------------
+                // 툴팁 위치 설정 시에도 currentIsCompareMode 전달 (이 경우 true)
+                setupTooltipPositioning(currentCharacterData, currentIsCompareMode);
 
             })
             .catch(err => {
                 console.error('비교 데이터 처리 실패:', err);
                 table.innerHTML = `<tr><td colspan="15">데이터 처리 중 오류가 발생했습니다: ${err.message}</td></tr>`; // colspan 조정 필요
-                 // --- 수정: 에러 발생 시 툴팁 위치 설정 호출 (빈 데이터 전달) ---
-                currentCharacterData = []; // 데이터 비어있음
-                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달
-                // -------------------------------------------------
-                setupTablePopup(); // 팝업 설정
+                currentCharacterData = [];
+                setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 에러 시에도 툴팁 위치 설정 (currentIsCompareMode는 이 경우 true)
+                setupTablePopup(); // 에러 시에도 팝업 설정
             });
 
         } else {
-            // --- 기존 단일 모드 로직 ---
-            // 이 블록은 isCompareMode가 false일 때만 실행됩니다.
-            // 위 동일 조건 체크에서 isCompareMode를 false로 변경하여 이 블록으로 분기시키는 방식은 아님.
-            // 로직의 가독성과 유지보수를 위해 동일 조건일 때의 처리를 위에 inline으로 복사했습니다.
-            // 따라서 이 'else' 블록은 isCompareMode === false 인 원래 단일 모드 요청 시에만 실행됩니다.
+            // --- 원래 단일 모드 로직 (isCompareMode === false) ---
 
             const version = versionSelect.value;
             const tier    = tierSelect.value;
             const period  = periodSelect.value;
 
-            dataContainer.innerHTML = '데이터 로딩 중...'; // 단일 모드 로딩 메시지
+            dataContainer.innerHTML = '데이터 로딩 중...';
 
             // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
             fetch(`/stats/${version}/${tier}.json`)
@@ -428,9 +409,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // 기간에 따라 common.js의 함수 호출
                     if (period === 'latest') {
-                         entries = commonExtractPeriodEntries(history, period); // 스냅샷
+                        entries = commonExtractPeriodEntries(history, period); // 스냅샷
                     } else {
-                         entries = commonExtractDeltaEntries(history, period); // 델타
+                        entries = commonExtractDeltaEntries(history, period); // 델타
                     }
 
                     const avgScore = calculateAverageScore(entries);
@@ -440,31 +421,31 @@ document.addEventListener('DOMContentLoaded', function () {
                     currentCharacterData = scored;
 
                     if (entries.length === 0) { // 기간에 해당하는 데이터가 아예 없는 경우
-                         let message = '데이터가 없습니다.';
-                         if (period !== 'latest') {
-                              message = '선택한 기간에 해당하는 데이터가 부족합니다.';
-                         }
-                         table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`;
-                         currentCharacterData = [];
+                        let message = '데이터가 없습니다.';
+                        if (period !== 'latest') {
+                            message = '선택한 기간에 해당하는 데이터가 부족합니다.';
+                        }
+                        table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
+                        currentCharacterData = [];
                     } else {
+                        // displayTierTable 호출 시 isCompareMode=false 전달 (단일 모드)
                         displayTierTable(scored, isCompareMode); // isCompareMode는 false 상태
                     }
 
                     setupTablePopup(); // 팝업 설정
-                    setupTooltipPositioning(currentCharacterData, isCompareMode); // 툴팁 위치 설정
+                    // 툴팁 위치 설정 시에도 isCompareMode 전달 (이 경우 false)
+                    setupTooltipPositioning(currentCharacterData, isCompareMode);
 
                 })
                 .catch(err => {
                     console.error('데이터 로드 실패:', err);
-                    table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>';
+                    table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
                     currentCharacterData = [];
                     setupTablePopup(); // 에러 시에도 팝업 설정
                     setupTooltipPositioning(currentCharacterData, isCompareMode); // 에러 시에도 툴팁 위치 설정
                 });
         }
-        // ---------------------------------
     }
-
 
     // 5) 티어별 테이블 렌더링
     // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
