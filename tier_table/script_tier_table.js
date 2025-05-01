@@ -445,8 +445,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }, {});
         // --- 수정 끝
 
+        // --- 추가 시작: 데이터 그룹화 전에 전체 데이터를 정렬 ---
+        // 단일 모드: '점수' 기준 내림차순
+        // 비교 모드: '점수 (Ver1)' 기준 내림차순
+        const sortKeyForOverall = isCompareMode ? '점수 (Ver1)' : '점수';
+        // sortData 함수는 common.js에 정의되어 있습니다.
+        // sortData(데이터 배열, 정렬 기준 컬럼명, 오름차순 여부, 모드)
+        // 내림차순 정렬 (false), 모드는 isCompareMode에 따라 'value1' 또는 'value' 사용
+        const sortedDataOverall = sortData([...data], sortKeyForOverall, false, isCompareMode ? 'value1' : 'value');
+        // --- 추가 끝
+
+
         // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
-        data.forEach(item => {
+        // 기존 data.forEach 대신 정렬된 sortedDataOverall.forEach 사용
+        sortedDataOverall.forEach(item => { // <--- 이 부분을 수정합니다.
             // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
             // 단일 모드일 때는 '티어' 기준으로 그룹화
             const itemTier = isCompareMode ? item['티어 (Ver1)'] : item.티어;
@@ -495,8 +507,10 @@ document.addEventListener('DOMContentLoaded', function () {
           // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
           // 비교 모드일 때는 '점수 (Ver1)' 기준으로 정렬
           // 단일 모드일 때는 '점수' 기준으로 정렬
-          const sortKey = isCompareMode ? '점수 (Ver1)' : '점수';
-          const sortMode = isCompareMode ? 'value1' : 'value'; // 비교 모드일 때는 value1 모드로 정렬
+          // NOTE: 이미 그룹화 전에 전체를 정렬했기 때문에 이 단계에서의 정렬은 불필요하지만,
+          //       기존 로직을 유지하기 위해 남겨둡니다. 실제 순서는 전체 정렬에 의해 결정됩니다.
+          const sortKey = isCompareMode ? '점수 (Ver1)' : '점수'; // 정렬 키는 동일하게 설정
+          const sortMode = isCompareMode ? 'value1' : 'value'; // 정렬 모드도 동일하게 설정
           const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
           // -----------------------------
 
@@ -619,165 +633,6 @@ document.addEventListener('DOMContentLoaded', function () {
         table.innerHTML = html; // 유지
 
         // --- 색상 강조 적용 로직 제거 (기존 유지) ---
-    }
-
-// --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 ---
-    // 이 함수는 테이블이 렌더링된 후에 호출되며, 로드된 데이터와 비교 모드 상태를 인자로 받습니다.
-    function setupTooltipPositioning(characterData, isCompareMode) {
-        // 단 하나의 툴팁 요소를 관리합니다.
-        let tooltipBox = document.getElementById('global-tooltip-box');
-        if (!tooltipBox) {
-            tooltipBox = document.createElement('div');
-            tooltipBox.id = 'global-tooltip-box';
-            tooltipBox.className = 'tooltip-box'; // 기존 CSS 스타일 재활용
-            document.body.appendChild(tooltipBox);
-        }
-
-        // 툴팁 내용을 동적으로 찾기 위한 데이터 맵 생성
-        // characterData가 빈 배열일 수도 있습니다.
-        const characterDataMap = new Map((characterData || []).map(item => [item['실험체'], item]));
-
-        // data-character-name 속성이 있는 컨테이너만 선택 (placeholder 제외)
-        const tooltipContainers = table.querySelectorAll('.tooltip-container[data-character-name]');
-
-        tooltipContainers.forEach(container => {
-             // 기존 mouseover/mouseout 이벤트 리스너 제거 (중복 부착 방지)
-             const oldMouseoverHandler = container._mouseoverHandler;
-             const oldMouseoutHandler = container._mouseoutHandler;
-             if (oldMouseoverHandler) {
-                 container.removeEventListener('mouseover', oldMouseoverHandler);
-             }
-             if (oldMouseoutHandler) {
-                 container.removeEventListener('mouseout', oldMouseoutHandler);
-             }
-
-
-            // 마우스 이벤트 리스너를 추가합니다.
-            const mouseoverHandler = () => {
-                const characterName = container.dataset.characterName;
-                const character = characterDataMap.get(characterName); // 캐릭터 데이터 찾기
-
-                if (!character) {
-                    // 데이터가 없으면 툴팁 표시 안함
-                    tooltipBox.style.visibility = 'hidden';
-                    tooltipBox.style.opacity = '0';
-                    return;
-                }
-
-                // 툴팁 내용 동적 생성 (단일/비교 모드에 따라 다르게)
-                let tooltipContent;
-                if (isCompareMode) {
-                     // 비교 모드 툴팁 내용 형식 (요청대로: 값2 → 값1)
-                     const pr1 = character['픽률 (Ver1)'] !== null && character['픽률 (Ver1)'] !== undefined ? (character['픽률 (Ver1)'] || 0).toFixed(2) + '%' : '-';
-                     const pr2 = character['픽률 (Ver2)'] !== null && character['픽률 (Ver2)'] !== undefined ? (character['픽률 (Ver2)'] || 0).toFixed(2) + '%' : '-';
-                     const rp1 = character['RP 획득 (Ver1)'] !== null && character['RP 획득 (Ver1)'] !== undefined ? (character['RP 획득 (Ver1)'] || 0).toFixed(1) : '-';
-                     const rp2 = character['RP 획득 (Ver2)'] !== null && character['RP 획득 (Ver2)'] !== undefined ? (character['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
-                     const win1 = character['승률 (Ver1)'] !== null && character['승률 (Ver1)'] !== undefined ? ((character['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
-                     const win2 = character['승률 (Ver2)'] !== null && character['승률 (Ver2)'] !== undefined ? ((character['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                     // --- 비교 모드 툴팁 내용 형식 (요청대로) ---
-                     tooltipContent = `
-                         ${character.실험체}<br>
-                         픽률: ${pr2} → ${pr1}<br>
-                         RP 획득: ${rp2} → ${rp1}<br>
-                         승률: ${win2} → ${win1}
-                     `;
-                     // ----------------------------------------
-                } else {
-                     // --- 단일 모드 툴팁 내용 형식 (요청대로) ---
-                     // 단일 모드에서는 totalSample 대신 해당 캐릭터의 픽률 값을 사용합니다.
-                     const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) : '-';
-                     const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(1) : '-';
-                     const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) : '-';
-                     tooltipContent = `
-                         ${character.실험체}<br>
-                         픽률: ${pickRate}%<br>
-                         RP: ${rp}<br>
-                         승률: ${winRate}%
-                     `;
-                     // ---------------------------------------
-                }
-
-                tooltipBox.innerHTML = tooltipContent; // 툴팁 내용 설정
-
-                // 툴팁을 보이게 하여 정확한 크기 계산 가능하도록 함
-                tooltipBox.style.visibility = 'visible';
-                tooltipBox.style.opacity = '1';
-                // position: fixed; z-index: 9999; 는 CSS에 정의되어 있습니다.
-
-                const containerRect = container.getBoundingClientRect();
-                // 툴팁의 크기를 계산하기 위해 잠시 위치를 조정할 필요 없음 (CSS에 이미 fixed로 되어 있으므로)
-                // 다만 내용이 업데이트 되었으니 크기 정보는 다시 가져와야 함
-                const tooltipRect = tooltipBox.getBoundingClientRect(); // 툴팁의 현재 크기 및 뷰포트 위치 가져옴
-
-
-                // 툴팁이 이미지 위에 나타나도록 위치 계산 (position: fixed 기준)
-                // 툴팁 하단이 컨테이너 상단에서 5px 위로 떨어지도록 계산
-                // --- 수정 시작: window.scrollY 및 window.scrollX 제거 ---
-                const desiredTooltipTop = containerRect.top - tooltipRect.height - 5;
-                // 툴팁 중앙이 컨테이너 중앙에 오도록 위치 계산
-                const desiredTooltipLeft = containerRect.left + containerRect.width / 2 - tooltipRect.width / 2;
-                // --- 수정 끝 ---
-
-
-                // 계산된 위치를 툴팁 요소의 인라인 스타일로 적용
-                tooltipBox.style.top = `${desiredTooltipTop}px`;
-                tooltipBox.style.left = `${desiredTooltipLeft}px`;
-
-                // 기존 CSS에서 bottom, right, transform은 제거했으므로 여기서 설정하지 않아도 됩니다.
-                tooltipBox.style.bottom = 'auto';
-                tooltipBox.style.right = 'auto';
-                tooltipBox.style.transform = 'none'; // translateX(-50%) 무시
-
-                // 툴팁이 뷰포트 좌우 경계를 벗어나지 않도록 조정 (선택 사항)
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight; // 상단 경계 조정을 위해 필요
-
-                // 좌측 경계 조정
-                // 뷰포트 왼쪽 경계 (window.scrollX는 필요 없음, fixed는 뷰포트 기준)
-                if (parseFloat(tooltipBox.style.left) < 5) { // 뷰포트 좌측에서 5px 이내로 붙으면
-                    tooltipBox.style.left = `5px`;
-                     tooltipBox.style.transform = 'none'; // 재계산 시 transform 해제
-                }
-                // 우측 경계 조정
-                if (parseFloat(tooltipBox.style.left) + tooltipRect.width > viewportWidth - 5) { // 뷰포트 우측에서 5px 이내로 붙으면
-                    tooltipBox.style.left = `${viewportWidth - tooltipRect.width - 5}px`;
-                     tooltipBox.style.transform = 'none'; // 재계산 시 transform 해제
-                }
-                 // 상단 경계 조정 (툴팁이 뷰포트 맨 위에 붙는 경우 방지)
-                 // 뷰포트 상단 경계 (window.scrollY는 필요 없음)
-                 if (parseFloat(tooltipBox.style.top) < 5) {
-                      tooltipBox.style.top = `5px`;
-                 }
-
-            };
-
-            const mouseoutHandler = () => {
-                // 툴팁 숨김
-                tooltipBox.style.opacity = '0';
-                // CSS transition 시간(0.3s) 후에 완전히 숨기도록 visibility를 변경합니다.
-                tooltipBox.addEventListener('transitionend', function handler() {
-                     if (tooltipBox.style.opacity === '0') {
-                          tooltipBox.style.visibility = 'hidden';
-                          // 이벤트 리스너 제거 (once: true 옵션 사용)
-                     }
-                }, { once: true }); // once: true 옵션을 사용하여 한 번만 실행 후 자동 제거
-
-                 // 마우스 아웃 시 동적으로 설정된 위치 스타일을 제거하여 다음 마우스 오버 시 정확히 다시 계산되도록 합니다.
-                 // CSS에 설정된 기본값 (position: fixed, z-index: 9999)은 유지됩니다.
-                 tooltipBox.style.top = '';
-                 tooltipBox.style.left = '';
-                 tooltipBox.style.bottom = ''; // 기본값 auto
-                 tooltipBox.style.right = '';   // 기본값 auto
-                 tooltipBox.style.transform = ''; // 기본값 none
-            };
-
-            container.addEventListener('mouseover', mouseoverHandler);
-            container.addEventListener('mouseout', mouseoutHandler);
-
-             // 나중에 제거할 수 있도록 이벤트 리스너 참조 저장
-             container._mouseoverHandler = mouseoverHandler;
-             container._mouseoutHandler = mouseoutHandler;
-        });
     }
     // -----------------------------------------------------
 
