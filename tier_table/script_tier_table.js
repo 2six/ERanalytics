@@ -241,61 +241,61 @@ document.addEventListener('DOMContentLoaded', function () {
         // --- 수정 시작: 비교 모드가 켜져 있고 데이터 1/데이터 2 조건이 동일 시 단일 모드 로직 실행 ---
         // 조건: 비교 모드 && 데이터 1과 데이터 2의 (버전, 티어, 기간) 선택이 모두 동일한 경우
         if (isCompareMode && version1 === version2 && tier1 === tier2 && period1 === period2) {
-            console.log("티어 테이블: 비교 모드이나 데이터 1과 데이터 2 조건 동일. 단일 모드 로직으로 처리.");
+             console.log("티어 테이블: 비교 모드이나 데이터 1과 데이터 2 조건 동일. 단일 모드 로직으로 처리.");
 
-            // 데이터 로드 로직 (데이터 1 조건으로 단일 데이터 로드)
-            dataContainer.innerHTML = '데이터 로딩 중...';
+             // 데이터 로드 로직 (데이터 1 조건으로 단일 데이터 로드)
+             dataContainer.innerHTML = '데이터 로딩 중...';
 
-            // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
-            fetch(`/stats/${version1}/${tier1}.json`)
-            // >>> 수정 끝
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                    return res.json();
-                })
-                .then(json => {
-                    const history = json['통계'];
-                    let entries;
+             // >>> 수정 시작: '/data/' 폴더를 '/stats/' 폴더로 변경
+             fetch(`/stats/${version1}/${tier1}.json`)
+             // >>> 수정 끝
+                 .then(res => {
+                     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                     return res.json();
+                 })
+                 .then(json => {
+                     const history = json['통계'];
+                     let entries;
 
-                    // 단일 모드 기간 처리 (latest는 스냅샷, 3day/7day는 델타)
-                    if (period1 === 'latest') { // 데이터 1의 period 사용
-                        entries = commonExtractPeriodEntries(history, period1);
-                    } else {
-                        entries = commonExtractDeltaEntries(history, period1);
-                    }
+                     // 단일 모드 기간 처리 (latest는 스냅샷, 3day/7day는 델타)
+                     if (period1 === 'latest') { // 데이터 1의 period 사용
+                          entries = commonExtractPeriodEntries(history, period1);
+                     } else {
+                          entries = commonExtractDeltaEntries(history, period1);
+                     }
 
-                    const avgScore = calculateAverageScore(entries);
-                    const stddev = calculateStandardDeviation(entries, avgScore);
-                    const scored = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                     const avgScore = calculateAverageScore(entries);
+                     const stddev = calculateStandardDeviation(entries, avgScore);
+                     const scored = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
 
-                    currentCharacterData = scored; // 단일 모드 데이터로 업데이트
+                     currentCharacterData = scored; // 단일 모드 데이터로 업데이트
 
-                    if (entries.length === 0) {
-                        let message = '데이터가 없습니다.';
-                        if (period1 !== 'latest') {
-                            message = '선택한 기간에 해당하는 데이터가 부족합니다.';
-                        }
-                        table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
-                        currentCharacterData = []; // 데이터 비어있음
-                    } else {
+                     if (entries.length === 0) {
+                         let message = '데이터가 없습니다.';
+                         if (period1 !== 'latest') {
+                              message = '선택한 기간에 해당하는 데이터가 부족합니다.';
+                         }
+                          table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
+                          currentCharacterData = []; // 데이터 비어있음
+                     } else {
                         // displayTierTable 호출 시 isCompareMode=false 전달하여 단일 모드 렌더링 및 정렬 적용
                         displayTierTable(scored, false);
-                    }
+                     }
 
-                    setupTablePopup(); // 팝업 설정
-                    // 툴팁 위치 설정 시에도 isCompareMode=false 전달하여 단일 모드 툴팁 형식 적용
-                    setupTooltipPositioning(currentCharacterData, false);
+                     setupTablePopup(); // 팝업 설정
+                     // 툴팁 위치 설정 시에도 isCompareMode=false 전달하여 단일 모드 툴팁 형식 적용
+                     setupTooltipPositioning(currentCharacterData, false);
 
-                })
-                .catch(err => {
-                    console.error('데이터 로드 실패:', err);
-                    table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                    currentCharacterData = []; // 데이터 비어있음
-                    setupTablePopup(); // 에러 시에도 팝업 설정
-                    setupTooltipPositioning(currentCharacterData, false); // 에러 시에도 툴팁 위치 설정
-                });
+                 })
+                 .catch(err => {
+                     console.error('데이터 로드 실패:', err);
+                     table.innerHTML = '<tr><td colspan="15">데이터를 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                     currentCharacterData = []; // 데이터 비어있음
+                     setupTablePopup(); // 에러 시에도 팝업 설정
+                     setupTooltipPositioning(currentCharacterData, false); // 에러 시에도 툴팁 위치 설정
+                 });
 
-            return; // 동일 조건 처리 완료 후 비교 모드 로직 진입 방지
+             return; // 동일 조건 처리 완료 후 비교 모드 로직 진입 방지
         }
         // --- 수정 끝 ---
 
@@ -321,11 +321,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ])
             .then(([json1, json2]) => {
                 if (!json1 && !json2) {
-                    table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
-                    currentCharacterData = []; // 데이터 비어있음
-                    setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달 (currentIsCompareMode는 이 경우 true)
-                    setupTablePopup(); // 팝업 설정
-                    return;
+                     table.innerHTML = '<tr><td colspan="15">두 데이터 모두 불러오는 데 실패했습니다.</td></tr>'; // colspan 조정 필요
+                     currentCharacterData = []; // 데이터 비어있음
+                     setupTooltipPositioning(currentCharacterData, currentIsCompareMode); // 빈 데이터 전달 (currentIsCompareMode는 이 경우 true)
+                     setupTablePopup(); // 팝업 설정
+                     return;
                 }
 
                 const history1 = json1 ? json1['통계'] : {};
@@ -342,9 +342,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 기간에 따라 common.js의 함수 호출 (데이터 2)
                 if (period2 === 'latest') {
-                    entries2 = commonExtractPeriodEntries(history2, period2);
+                     entries2 = commonExtractPeriodEntries(history2, period2);
                 } else {
-                    entries2 = commonExtractDeltaEntries(history2, period2);
+                     entries2 = commonExtractDeltaEntries(history2, period2);
                 }
 
                 // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
@@ -409,9 +409,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // 기간에 따라 common.js의 함수 호출
                     if (period === 'latest') {
-                        entries = commonExtractPeriodEntries(history, period); // 스냅샷
+                         entries = commonExtractPeriodEntries(history, period); // 스냅샷
                     } else {
-                        entries = commonExtractDeltaEntries(history, period); // 델타
+                         entries = commonExtractDeltaEntries(history, period); // 델타
                     }
 
                     const avgScore = calculateAverageScore(entries);
@@ -421,12 +421,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     currentCharacterData = scored;
 
                     if (entries.length === 0) { // 기간에 해당하는 데이터가 아예 없는 경우
-                        let message = '데이터가 없습니다.';
-                        if (period !== 'latest') {
-                            message = '선택한 기간에 해당하는 데이터가 부족합니다.';
-                        }
-                        table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
-                        currentCharacterData = [];
+                         let message = '데이터가 없습니다.';
+                         if (period !== 'latest') {
+                              message = '선택한 기간에 해당하는 데이터가 부족합니다.';
+                         }
+                         table.innerHTML = `<tr><td colspan="15">${message}</td></tr>`; // colspan 조정 필요
+                         currentCharacterData = [];
                     } else {
                         // displayTierTable 호출 시 isCompareMode=false 전달 (단일 모드)
                         displayTierTable(scored, isCompareMode); // isCompareMode는 false 상태
@@ -449,202 +449,205 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 5) 티어별 테이블 렌더링
     // --- 수정: isCompareMode 인자 추가 및 비교 모드 처리 로직 추가 ---
-    function displayTierTable(data, isCompareMode) {
-        const tierLabels = {
-          platinum_plus:  "플래티넘+",
-          diamond_plus:   "다이아몬드+",
-          meteorite_plus: "메테오라이트+",
-          mithril_plus:  "미스릴+",
-          in1000:         "in1000"
-        };
-
-        const versionLabel = versionSelect.value;
-        const tierLabel    = tierLabels[tierSelect.value];
-
-        const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
-        // --- 수정 시작: groups 변수 초기화 오류 수정 ---
-        // reduce 함수의 초기값으로 빈 객체 {}를 전달합니다.
-        const groups = tiers.reduce((o, t) => {
-            o[t] = [];
-            return o;
-        }, {});
-        // --- 수정 끝
-
-        // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
-        data.forEach(item => {
-            // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
-            // 단일 모드일 때는 '티어' 기준으로 그룹화
-            const itemTier = isCompareMode ? item['티어 (Ver1)'] : item.티어;
-            // 단일 모드 또는 비교 모드에서 Ver1 티어가 유효한 경우에만 그룹에 추가
-            // Ver1에 없는 캐릭터 (신규)는 티어 테이블에 표시되지 않음 (기존 동작 유지)
-            if (itemTier && groups[itemTier]) { // itemTier가 null이거나 undefined인 경우 방지
-                 groups[itemTier].push(item);
-            }
-        });
-        // ----------------------------------------------------
-
-        // --- 수정: totalSample 계산 (단일 모드에서만 사용) - 이 계산은 displayTierTable에서 직접 사용되지 않으므로 유지 ---
-        // 단일 모드: 현재 데이터의 표본수 합계
-        // 비교 모드: 픽률은 개별 픽률 사용, 총 표본수는 필요 없음.
-        const totalSample = isCompareMode
-            ? 0 // 비교 모드에서는 총 표본수 합계 사용하지 않음
-            : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0);
-        // ---------------------------------------------
-
-        const perRow      = 15;
-        let html = '';
-
-        tiers.forEach(tier => {
-          // 시작 태그: <tr><th>...
-          html += `<tr class="tier-row tier-${tier}"><th>${tier}</th>`;
-
-          // <td> 시작(첫 행이면 position:relative)
-          if (tier === 'S+') {
-            html += `<td style="position: relative;"><div class="tier-info" style="
-                         position: absolute;
-                         top: 4px;
-                         right: 4px;
-                         padding: 2px 6px;
-                         background: rgba(255,255,255,0.8);
-                         border-radius: 4px;
-                         font-size: 0.85em;
-                         font-weight: bold;
-                         white-space: nowrap;
-                      ">${versionLabel} | ${tierLabel}</div><div>`; // white-space: nowrap 추가
-          } else {
-            html += `<td><div>`;
-          }
-
-          // 슬롯들 렌더링
-          // --- 수정: sortData 함수 사용 (비교 모드 고려) ---
-          // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
-          // 비교 모드일 때는 '점수 (Ver1)' 기준으로 정렬
-          // 단일 모드일 때는 '점수' 기준으로 정렬
-          const sortKey = isCompareMode ? '점수 (Ver1)' : '점수';
-          const sortMode = isCompareMode ? 'value1' : 'value'; // 비교 모드일 때는 value1 모드로 정렬
-          const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
-          // -----------------------------
-
-          if (entries.length === 0) {
-            // 빈 슬롯 표시 (기존 이미지 사용)
-            // 15개 모두 채워서 레이아웃 유지
-             for (let i = 0; i < perRow; i++) {
-                // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 (기존 유지) ---
-                html += `<span class="tooltip-container">
-                           <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
-                         </span>`;
-                // ---------------------------------------------------------------------
-             }
-
-          } else {
-            entries.forEach((e) => {
-              const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
-              const characterName = e.실험체; // 데이터의 정확한 실험체 이름
-
-              // --- 추가 시작: 패치 변화 오버레이 생성 (체크박스 상태 확인) ---
-              let patchChangeOverlayHtml = '';
-              if (isPatchIndicatorVisible) { // 패치 표시 체크박스가 켜져 있을 때만 오버레이 생성
-                  let indicatorChar = '';
-                  let indicatorClass = '';
-
-                  // 사용자 배열에 정확히 일치하는 이름이 있는지 또는 무기 타입 포함 이름이 있는지 확인
-                  // "재키" -> 단검 재키, 쌍검 재키 등
-                  // "쌍검 재키" -> 쌍검 재키 만 해당
-                  // "리 다이린" -> 글러브 리 다이린, 쌍절곤 리 다이린 해당 (이름이 뒤에 오므로)
-                  // "아야" -> 돌격 소총 아야 해당 (이름이 뒤에 오므로)
-
-                  const baseName = characterName.split(' ').pop(); // 이름에서 무기 타입 제외 (뒤에 오는 이름)
-                  const fullName = characterName; // 무기 타입 포함 전체 이름
-
-                  // buffedChars, nerfedChars, adjustedChars 배열에
-                  // 1) 전체 이름 ("쌍검 재키")이 있는지
-                  // 2) 또는 기본 이름 ("재키")이 있는지 (이 경우 해당 기본 이름을 가진 모든 무기 타입에 적용)
-                  // 순서대로 확인하여 첫 번째 일치하는 타입의 기호만 사용합니다.
-                  const isBuffed = buffedChars.includes(fullName) || buffedChars.includes(baseName);
-                  const isNerfed = nerfedChars.includes(fullName) || nerfedChars.includes(baseName);
-                  const isAdjusted = adjustedChars.includes(fullName) || adjustedChars.includes(baseName);
-
-
-                   if (isBuffed) {
-                       indicatorChar = '⬆';
-                       indicatorClass = 'is-buff';
-                   } else if (isNerfed) {
-                       indicatorChar = '⬇';
-                       indicatorClass = 'is-nerf';
-                   } else if (isAdjusted) {
-                       indicatorChar = '⟳';
-                       indicatorClass = 'is-adjusted';
-                   }
-
-                   if (indicatorChar) { // 표시할 기호가 결정되었으면 오버레이 HTML 생성
-                        // --- 수정: data-text 속성에 기호 문자 추가 ---
-                        patchChangeOverlayHtml = `<div class="patch-change-indicator ${indicatorClass}" data-text="${indicatorChar}">${indicatorChar}</div>`;
-                        // --- 수정 끝 ---
-                   }
-              }
-              // --- 추가 끝
-
-              // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
-              let rankChangeOverlayHtml = '';
-              if (isCompareMode) { /* ... 순위 변동 로직 ... */
-                   const rankChangeValue = e['순위 변화값']; // 숫자 또는 string (latest - past)
-                   let rankChangeText = '';
-                   let rankChangeClass = '';
-
-                   if (typeof rankChangeValue === 'number') {
-                        const absChange = Math.abs(rankChangeValue);
-                        if (rankChangeValue < 0) { // 순위 숫자가 감소 (좋아짐): ▲
-                            rankChangeText = `▲${absChange}`;
-                            rankChangeClass = 'rank-change-up'; // 순위 증가
-                        } else if (rankChangeValue > 0) { // 순위 숫자가 증가 (나빠짐): ▼
-                            rankChangeText = `▼${absChange}`;
-                            rankChangeClass = 'rank-change-down'; // 순위 감소
-                        } else { // 순위 변화 없음
-                            rankChangeText = `=`;
-                            rankChangeClass = 'rank-change-same';
-                        }
-                   } else { // 문자열 ('신규 → ', '→ 삭제', '-')
-                        if (rankChangeValue === '신규 → ') { rankChangeText = '신규'; rankChangeClass = 'rank-change-up'; }
-                        else if (rankChangeValue === '→ 삭제') { rankChangeText = '삭제'; rankChangeClass = 'rank-change-down'; }
-                        else { rankChangeText = '-'; rankChangeClass = 'rank-change-same'; } // '-' 또는 예상치 못한 값
-                   }
-                   // 텍스트가 '신규', '삭제', '=', '▲N', '▼N' 등 의미 있는 변화를 나타낼 때만 오버레이 표시
-                   if (rankChangeText !== '-' && rankChangeText !== '') {
-                        rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
-                   }
-              }
-              // -------------------------------------------------
-
-              // --- 수정: 툴팁 컨테이너에 data-character-name 속성만 추가 ---
-              // 툴팁 내용은 JS에서 데이터를 찾아 동적으로 생성합니다.
-              html += `<span class="tooltip-container" data-character-name="${characterName}">
-                         <img src="/image/tier_table/${imgName}.png" alt="${characterName}">
-                         ${patchChangeOverlayHtml} <!-- 추가: 패치 변화 오버레이 삽입 -->
-                         ${rankChangeOverlayHtml} <!-- 기존: 순위 변화 오버레이 삽입 -->
-                       </span>`;
-              // -----------------------------------------------------------
+    // --- 수정: isIdenticalComparison 인자 추가 (더 이상 사용되지 않으나 유지) ---
+    function displayTierTable(data, isCompareMode, isIdenticalComparison) {
+        // --- 수정 끝 ---
+            const tierLabels = {
+              platinum_plus:  "플래티넘+",
+              diamond_plus:   "다이아몬드+",
+              meteorite_plus: "메테오라이트+",
+              mithril_plus:  "미스릴+",
+              in1000:         "in1000"
+            };
+    
+            const versionLabel = versionSelect.value;
+            const tierLabel    = tierLabels[tierSelect.value];
+    
+            const tiers = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
+            // --- 수정 시작: groups 변수 초기화 오류 수정 ---
+            // reduce 함수의 초기값으로 빈 객체 {}를 전달합니다.
+            const groups = tiers.reduce((o, t) => {
+                o[t] = [];
+                return o;
+            }, {});
+            // --- 수정 끝
+    
+            // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
+            data.forEach(item => {
+                // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
+                // 단일 모드일 때는 '티어' 기준으로 그룹화
+                // 정렬은 단일 모드 기준 '점수'로 하더라도, 티어 테이블의 행 배치는 데이터 1의 티어 기준으로 유지합니다.
+                const itemTier = isCompareMode ? item['티어 (Ver1)'] : item.티어;
+                // 단일 모드 또는 비교 모드에서 Ver1 티어가 유효한 경우에만 그룹에 추가
+                // Ver1에 없는 캐릭터 (신규)는 티어 테이블에 표시되지 않음 (기존 동작 유지)
+                if (itemTier && groups[itemTier]) { // itemTier가 null이거나 undefined인 경우 방지
+                     groups[itemTier].push(item);
+                }
             });
-
-            // perRow 개수 채우기 (기존 유지)
-            const remainingSlots = perRow - (entries.length % perRow);
-            if (remainingSlots > 0 && remainingSlots < perRow) {
-                 for (let i = 0; i < remainingSlots; i++) {
-                      // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 (기존 유지) ---
-                      html += `<span class="tooltip-container">
-                                 <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
-                               </span>`;
-                      // ---------------------------------------------------------------------
+            // ----------------------------------------------------
+    
+            // --- 수정: totalSample 계산 (단일 모드에서만 사용) - 이 계산은 displayTierTable에서 직접 사용되지 않으므로 유지 ---
+            // 단일 모드: 현재 데이터의 표본수 합계
+            // 비교 모드: 픽률은 개별 픽률 사용, 총 표본수는 필요 없음.
+            const totalSample = isCompareMode
+                ? 0 // 비교 모드에서는 총 표본수 합계 사용하지 않음
+                : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0);
+            // ---------------------------------------------
+    
+            const perRow      = 15;
+            let html = '';
+    
+            tiers.forEach(tier => {
+              // 시작 태그: <tr><th>...
+              html += `<tr class="tier-row tier-${tier}"><th>${tier}</th>`;
+    
+              // <td> 시작(첫 행이면 position:relative)
+              if (tier === 'S+') {
+                html += `<td style="position: relative;"><div class="tier-info" style="
+                             position: absolute;
+                             top: 4px;
+                             right: 4px;
+                             padding: 2px 6px;
+                             background: rgba(255,255,255,0.8);
+                             border-radius: 4px;
+                             font-size: 0.85em;
+                             font-weight: bold;
+                             white-space: nowrap;
+                          ">${versionLabel} | ${tierLabel}</div><div>`; // white-space: nowrap 추가
+              } else {
+                html += `<td><div>`;
+              }
+    
+              // 슬롯들 렌더링
+              // --- 수정 시작: sortData 함수 사용 시 정렬 모드 결정 로직 변경 (항상 단일 모드 기준) ---
+              // 비교 모드 여부나 동일 조건 여부와 관계없이 항상 '점수' 기준, 'value' 모드로 정렬
+              const sortKey = '점수';
+              const sortMode = 'value';
+              // common.js의 sortData 함수를 사용하여 정렬 (sortKey='점수', sortMode='value')
+              const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
+              // --- 수정 끝 ---
+    
+              if (entries.length === 0) {
+                // 빈 슬롯 표시 (기존 이미지 사용)
+                // 15개 모두 채워서 레이아웃 유지
+                 for (let i = 0; i < perRow; i++) {
+                    // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 (기존 유지) ---
+                    html += `<span class="tooltip-container">
+                               <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
+                             </span>`;
+                    // ---------------------------------------------------------------------
                  }
-            }
-          }
-
-          html += `</div></td></tr>`; // 유지
-        });
-
-        table.innerHTML = html; // 유지
-
-        // --- 색상 강조 적용 로직 제거 (기존 유지) ---
-    }
+    
+              } else {
+                entries.forEach((e) => {
+                  const imgName = convertExperimentNameToImageName(e.실험체).replace(/ /g,'_');
+                  const characterName = e.실实验体; // 데이터의 정확한 실험체 이름
+    
+                  // --- 추가 시작: 패치 변화 오버레이 생성 (체크박스 상태 확인) ---
+                  let patchChangeOverlayHtml = '';
+                  if (isPatchIndicatorVisible) { // 패치 표시 체크박스가 켜져 있을 때만 오버레이 생성
+                      let indicatorChar = '';
+                      let indicatorClass = '';
+    
+                      // 사용자 배열에 정확히 일치하는 이름이 있는지 또는 무기 타입 포함 이름이 있는지 확인
+                      // "재키" -> 단검 재키, 쌍검 재키 등
+                      // "쌍검 재키" -> 쌍검 재키 만 해당
+                      // "리 다이린" -> 글러브 리 다이린, 쌍절곤 리 다이린 해당 (이름이 뒤에 오므로)
+                      // "아야" -> 돌격 소총 아야 해당 (이름이 뒤에 오므로)
+    
+                      const baseName = characterName.split(' ').pop(); // 이름에서 무기 타입 제외 (뒤에 오는 이름)
+                      const fullName = characterName; // 무기 타입 포함 전체 이름
+    
+                      // buffedChars, nerfedChars, adjustedChars 배열에
+                      // 1) 전체 이름 ("쌍검 재키")이 있는지
+                      // 2) 또는 기본 이름 ("재키")이 있는지 (이 경우 해당 기본 이름을 가진 모든 무기 타입에 적용)
+                      // 순서대로 확인하여 첫 번째 일치하는 타입의 기호만 사용합니다.
+                      const isBuffed = buffedChars.includes(fullName) || buffedChars.includes(baseName);
+                      const isNerfed = nerfedChars.includes(fullName) || nerfedChars.includes(baseName);
+                      const isAdjusted = adjustedChars.includes(fullName) || adjustedChars.includes(baseName);
+    
+    
+                       if (isBuffed) {
+                           indicatorChar = '⬆';
+                           indicatorClass = 'is-buff';
+                       } else if (isNerfed) {
+                           indicatorChar = '⬇';
+                           indicatorClass = 'is-nerf';
+                       } else if (isAdjusted) {
+                           indicatorChar = '⟳';
+                           indicatorClass = 'is-adjusted';
+                       }
+    
+                       if (indicatorChar) { // 표시할 기호가 결정되었으면 오버레이 HTML 생성
+                            // --- 수정: data-text 속성에 기호 문자 추가 ---
+                            patchChangeOverlayHtml = `<div class="patch-change-indicator ${indicatorClass}" data-text="${indicatorChar}">${indicatorChar}</div>`;
+                            // --- 수정 끝 ---
+                       }
+                  }
+                  // --- 추가 끝
+    
+                  // --- 순위 변동 표시 요소 (기존 수정된 내용 유지) ---
+                  let rankChangeOverlayHtml = '';
+                  // 순위 변화 표시는 비교 모드일 때만 보여줍니다.
+                  if (isCompareMode) { /* ... 순위 변동 로직 ... */
+                       const rankChangeValue = e['순위 변화값']; // 숫자 또는 string (latest - past)
+                       let rankChangeText = '';
+                       let rankChangeClass = '';
+    
+                       if (typeof rankChangeValue === 'number') {
+                            const absChange = Math.abs(rankChangeValue);
+                            if (rankChangeValue < 0) { // 순위 숫자가 감소 (좋아짐): ▲
+                                rankChangeText = `▲${absChange}`;
+                                rankChangeClass = 'rank-change-up'; // 순위 증가
+                            } else if (rankChangeValue > 0) { // 순위 숫자가 증가 (나빠짐): ▼
+                                rankChangeText = `▼${absChange}`;
+                                rankChangeClass = 'rank-change-down'; // 순위 감소
+                            } else { // 순위 변화 없음
+                                rankChangeText = `=`;
+                                rankChangeClass = 'rank-change-same';
+                            }
+                       } else { // 문자열 ('신규 → ', '→ 삭제', '-')
+                            if (rankChangeValue === '신규 → ') { rankChangeText = '신규'; rankChangeClass = 'rank-change-up'; }
+                            else if (rankChangeValue === '→ 삭제') { rankChangeText = '삭제'; rankChangeClass = 'rank-change-down'; }
+                            else { rankChangeText = '-'; rankChangeClass = 'rank-change-same'; } // '-' 또는 예상치 못한 값
+                       }
+                       // 텍스트가 '신규', '삭제', '=', '▲N', '▼N' 등 의미 있는 변화를 나타낼 때만 오버레이 표시
+                       if (rankChangeText !== '-' && rankChangeText !== '') {
+                            rankChangeOverlayHtml = `<div class="rank-change-overlay ${rankChangeClass}" data-text="${rankChangeText}">${rankChangeText}</div>`;
+                       }
+                  }
+                  // -------------------------------------------------
+    
+                  // --- 수정: 툴팁 컨테이너에 data-character-name 속성만 추가 ---
+                  // 툴팁 내용은 JS에서 데이터를 찾아 동적으로 생성합니다.
+                  html += `<span class="tooltip-container" data-character-name="${characterName}">
+                             <img src="/image/tier_table/${imgName}.png" alt="${characterName}">
+                             ${patchChangeOverlayHtml} <!-- 추가: 패치 변화 오버레이 삽입 -->
+                             ${rankChangeOverlayHtml} <!-- 기존: 순위 변화 오버레이 삽입 -->
+                           </span>`;
+                  // -----------------------------------------------------------
+                });
+    
+                // perRow 개수 채우기 (기존 유지)
+                const remainingSlots = perRow - (entries.length % perRow);
+                if (remainingSlots > 0 && remainingSlots < perRow) {
+                     for (let i = 0; i < remainingSlots; i++) {
+                          // --- 수정: placeholder 이미지에는 툴팁 관련 요소 생성 안함 (기존 유지) ---
+                          html += `<span class="tooltip-container">
+                                     <img src="/image/placeholder.png" alt="빈 슬롯" style="opacity:0;">
+                                   </span>`;
+                          // ---------------------------------------------------------------------
+                     }
+                }
+              }
+    
+              html += `</div></td></tr>`; // 유지
+            });
+    
+            table.innerHTML = html; // 유지
+    
+            // --- 색상 강조 적용 로직 제거 (기존 유지) ---
+        }
 
 // --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 ---
     // 이 함수는 테이블이 렌더링된 후에 호출되며, 로드된 데이터와 비교 모드 상태를 인자로 받습니다.
