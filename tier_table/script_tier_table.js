@@ -570,10 +570,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         const absChange = Math.abs(rankChangeValue);
                         if (rankChangeValue < 0) { // 순위 숫자가 감소 (좋아짐): ▲
                             rankChangeText = `▲${absChange}`;
-                            rankChangeClass = 'rank-change-down'; // 순위 번호는 내려감
+                            rankChangeClass = 'rank-change-up'; // 순위 증가
                         } else if (rankChangeValue > 0) { // 순위 숫자가 증가 (나빠짐): ▼
                             rankChangeText = `▼${absChange}`;
-                            rankChangeClass = 'rank-change-up'; // 순위 번호는 올라감
+                            rankChangeClass = 'rank-change-down'; // 순위 감소
                         } else { // 순위 변화 없음
                             rankChangeText = `=`;
                             rankChangeClass = 'rank-change-same';
@@ -621,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // --- 색상 강조 적용 로직 제거 (기존 유지) ---
     }
 
-    // --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 --- - 기존 유지
+// --- 추가: 툴팁 위치를 동적으로 계산하여 설정하는 함수 ---
     // 이 함수는 테이블이 렌더링된 후에 호출되며, 로드된 데이터와 비교 모드 상태를 인자로 받습니다.
     function setupTooltipPositioning(characterData, isCompareMode) {
         // 단 하나의 툴팁 요소를 관리합니다.
@@ -712,10 +712,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 툴팁이 이미지 위에 나타나도록 위치 계산 (position: fixed 기준)
                 // 툴팁 하단이 컨테이너 상단에서 5px 위로 떨어지도록 계산
-                // window.scrollY를 더하여 페이지 스크롤 위치를 반영합니다.
-                const desiredTooltipTop = containerRect.top + window.scrollY - tooltipRect.height - 5;
+                // --- 수정 시작: window.scrollY 및 window.scrollX 제거 ---
+                const desiredTooltipTop = containerRect.top - tooltipRect.height - 5;
                 // 툴팁 중앙이 컨테이너 중앙에 오도록 위치 계산
-                const desiredTooltipLeft = containerRect.left + window.scrollX + containerRect.width / 2 - tooltipRect.width / 2;
+                const desiredTooltipLeft = containerRect.left + containerRect.width / 2 - tooltipRect.width / 2;
+                // --- 수정 끝 ---
 
 
                 // 계산된 위치를 툴팁 요소의 인라인 스타일로 적용
@@ -732,18 +733,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 const viewportHeight = window.innerHeight; // 상단 경계 조정을 위해 필요
 
                 // 좌측 경계 조정
-                if (parseFloat(tooltipBox.style.left) < window.scrollX + 5) { // 뷰포트 좌측에서 5px 이내로 붙으면
-                    tooltipBox.style.left = `${window.scrollX + 5}px`;
+                // 뷰포트 왼쪽 경계 (window.scrollX는 필요 없음, fixed는 뷰포트 기준)
+                if (parseFloat(tooltipBox.style.left) < 5) { // 뷰포트 좌측에서 5px 이내로 붙으면
+                    tooltipBox.style.left = `5px`;
                      tooltipBox.style.transform = 'none'; // 재계산 시 transform 해제
                 }
                 // 우측 경계 조정
-                if (parseFloat(tooltipBox.style.left) + tooltipRect.width > window.scrollX + viewportWidth - 5) { // 뷰포트 우측에서 5px 이내로 붙으면
-                    tooltipBox.style.left = `${window.scrollX + viewportWidth - tooltipRect.width - 5}px`;
+                if (parseFloat(tooltipBox.style.left) + tooltipRect.width > viewportWidth - 5) { // 뷰포트 우측에서 5px 이내로 붙으면
+                    tooltipBox.style.left = `${viewportWidth - tooltipRect.width - 5}px`;
                      tooltipBox.style.transform = 'none'; // 재계산 시 transform 해제
                 }
                  // 상단 경계 조정 (툴팁이 뷰포트 맨 위에 붙는 경우 방지)
-                 if (parseFloat(tooltipBox.style.top) < window.scrollY + 5) {
-                      tooltipBox.style.top = `${window.scrollY + 5}px`;
+                 // 뷰포트 상단 경계 (window.scrollY는 필요 없음)
+                 if (parseFloat(tooltipBox.style.top) < 5) {
+                      tooltipBox.style.top = `5px`;
                  }
 
             };
