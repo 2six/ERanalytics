@@ -614,13 +614,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, {});
         // --- 수정 끝
 
-        // --- 삭제 시작: 데이터 그룹화 전에 전체 데이터를 정렬하는 로직 ---
-        // const sortKeyForOverall = isCompareMode ? '점수 (Ver1)' : '점수';
-        // const sortedDataOverall = sortData([...data], sortKeyForOverall, false, isCompareMode ? 'value1' : 'value');
-        // --- 삭제 끝
-
-
-        // --- 수정: 데이터 그룹화 로직 (비교 모드 고려) ---
+        // --- 데이터 그룹화 로직 (비교 모드 고려) ---
         // 기존 data.forEach를 다시 사용 (그룹화 자체는 입력 순서와 무관)
         data.forEach(item => { // <--- 이 부분을 수정합니다.
             // 비교 모드일 때는 '티어 (Ver1)' 기준으로 그룹화 (데이터 1 기준 표)
@@ -669,12 +663,11 @@ document.addEventListener('DOMContentLoaded', function () {
           // 슬롯들 렌더링
           // --- 수정: sortData 함수 사용 (비교 모드 고려) ---
           // common.js의 sortData 함수를 사용하여 '점수' 기준으로 내림차순 정렬
-          // 비교 모드일 때는 '점수 (Ver1)' 기준으로 정렬
-          // 단일 모드일 때는 '점수' 기준으로 정렬
-          // NOTE: 그룹화된 데이터를 이 단계에서 정렬하는 것이 올바른 "티어 내 정렬" 방식입니다.
-          const sortKey = isCompareMode ? '점수 (Ver1)' : '점수'; // 정렬 키는 동일하게 설정
-          const sortMode = isCompareMode ? 'value1' : 'value'; // 정렬 모드도 동일하게 설정
-          const entries = sortData(groups[tier], sortKey, false, sortMode); // false: 내림차순 (좋은 것 위로)
+          // 비교 모드일 때는 sortMode를 'value1'로 전달하여 내부적으로 '점수 (Ver1)' 사용
+          // 단일 모드일 때는 sortMode를 'value'로 전달하여 내부적으로 '점수' 사용
+          const sortColumn = '점수'; // <--- 원본 컬럼 이름을 '점수'로 명시 (수정)
+          const sortMode = isCompareMode ? 'value1' : 'value'; // <--- 모드를 정확히 전달 (수정)
+          const entries = sortData(groups[tier], sortColumn, false, sortMode); // false: 내림차순 (좋은 것 위로)
           // -----------------------------
 
           if (entries.length === 0) {
