@@ -1,6 +1,10 @@
 // script_common.js
 // 필요한 함수들을 전역 스코프에 둡니다.
 
+// --- 추가 시작: 다이아+ 평균 RP 기준 상수 ---
+const DIAMOND_PLUS_AVG_RP_BENCHMARK = 10;
+// --- 추가 끝 ---
+
 function parseINI(iniString) {
     const config = {};
     let currentSection = null;
@@ -70,17 +74,6 @@ function getRPScore(rp) {
         : -Math.log(-rp + 1) * 2;
 }
 
-function calculateTier(score, avgScore, stddev, config) {
-    const diff = score - avgScore;
-    if (diff > stddev * parseFloat(config['S+'])) return 'S+';
-    if (diff > stddev * parseFloat(config['S'])) return 'S';
-    if (diff > stddev * parseFloat(config['A'])) return 'A';
-    if (diff > stddev * parseFloat(config['B'])) return 'B';
-    if (diff > stddev * parseFloat(config['C'])) return 'C';
-    if (diff > stddev * parseFloat(config['D'])) return 'D';
-    return 'F';
-}
-
 function calculateAverageScore(data) {
     const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
@@ -110,7 +103,32 @@ function calculateStandardDeviation(data, avgScore) {
     return Math.sqrt(variance);
 }
 
+// --- 추가 시작: 주어진 데이터셋의 가중 평균 RP 획득량 계산 함수 ---
+function getAverageRpFromEntries(entries) {
+    const validEntries = entries.filter(item => (item['표본수'] || 0) > 0);
+    const totalSample = validEntries.reduce((sum, item) => sum + item['표본수'], 0);
+
+    if (totalSample === 0) {
+        return 0; // 표본수가 0이면 평균 RP도 0
+    }
+
+    const totalRpContribution = validEntries.reduce((sum, item) => sum + (item['RP 획득'] || 0) * item['표본수'], 0);
+
+    return totalRpContribution / totalSample;
+}
+// --- 추가 끝 ---
+
+
 function calculateTiers(data, avgScore, stddev, config) {
+    // --- 수정 시작: 현재 데이터셋의 평균 RP 계산 및 보정 배율 적용 ---
+    const currentAvgRp = getAverageRpFromEntries(data);
+
+    // 현재 평균 RP가 0이면 보정 불가능하므로 배율을 1로 설정
+    // 델타 기간 데이터에서 전체 표본수가 적거나 RP 획득이 0인 경우 발생 가능
+    const rpCorrectionFactor = (currentAvgRp === 0) ? 1 : DIAMOND_PLUS_AVG_RP_BENCHMARK / currentAvgRp;
+
+    //console.log("Current Avg RP:", currentAvgRp, "Correction Factor:", rpCorrectionFactor); // 디버깅
+
     const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0); // 표본수 null/undefined 방지
     const avgPickRate = total === 0 ? 0 : data.reduce((sum, i) => sum + (i['표본수'] || 0), 0) / total / (data.length || 1); // 표본수 null/undefined 방지
 
@@ -121,7 +139,6 @@ function calculateTiers(data, avgScore, stddev, config) {
         // 델타 데이터의 '표본수'는 증가분, 스냅샷 데이터의 '표본수'는 해당 시점의 총 표본수입니다.
         // 점수 계산 로직은 '표본수', 'RP 획득', '승률', 'TOP 3' 값을 사용하므로,
         // 이 값들이 델타를 나타내는지, 스냅샷을 나타내는지에 따라 점수와 티어가 계산됩니다.
-        // 이는 사용자 요구사항 ("델타 통계를 가져와서 비교")에 부합합니다.
 
         if ((item['표본수'] || 0) === 0) { // null/undefined 대비 및 표본수 0인 경우
              return {
@@ -143,7 +160,12 @@ function calculateTiers(data, avgScore, stddev, config) {
         if (r > 5) {
             factor += 0.05 * (1 - Math.min((r - 5) / 5, 1));
         }
-        const baseScore = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 방지
+
+        // --- 수정: baseScore 계산 시 RP 항에 보정 배율 적용 ---
+        const rpComponent = getRPScore(item['RP 획득'] || 0);
+        const baseScore = (rpComponent * rpCorrectionFactor) + ((item['승률'] || 0) * 9) + ((item['TOP 3'] || 0) * 3); // null/undefined 방지
+        // --- 수정 끝 ---
+
         let score;
 
         if (avgPickRate !== 0 && (item['표본수'] || 0) < total * avgPickRate) { // null/undefined 방지
@@ -157,13 +179,17 @@ function calculateTiers(data, avgScore, stddev, config) {
 
         const tierLabel = calculateTier(score, avgScore, stddev, config);
 
+        // 픽률은 전체 데이터셋 표본수 대비 해당 캐릭터 표본 비율로 계산하여 반환
+        const displayPickRate = total === 0 ? 0.00 : parseFloat((pickRate * 100).toFixed(2));
+
         return {
             ...item,
             '점수': parseFloat(score.toFixed(2)),
             '티어': tierLabel,
-            '픽률': parseFloat((pickRate * 100).toFixed(2)) // 픽률은 전체 표본 중 해당 캐릭터 표본 비율
+            '픽률': displayPickRate
         };
     });
+    // --- 수정 끝 ---
 }
 
 // 8. 데이터 정렬 (mode 인자 추가 및 로직 수정) - 기존 유지
@@ -794,7 +820,6 @@ function applyGradientColorsComparison(table, data, mode, sortedCol) {
             color = (ratio >= 0.5)
                  ? interpolateColor([255,255,255], [230,124,115], (ratio-0.5)*2) // White -> Red (Avg to Best)
                  : interpolateColor([164,194,244], [255,255,255], ratio*2); // Blue -> White (Worst to Avg)
-
             cell.style.backgroundColor = color;
         });
     });
