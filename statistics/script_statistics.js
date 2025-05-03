@@ -1,3 +1,4 @@
+// script_statistics.js
 document.addEventListener('DOMContentLoaded', function() {
     // common.js에 정의된 함수/변수들은 전역 스코프에 있으므로 바로 사용 가능합니다.
 
@@ -68,7 +69,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentSortAsc = isBetterWhenLower ? true : false; // 평균 순위는 오름차순(작은 값 위로), 나머지는 내림차순(큰 값 위로)
 
                     // --- 확인: 티어 컬럼의 기본 정렬 방향 ---
-                    // 티어 컬럼은 점수 기준으로 정렬되며, 점수는 클수록 좋으므로 기본 내림차순(false)이 맞습니다.
+                    // 티어 컬럼은 점수 기준으로 정렬되며, 점수는 클수록 좋음으로 처리합니다.
+                    // common.js sortData에서 '티어' Value 정렬 시 '점수' 키를 사용하고, 점수는 클수록 좋음으로 처리합니다.
+                    // 따라서 '점수' 기준 내림차순 (asc=false)일 때 S+가 위로 옵니다.
+                    // 그래서 '티어' 컬럼 클릭 시 내림차순으로 시작하는 것이 맞습니다.
                     if (col === '티어') currentSortAsc = false;
                     // ------------------------------------
 
@@ -580,6 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setupTablePopup();
         });
     }
+
 // --- 추가: 표 이미지 팝업 기능 설정 함수 --- - 기존 유지
 function setupTablePopup() {
     const popup = document.getElementById('image-popup');
@@ -723,7 +728,7 @@ function renderComparisonTable(data) { // data 인자는 정렬된 데이터 배
                 // Construct the final cell HTML with spans wrapped in a div
                 let innerContentHtml = '';
                 // 티어 변화가 '-'가 아니거나 (S+, S 등) '→' 포함 문자열인 경우 표시
-                if (tierChange !== '-' || tierChange.includes('→')) {
+                if (tierChange !== '-') { // '-'가 아니면 표시
                      innerContentHtml += `<span class="tier-value-or-change">${tierChange}</span>`;
                 } else {
                      // 티어 변화 정보가 없으면 빈 스팬 또는 '-' 표시 스팬 추가 (레이아웃 유지를 위해)

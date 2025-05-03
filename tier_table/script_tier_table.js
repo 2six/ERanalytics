@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
                      // 단일 모드에서는 totalSample 대신 해당 캐릭터의 픽률 값을 사용합니다.
                      const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) : '-';
                      const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(1) : '-';
-                     const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) : '-';
+                     const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) + '%' : '-';
                       // --- 삭제 시작: 단일 모드 점수 정보 (디버깅용) ---
                      // const score = character['점수'] !== null && character['점수'] !== undefined ? (character['점수'] || 0).toFixed(2) : '-';
                      // --- 삭제 끝
@@ -470,14 +470,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
                 // calculateTiers는 common.js의 함수를 사용합니다.
                 // entries1/entries2가 델타 데이터인 경우, calculateTiers는 해당 델타 데이터의 특성을 반영한 점수/티어를 계산합니다.
-                // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers 호출 인자 변경 ---
+                // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers/calculateStandardDeviation 호출 인자 변경 ---
                 const { avgScore: avgScore1, averageRP: averageRP1 } = calculateAverageScore(entries1);
-                const stddev1 = calculateStandardDeviation(entries1, avgScore1, averageRP1); // 표준편차 계산 시에도 평균 RP 전달
-                const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal, averageRP1); // averageRP1 인자 추가
+                const stddev1 = calculateStandardDeviation(entries1, avgScore1, averageRP1); // calculateStandardDeviation 인자 추가
+                const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal, averageRP1); // calculateTiers 인자 추가
 
                 const { avgScore: avgScore2, averageRP: averageRP2 } = calculateAverageScore(entries2);
-                const stddev2 = calculateStandardDeviation(entries2, avgScore2, averageRP2); // 표준편차 계산 시에도 평균 RP 전달
-                const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal, averageRP2); // averageRP2 인자 추가
+                const stddev2 = calculateStandardDeviation(entries2, avgScore2, averageRP2); // calculateStandardDeviation 인자 추가
+                const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal, averageRP2); // calculateTiers 인자 추가
                 // --- 수정 끝
 
 
@@ -543,10 +543,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     // --- 수정 끝
 
-                    // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers 호출 인자 변경 ---
+                    // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers/calculateStandardDeviation 호출 인자 변경 ---
                     const { avgScore, averageRP } = calculateAverageScore(entries); // avgScore와 averageRP 함께 받음
-                    const stddev   = calculateStandardDeviation(entries, avgScore, averageRP); // 표준편차 계산 시에도 평균 RP 전달
-                    const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal, averageRP); // averageRP 인자 추가
+                    const stddev   = calculateStandardDeviation(entries, avgScore, averageRP); // calculateStandardDeviation 인자 추가
+                    const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal, averageRP); // calculateTiers 인자 추가
                     // --- 수정 끝
 
                     // --- 수정: currentCharacterData 업데이트 ---

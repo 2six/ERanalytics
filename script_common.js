@@ -85,57 +85,68 @@ function calculateTier(score, avgScore, stddev, config) {
     return 'F';
 }
 
-// --- 수정: calculateAverageScore 함수가 평균 RP도 반환하도록 변경 ---
+// --- 수정: calculateAverageScore 함수가 RP 보정 계수를 적용하여 평균 점수 계산 및 평균 RP 반환 ---
 function calculateAverageScore(data) {
     const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
 
     if (total === 0) return { avgScore: 0, averageRP: 0 }; // 데이터 없으면 0 반환
 
-    let sumRP = 0, sumWin = 0, sumTop3 = 0;
-    validData.forEach(i => {
-        const w = (i['표본수'] || 0) / total; // 표본수 null/undefined 방지
-        sumRP += (i['RP 획득'] || 0) * w; // RP 획득 null/undefined 방지 (가중 합)
-        sumWin += (i['승률'] || 0) * w; // 승률 null/undefined 방지
-        sumTop3 += (i['TOP 3'] || 0) * w; // TOP 3 null/undefined 방지
+    // 데이터셋의 가중 평균 RP 획득량 계산
+    const weightedAverageRP = validData.reduce((sum, i) => sum + (i['RP 획득'] || 0) * (i['표본수'] || 0), 0) / total;
+
+     // --- RP 보정 계수 계산 (데이터셋 전체 평균에 기반) ---
+    let rpCorrectionFactor = 1;
+    if (weightedAverageRP !== 0 && RP_REFERENCE_AVG !== 0) {
+        rpCorrectionFactor = RP_REFERENCE_AVG / weightedAverageRP;
+        // 극단적인 보정 계수 방지 (예시: 0.5배 ~ 2배)
+        rpCorrectionFactor = Math.max(0.5, Math.min(2.0, rpCorrectionFactor));
+    }
+    // ------------------------------------------------------
+
+    let sumScores = 0;
+    validData.forEach(item => {
+        // --- 수정: 개별 캐릭터의 RP 보정된 점수를 사용하여 평균 계산 ---
+        const rpScore = getRPScore(item['RP 획득'] || 0) * rpCorrectionFactor;
+        const itemBaseScore = rpScore + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3;
+        // Note: calculateTiers의 픽률 보정은 평균 계산에는 적용하지 않습니다.
+        //       평균은 기본적인 스탯 조합 점수의 평균을 계산합니다.
+        sumScores += itemBaseScore * ((item['표본수'] || 0) / total);
+        // -------------------------------------------------------------
     });
 
-    // 총 표본수로 나누어 가중 평균 RP 획득량 계산
-    const averageRP = sumRP / (total / (validData.length || 1)); // 캐릭터 수로 나눈 평균 픽률의 역수? 아니면 전체 표본수로 나눈 RP 합?
-    // RP 획득량의 가중 평균은 전체 RP 합을 전체 표본수로 나눈 값입니다.
-    const weightedAverageRP = sumRP; // sumRP 자체가 가중 평균 RP 획득량입니다.
+    const avgScore = sumScores; // sumScores 자체가 가중 평균 점수입니다.
 
-    const avgScore = getRPScore(weightedAverageRP) + sumWin * 9 + sumTop3 * 3;
-
-    return { avgScore: avgScore, averageRP: weightedAverageRP }; // 평균 점수와 가중 평균 RP 획득량 반환
+    return { avgScore: avgScore, averageRP: weightedAverageRP }; // 보정된 평균 점수와 가중 평균 RP 획득량 반환
 }
 // -------------------------------------------------------------
 
-function calculateStandardDeviation(data, avgScore) {
+// --- 수정: calculateStandardDeviation 함수가 평균 RP 인자를 받아 RP 보정 계수 적용 ---
+function calculateStandardDeviation(data, avgScore, datasetAverageRP) {
     const validData = data.filter(item => (item['표본수'] || 0) > 0);
     const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
 
     if (total === 0) return 0;
 
+     // --- RP 보정 계수 계산 (표준편차 계산 시에도 동일하게 적용) ---
+    let rpCorrectionFactor = 1;
+    if (datasetAverageRP !== 0 && RP_REFERENCE_AVG !== 0) {
+        rpCorrectionFactor = RP_REFERENCE_AVG / datasetAverageRP;
+        rpCorrectionFactor = Math.max(0.5, Math.min(2.0, rpCorrectionFactor)); // 동일 제한 적용
+    }
+    // ----------------------------------------------------------
+
     const variance = validData.reduce((sum, item) => {
-        // --- 수정: calculateTiers와 동일하게 RP 보정 로직을 적용해야 일관성 있는 표준편차 계산 가능 ---
-        // 표준편차 계산 시에도 평균 점수 계산에 사용된 RP 보정 로직과 동일한 보정을 적용해야 합니다.
-        // 여기서는 데이터셋 전체의 가중 평균 RP를 알 수 없으므로, calculateTiers에서 개별 캐릭터의 점수를
-        // 계산한 후 표준편차를 계산하는 것이 더 정확할 수 있습니다.
-        // 하지만 현재 구조에서는 calculateTiers 이전에 표준편차가 필요하므로, calculateAverageScore에서
-        // 반환된 데이터셋 평균 RP를 사용하여 표준편차 계산 시 RP 점수에 보정 계수를 적용합니다.
-        // calculateAverageScore에서 평균 RP를 반환하도록 수정했으니, 여기서 그 값을 사용해야 합니다.
-        // calculateStandardDeviation 함수의 인자에 averageRP를 추가합니다.
-        // 임시로 기존 방식 유지 (calculateStandardDeviation 인자 수정은 script_tier_table 에서 호출 시 함께 수정)
-        const s = getRPScore(item['RP 획득'] || 0) + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 방지
-        // NOTE: 표준편차 계산 시 RP 보정을 적용하려면 calculateStandardDeviation 함수가 averageRP 인자를 받아야 합니다.
-        //       아래 calculateTiers 함수 수정과 함께 이 부분도 수정하겠습니다.
-        return sum + Math.pow(s - avgScore, 2) * ((item['표본수'] || 0) / total); // 표본수 null/undefined 방지
+        // --- 수정: 표준편차 계산 시에도 RP 보정 계수 적용된 점수 사용 ---
+        const rpScore = getRPScore(item['RP 획득'] || 0) * rpCorrectionFactor;
+        const s = rpScore + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // 보정된 개별 기본 점수
+        // ----------------------------------------------------
+        return sum + Math.pow(s - avgScore, 2) * ((item['표본수'] || 0) / total); // 보정된 점수와 보정된 평균 점수 사용
     }, 0);
     return Math.sqrt(variance);
 }
+// -------------------------------------------------------------
 
-// --- 수정: calculateStandardDeviation 함수에 averageRP 인자 추가 ---
 // --- 수정: calculateTiers 함수에 datasetAverageRP 인자 추가 및 RP 보정 로직 적용 ---
 function calculateTiers(data, avgScore, stddev, config, datasetAverageRP) {
     const total = data.reduce((sum, item) => sum + (item['표본수'] || 0), 0); // 표본수 null/undefined 방지
@@ -143,16 +154,13 @@ function calculateTiers(data, avgScore, stddev, config, datasetAverageRP) {
 
     const k = 1.5;
 
-    // --- RP 보정 계수 계산 ---
+    // --- RP 보정 계수 계산 (calculateAverageScore에서 계산된 averageRP 사용) ---
     let rpCorrectionFactor = 1;
-    // 데이터셋의 평균 RP가 0이 아니고, 기준 상수도 0이 아닐 때만 보정
     if (datasetAverageRP !== 0 && RP_REFERENCE_AVG !== 0) {
         rpCorrectionFactor = RP_REFERENCE_AVG / datasetAverageRP;
-        // 극단적인 보정 계수 방지 (예: 평균 RP가 0에 가까울 때 계수가 너무 커지는 것 방지)
-        // 최소/최대 계수 제한 (예시: 0.5배 ~ 2배)
-        rpCorrectionFactor = Math.max(0.5, Math.min(2.0, rpCorrectionFactor));
+        rpCorrectionFactor = Math.max(0.5, Math.min(2.0, rpCorrectionFactor)); // 극단적인 보정 계수 방지
     }
-    // -------------------------
+    // ------------------------------------------------------------------------
 
     return data.map(item => {
         if ((item['표본수'] || 0) === 0) { // null/undefined 대비 및 표본수 0인 경우
@@ -168,21 +176,22 @@ function calculateTiers(data, avgScore, stddev, config, datasetAverageRP) {
         const r = avgPickRate ? pickRate / avgPickRate : 1;
         const originWeight =
             r <= 1/3
-                ? 0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k))
-                : 0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k));
+                ? 0.6 + 0.2 * (1 - Math.exp(-k * 3 * r)) / (1 - Math.exp(-k)) / (1 - Math.exp(-k)) // 분모 수정
+                : 0.8 + 0.2 * (1 - Math.exp(-k * 1.5 * (r - 1/3))) / (1 - Math.exp(-k)); // 분모 수정
         const meanWeight = 1 - originWeight;
         let factor = avgPickRate === 0 ? 1 : (0.85 + 0.15 * (1 - Math.exp(-k * r)) / (1 - Math.exp(-k)));
         if (r > 5) {
             factor += 0.05 * (1 - Math.min((r - 5) / 5, 1));
         }
 
-        // --- 수정: RP 획득 점수에 보정 계수 적용 ---
-        const rpScore = getRPScore(item['RP 획득'] || 0) * rpCorrectionFactor; // RP 획득 점수에 보정 계수 곱함
+        // --- 수정: 개별 캐릭터의 RP 획득 점수에 보정 계수 적용 ---
+        const rpScore = getRPScore(item['RP 획득'] || 0) * rpCorrectionFactor;
         const baseScore = rpScore + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 방지
         // -----------------------------------------
 
         let score;
 
+        // NOTE: 픽률 보정 로직은 그대로 유지됩니다.
         if (avgPickRate !== 0 && (item['표본수'] || 0) < total * avgPickRate) { // null/undefined 방지
             score =
                 baseScore * (originWeight + meanWeight * Math.min(1, pickRate / avgPickRate)) +
@@ -192,7 +201,12 @@ function calculateTiers(data, avgScore, stddev, config, datasetAverageRP) {
             score = baseScore * factor;
         }
 
+        // --- 수정: 티어 결정 시 보정된 avgScore와 stddev 사용 ---
+        // calculateTier 함수는 인자로 받은 avgScore와 stddev를 사용하므로,
+        // calculateAverageScore와 calculateStandardDeviation에서 이미 보정된 값을
+        // calculateTiers 호출 시 전달해야 합니다. (이 부분은 script_tier_table.js에서 수정)
         const tierLabel = calculateTier(score, avgScore, stddev, config);
+        // -----------------------------------------------------
 
         return {
             ...item,
@@ -201,32 +215,6 @@ function calculateTiers(data, avgScore, stddev, config, datasetAverageRP) {
             '픽률': parseFloat((pickRate * 100).toFixed(2)) // 픽률은 전체 표본 중 해당 캐릭터 표본 비율
         };
     });
-}
-
-// --- 수정: calculateStandardDeviation 함수에 averageRP 인자 추가 ---
-function calculateStandardDeviation(data, avgScore, stddevAverageRP) {
-    const validData = data.filter(item => (item['표본수'] || 0) > 0);
-    const total = validData.reduce((sum, item) => sum + item['표본수'], 0);
-
-    if (total === 0) return 0;
-
-     // --- RP 보정 계수 계산 (표준편차 계산 시에도 동일하게 적용) ---
-    let rpCorrectionFactor = 1;
-    if (stddevAverageRP !== 0 && RP_REFERENCE_AVG !== 0) {
-        rpCorrectionFactor = RP_REFERENCE_AVG / stddevAverageRP;
-        rpCorrectionFactor = Math.max(0.5, Math.min(2.0, rpCorrectionFactor)); // 동일 제한 적용
-    }
-    // ----------------------------------------------------------
-
-
-    const variance = validData.reduce((sum, item) => {
-        // --- 수정: 표준편차 계산 시에도 RP 보정 계수 적용 ---
-        const rpScore = getRPScore(item['RP 획득'] || 0) * rpCorrectionFactor; // RP 획득 점수에 보정 계수 곱함
-        const s = rpScore + (item['승률'] || 0) * 9 + (item['TOP 3'] || 0) * 3; // null/undefined 방지
-        // ----------------------------------------------------
-        return sum + Math.pow(s - avgScore, 2) * ((item['표본수'] || 0) / total); // 표본수 null/undefined 방지
-    }, 0);
-    return Math.sqrt(variance);
 }
 // -------------------------------------------------------------
 
@@ -491,7 +479,7 @@ function extractDeltaEntries(history, period) {
              const rpDiff = ((c['RP 획득'] || 0) * currSample) - ((p ? (p['RP 획득'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
              const winDiff = ((c['승률'] || 0) * currSample) - ((p ? (p['승률'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
              const top3Diff = ((c['TOP 3'] || 0) * currSample) - ((p ? (p['TOP 3'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
-             const rankDiff = ((c['평균 순위'] || 0) * currSample) - ((p ? (p['평위 순위'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
+             const rankDiff = ((c['평균 순위'] || 0) * currSample) - ((p ? (p['평균 순위'] || 0) : 0) * prevSample); // 과거 데이터 없으면 0 처리
 
 
             delta.push({
@@ -954,7 +942,7 @@ function mergeDataForComparison(data1, data2) {
         } else if (typeof rank1 === 'number') {
              result['순위 변화값'] = '신규 → '; // string (Ver2에 없고 Ver1에만 있음)
         } else if (typeof rank2 === 'number') {
-             result['순위 변화값'] = '→ 삭제'; // string (Ver1에 없고 Ver2에만 없음)
+             result['순위 변화값'] = '→ 삭제'; // string (Ver1에 없고 Ver2에만 있음)
         } else {
              result['순위 변화값'] = '-'; // string
         }
