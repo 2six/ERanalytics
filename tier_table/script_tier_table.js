@@ -106,32 +106,32 @@ document.addEventListener('DOMContentLoaded', function () {
                      const rp2 = character['RP 획득 (Ver2)'] !== null && character['RP 획득 (Ver2)'] !== undefined ? (character['RP 획득 (Ver2)'] || 0).toFixed(1) : '-';
                      const win1 = character['승률 (Ver1)'] !== null && character['승률 (Ver1)'] !== undefined ? ((character['승률 (Ver1)'] || 0) * 100).toFixed(1) + '%' : '-';
                      const win2 = character['승률 (Ver2)'] !== null && character['승률 (Ver2)'] !== undefined ? ((character['승률 (Ver2)'] || 0) * 100).toFixed(1) + '%' : '-';
-                     // --- 추가 시작: 비교 모드 점수 정보 ---
-                     const score1 = character['점수 (Ver1)'] !== null && character['점수 (Ver1)'] !== undefined ? (character['점수 (Ver1)'] || 0).toFixed(2) : '-';
-                     const score2 = character['점수 (Ver2)'] !== null && character['점수 (Ver2)'] !== undefined ? (character['점수 (Ver2)'] || 0).toFixed(2) : '-';
-                     // --- 추가 끝
-                     // --- 비교 모드 툴팁 내용 형식 (요청대로 + 점수 추가) ---
+                     // --- 삭제 시작: 비교 모드 점수 정보 (디버깅용) ---
+                     // const score1 = character['점수 (Ver1)'] !== null && character['점수 (Ver1)'] !== undefined ? (character['점수 (Ver1)'] || 0).toFixed(2) : '-';
+                     // const score2 = character['점수 (Ver2)'] !== null && character['점수 (Ver2)'] !== undefined ? (character['점수 (Ver2)'] || 0).toFixed(2) : '-';
+                     // --- 삭제 끝
+                     // --- 비교 모드 툴팁 내용 형식 (요청대로, 점수 제거) ---
                      tooltipContent = `
                          ${character.실험체}<br>
                          픽률: ${pr2} → ${pr1}<br>
                          RP 획득: ${rp2} → ${rp1}<br>
-                         승률: ${win2} → ${win1}<br>
+                         승률: ${win2} → ${win1}
                      `;
                      // ----------------------------------------
                 } else {
-                     // --- 단일 모드 툴팁 내용 형식 (요청대로 + 점수 추가) ---
+                     // --- 단일 모드 툴팁 내용 형식 (요청대로, 점수 제거) ---
                      // 단일 모드에서는 totalSample 대신 해당 캐릭터의 픽률 값을 사용합니다.
                      const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) : '-';
                      const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(1) : '-';
                      const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) : '-';
-                      // --- 추가 시작: 단일 모드 점수 정보 ---
-                     const score = character['점수'] !== null && character['점수'] !== undefined ? (character['점수'] || 0).toFixed(2) : '-';
-                     // --- 추가 끝
+                      // --- 삭제 시작: 단일 모드 점수 정보 (디버깅용) ---
+                     // const score = character['점수'] !== null && character['점수'] !== undefined ? (character['점수'] || 0).toFixed(2) : '-';
+                     // --- 삭제 끝
                      tooltipContent = `
                          ${character.실험체}<br>
                          픽률: ${pickRate}%<br>
                          RP: ${rp}<br>
-                         승률: ${winRate}%<br>
+                         승률: ${winRate}%
                      `;
                      // ---------------------------------------
                 }
@@ -470,13 +470,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
                 // calculateTiers는 common.js의 함수를 사용합니다.
                 // entries1/entries2가 델타 데이터인 경우, calculateTiers는 해당 델타 데이터의 특성을 반영한 점수/티어를 계산합니다.
-                const avgScore1 = calculateAverageScore(entries1);
-                const stddev1 = calculateStandardDeviation(entries1, avgScore1);
-                const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal);
+                // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers 호출 인자 변경 ---
+                const { avgScore: avgScore1, averageRP: averageRP1 } = calculateAverageScore(entries1);
+                const stddev1 = calculateStandardDeviation(entries1, avgScore1, averageRP1); // 표준편차 계산 시에도 평균 RP 전달
+                const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfigGlobal, averageRP1); // averageRP1 인자 추가
 
-                const avgScore2 = calculateAverageScore(entries2);
-                const stddev2 = calculateStandardDeviation(entries2, avgScore2);
-                const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal);
+                const { avgScore: avgScore2, averageRP: averageRP2 } = calculateAverageScore(entries2);
+                const stddev2 = calculateStandardDeviation(entries2, avgScore2, averageRP2); // 표준편차 계산 시에도 평균 RP 전달
+                const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfigGlobal, averageRP2); // averageRP2 인자 추가
+                // --- 수정 끝
 
 
                 // 두 데이터셋 병합 및 차이 계산 (common.js 함수 사용)
@@ -541,9 +543,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     // --- 수정 끝
 
-                    const avgScore = calculateAverageScore(entries);
-                    const stddev   = calculateStandardDeviation(entries, avgScore);
-                    const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal);
+                    // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers 호출 인자 변경 ---
+                    const { avgScore, averageRP } = calculateAverageScore(entries); // avgScore와 averageRP 함께 받음
+                    const stddev   = calculateStandardDeviation(entries, avgScore, averageRP); // 표준편차 계산 시에도 평균 RP 전달
+                    const scored   = calculateTiers(entries, avgScore, stddev, tierConfigGlobal, averageRP); // averageRP 인자 추가
+                    // --- 수정 끝
 
                     // --- 수정: currentCharacterData 업데이트 ---
                     currentCharacterData = scored;

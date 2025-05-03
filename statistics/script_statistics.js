@@ -429,20 +429,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const history = json['통계'];
                 let entries;
 
-                // --- 수정 시작: 기간에 따라 extractPeriodEntries 또는 extractDeltaEntries 호출 ---
+                // --- 수정 시작: 기간에 따라 common.js의 함수 호출 ---
                 if (period === 'latest') {
-                    // 'latest' 기간은 스냅샷 사용
-                    entries = extractPeriodEntries(history, period); // common.js의 extractPeriodEntries
+                    // 'latest' 기간은 스냅샷 사용 (common.js의 extractPeriodEntries)
+                    entries = extractPeriodEntries(history, period);
                 } else {
-                    // '3day' 또는 '7day' 기간은 델타 통계 사용
-                    entries = extractDeltaEntries(history, period); // common.js의 extractDeltaEntries
+                    // '3day' 또는 '7day' 기간은 델타 통계 사용 (common.js의 extractDeltaEntries)
+                    entries = extractDeltaEntries(history, period);
                 }
                 // --- 수정 끝
 
-                const avgScore = calculateAverageScore(entries);
-                const stddev = calculateStandardDeviation(entries, avgScore);
+                // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers/calculateStandardDeviation 호출 인자 변경 ---
+                const { avgScore, averageRP } = calculateAverageScore(entries); // avgScore와 averageRP 함께 받음
+                const stddev = calculateStandardDeviation(entries, avgScore, averageRP); // calculateStandardDeviation 인자 추가
+                let scored = calculateTiers(entries, avgScore, stddev, tierConfig, averageRP); // calculateTiers 인자 추가
+                // --- 수정 끝
 
-                let scored = calculateTiers(entries, avgScore, stddev, tierConfig);
                 currentSortMode = 'value'; // 단일 모드는 value 고정
                 scored = sortData(scored, currentSortColumn, currentSortAsc, currentSortMode);
 
@@ -538,13 +540,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // 각 데이터셋 별도로 가공 (점수, 티어, 픽률 계산)
             // calculateTiers는 entries 배열을 받아서 점수, 티어, 픽률을 계산하여 새 객체를 반환합니다.
             // entries1/entries2가 델타 데이터인 경우, calculateTiers는 해당 델타 데이터의 특성을 반영한 점수/티어를 계산합니다.
-            const avgScore1 = calculateAverageScore(entries1);
-            const stddev1 = calculateStandardDeviation(entries1, avgScore1);
-            const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfig);
+            // --- 수정 시작: calculateAverageScore 반환값 및 calculateTiers/calculateStandardDeviation 호출 인자 변경 ---
+            const { avgScore: avgScore1, averageRP: averageRP1 } = calculateAverageScore(entries1); // avgScore와 averageRP 함께 받음
+            const stddev1 = calculateStandardDeviation(entries1, avgScore1, averageRP1); // calculateStandardDeviation 인자 추가
+            const scored1 = calculateTiers(entries1, avgScore1, stddev1, tierConfig, averageRP1); // calculateTiers 인자 추가
 
-            const avgScore2 = calculateAverageScore(entries2);
-            const stddev2 = calculateStandardDeviation(entries2, avgScore2);
-            const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfig);
+            const { avgScore: avgScore2, averageRP: averageRP2 } = calculateAverageScore(entries2); // avgScore와 averageRP 함께 받음
+            const stddev2 = calculateStandardDeviation(entries2, avgScore2, averageRP2); // calculateStandardDeviation 인자 추가
+            const scored2 = calculateTiers(entries2, avgScore2, stddev2, tierConfig, averageRP2); // calculateTiers 인자 추가
+            // --- 수정 끝
 
 
             // 두 데이터셋 병합 및 차이 계산
@@ -576,7 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
             setupTablePopup();
         });
     }
-
 // --- 추가: 표 이미지 팝업 기능 설정 함수 --- - 기존 유지
 function setupTablePopup() {
     const popup = document.getElementById('image-popup');
