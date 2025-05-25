@@ -1,0 +1,138 @@
+{
+    "disassembleOptions": {
+      "uncommon_skin_salvage": {
+        "displayName": "온전한 아이템 분해 - 고급 스킨",
+        "eventProbabilities": {
+          "noAdditional": 0.18701100,
+          "triggersAdditionalGroup1Only": 0.73376800,
+          "triggersAdditionalGroup1And2Only": 0.07922100
+        },
+        "rewardGroups": {
+          "baseRewards": [
+            {
+              "descriptionForDisplay": "기본 획득 (데이터 조각)",
+              "items": [
+                { "displayName": "데이터 조각", "amount": 27, "probability": 0.15000000 },
+                { "displayName": "데이터 조각", "amount": 36, "probability": 0.35000000 },
+                { "displayName": "데이터 조각", "amount": 45, "probability": 0.35000000 },
+                { "displayName": "데이터 조각", "amount": 60, "probability": 0.15000000 }
+              ]
+            }
+          ],
+          "additionalRewardsOne": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 1)",
+            "items": [
+              { "displayName": "토큰", "amount": 7, "probability": 0.39610500 },
+              { "displayName": "토큰", "amount": 10, "probability": 0.39610500 }
+            ]
+          },
+          "additionalRewardsTwo": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 2)",
+            "items": [
+              {
+                "displayName": "고급 스킨",
+                "type": "multiple_unique_items_summed_probability",
+                "amountPerItem": 1,
+                "totalProbabilityForAny": 0.09999990,
+                "itemCountIfAny": 1 
+              }
+            ]
+          }
+        }
+      },
+      "rare_skin_salvage": {
+        "displayName": "온전한 아이템 분해 - 희귀 스킨",
+        "eventProbabilities": {
+          "noAdditional": 0.03753000, 
+          "triggersAdditionalGroup1Only": 0.45417000,
+          "triggersAdditionalGroup1And2Only": 0.46247000,
+          "triggersAdditionalGroup1And2And3": 0.04583000 
+        },
+        "rewardGroups": {
+          "baseRewards": [
+            {
+              "descriptionForDisplay": "기본 획득 (데이터 조각)",
+              "items": [
+                { "displayName": "데이터 조각", "amount": 37, "probability": 0.15000000 },
+                { "displayName": "데이터 조각", "amount": 45, "probability": 0.35000000 },
+                { "displayName": "데이터 조각", "amount": 60, "probability": 0.35000000 },
+                { "displayName": "데이터 조각", "amount": 83, "probability": 0.15000000 }
+              ]
+            }
+          ],
+          "additionalRewardsOne": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 1)",
+            "items": [
+              { "displayName": "희귀 데이터 조각", "amount": 1, "probability": 0.50000000 }
+            ]
+          },
+          "additionalRewardsTwo": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 2)",
+            "items": [
+              { "displayName": "토큰", "amount": 11, "probability": 0.45830000 },
+              { "displayName": "토큰", "amount": 16, "probability": 0.45830000 }
+            ]
+          },
+          "additionalRewardsThree": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 3)",
+            "items": [
+              {
+                "displayName": "희귀 스킨",
+                "type": "multiple_unique_items_summed_probability",
+                "amountPerItem": 1,
+                "totalProbabilityForAny": 0.09999985, 
+                "itemCountIfAny": 1
+              }
+            ]
+          }
+        }
+      },
+      "epic_skin_salvage": {
+        "displayName": "온전한 아이템 분해 - 영웅 스킨",
+        "eventProbabilities": {
+          "noAdditional": 0.01805400,
+          "triggersAdditionalGroup1Only": 0.88395200,
+          "triggersAdditionalGroup1And2Only": 0.09799400
+        },
+        "rewardGroups": {
+          "baseRewards": [
+            {
+              "descriptionForDisplay": "기본 획득 (데이터 조각)",
+              "items": [
+                { "displayName": "데이터 조각", "amount": 54, "probability": 0.15000000 },
+                { "displayName": "데이터 조각", "amount": 72, "probability": 0.35000000 },
+                { "displayName": "데이터 조각", "amount": 87, "probability": 0.35000000 },
+                { "displayName": "데이터 조각", "amount": 120, "probability": 0.15000000 }
+              ]
+            },
+            {
+              "descriptionForDisplay": "기본 획득 (희귀 데이터 조각)",
+              "items": [
+                { "displayName": "희귀 데이터 조각", "amount": 1, "probability": 0.50000000 },
+                { "displayName": "희귀 데이터 조각", "amount": 2, "probability": 0.50000000 }
+              ]
+            }
+          ],
+          "additionalRewardsOne": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 1)",
+            "items": [
+              { "displayName": "토큰", "amount": 15, "probability": 0.48997000 },
+              { "displayName": "토큰", "amount": 22, "probability": 0.48997000 }
+            ]
+          },
+          "additionalRewardsTwo": {
+            "descriptionForDisplay": "추가 획득 아이템 (그룹 2)",
+            "items": [
+              {
+                "displayName": "영웅 스킨",
+                "type": "multiple_unique_items_summed_probability",
+                "amountPerItem": 1,
+                "totalProbabilityForAny": 0.09999999,
+                "itemCountIfAny": 1
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
