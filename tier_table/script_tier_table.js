@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                      // --- 단일 모드 툴팁 내용 형식 (요청대로, 점수 제거) ---
                      // 단일 모드에서는 totalSample 대신 해당 캐릭터의 픽률 값을 사용합니다.
-                     const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) : '-';
+                     const pickRate = character['픽률'] !== null && character['픽률'] !== undefined ? character['픽률'].toFixed(2) + '%' : '-';
                      const rp = character['RP 획득'] !== null && character['RP 획득'] !== undefined ? character['RP 획득'].toFixed(1) : '-';
                      const winRate = character['승률'] !== null && character['승률'] !== undefined ? (character['승률'] * 100).toFixed(1) + '%' : '-';
                       // --- 삭제 시작: 단일 모드 점수 정보 (디버깅용) ---
@@ -129,9 +129,9 @@ document.addEventListener('DOMContentLoaded', function () {
                      // --- 삭제 끝
                      tooltipContent = `
                          ${character.실험체}<br>
-                         픽률: ${pickRate}%<br>
+                         픽률: ${pickRate}<br>
                          RP: ${rp}<br>
-                         승률: ${winRate}%
+                         승률: ${winRate}
                      `;
                      // ---------------------------------------
                 }
