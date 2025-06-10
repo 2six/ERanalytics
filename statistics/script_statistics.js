@@ -585,87 +585,152 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-// --- 추가: 표 이미지 팝업 기능 설정 함수 --- - 기존 유지
+// --- 수정: 표 이미지 팝업 기능 설정 함수 (렌더링 안정성 개선) ---
 function setupTablePopup() {
     const popup = document.getElementById('image-popup');
     const popupImg = document.getElementById('popup-image');
     const popupTableButton = document.getElementById('popup-table-button');
-    const targetTable = dataContainer.querySelector('table'); // dataContainer 내의 테이블 탐색
+    const dataContainer = document.getElementById('data-container');
 
-    // 요소가 모두 존재하는지 확인
-    if (!popupTableButton || !popup || !popupImg) {
-         // console.error("Popup elements or target table not found."); // 디버깅 로그
-         // 테이블이 로드되기 전이나 에러 시에는 targetTable이 없을 수 있습니다.
-         // 버튼만이라도 존재하면 이벤트 리스너를 붙입니다.
-         if (popupTableButton) {
-              // 에러 메시지 등이 표시된 상태에서도 캡처 시도 가능
-              setupButtonListener(popupTableButton, popup, popupImg, dataContainer);
-         }
-         return;
+    if (!popupTableButton || !popup || !popupImg || !dataContainer) {
+        return;
     }
 
-    // targetTable이 로드된 경우에만 테이블 캡처 리스너를 붙입니다.
-     setupButtonListener(popupTableButton, popup, popupImg, targetTable);
+    // 기존 클릭 이벤트 리스너 제거
+    popupTableButton.onclick = null;
 
+    popupTableButton.onclick = async () => {
+        const targetTable = dataContainer.querySelector('table');
+        if (!targetTable) {
+            alert("캡처할 테이블이 없습니다.");
+            return;
+        }
+
+        // 캡처용 임시 컨테이너 생성
+        const captureContainer = document.createElement('div');
+        captureContainer.style.position = 'absolute';
+        captureContainer.style.left = '-9999px';
+        captureContainer.style.padding = '1px'; // 테두리 잘림 방지
+        
+        // 원본 테이블의 전체 HTML을 복사하여 컨테이너에 삽입
+        captureContainer.innerHTML = targetTable.outerHTML;
+        
+        // 복사본 테이블에 원본 너비를 명시적으로 설정하여 레이아웃 깨짐 방지
+        const clonedTable = captureContainer.querySelector('table');
+        if (clonedTable) {
+            clonedTable.style.width = `${targetTable.offsetWidth}px`;
+        }
+
+        document.body.appendChild(captureContainer);
+
+        try {
+            // 임시 컨테이너를 캡처
+            const canvas = await html2canvas(captureContainer, { 
+                backgroundColor: null,
+                scale: window.devicePixelRatio > 1 ? 2 : 1 // 고해상도 지원
+            });
+            popup.style.display = 'block';
+            popupImg.src = canvas.toDataURL();
+        } catch (err) {
+            console.error("전체 표 이미지 캡처 실패:", err);
+            alert("이미지 캡처 중 오류가 발생했습니다.");
+        } finally {
+            // 작업 완료 후 항상 임시 컨테이너 제거
+            document.body.removeChild(captureContainer);
+        }
+    };
+    
     // 팝업 닫기 버튼 이벤트 리스너 (한 번만 설정)
-     const closeButton = popup.querySelector('.image-popup-close');
-     if (closeButton && !closeButton.onclick) { // 이미 리스너가 없으면 추가
-          closeButton.onclick = () => { popup.style.display = 'none'; };
-     }
-
-    // 팝업 외부 클릭 시 닫기 (선택 사항)
-    // popup.onclick = (event) => {
-    //     if (event.target === popup) {
-    //         popup.style.display = 'none';
-    //     }
-    // };
+    const closeButton = popup.querySelector('.image-popup-close');
+    if (closeButton && !closeButton.onclick) {
+        closeButton.onclick = () => { popup.style.display = 'none'; };
+    }
+    
+    // 부분 캡처 함수 호출 (이 함수는 '상위+하위 10행' 버튼을 설정합니다)
     setupPartialTablePopup(); 
 }
 
-// 부분 이미지 캡처 버튼 설정
+// 부분 이미지 캡처 버튼 설정 (렌더링 안정성 개선)
 function setupPartialTablePopup() {
     const popup = document.getElementById('image-popup');
     const popupImg = document.getElementById('popup-image');
     const partialButton = document.getElementById('popup-partial-button');
-    const dataContainer = document.getElementById('data-container'); // dataContainer 참조
+    const dataContainer = document.getElementById('data-container');
 
-    if (!partialButton || !popup || !popupImg) return;
+    if (!partialButton || !popup || !popupImg || !dataContainer) return;
+    
+    // 기존 리스너 제거
+    partialButton.onclick = null;
 
-    // async/await를 사용하여 비동기 코드를 더 명확하게 작성
     partialButton.onclick = async () => {
         const targetTable = dataContainer.querySelector('table');
         if (!targetTable) {
             alert("테이블이 로드되지 않았습니다.");
             return;
         }
-
+    
+        const thead = targetTable.querySelector('thead');
         const tbody = targetTable.querySelector('tbody');
-        if (!tbody || tbody.rows.length === 0) {
+    
+        if (!tbody || !thead || tbody.rows.length === 0) {
             alert("캡처할 데이터가 테이블에 없습니다.");
             return;
         }
-
+    
         const allRows = Array.from(tbody.rows);
-        
-        // 상위 10개와 하위 10개 사이에 있는 행들만 선택
-        // 총 행 수가 20개 이하이면 숨길 행이 없으므로 빈 배열이 됨
-        const rowsToHide = allRows.length > 20 ? allRows.slice(10, -10) : [];
-        
-        // 행들을 숨김 처리
-        rowsToHide.forEach(row => row.style.display = 'none');
+        let rowsHtml = '';
 
+        if (allRows.length <= 20) {
+            // 행이 20개 이하이면 모든 행을 포함하여 HTML 생성
+            rowsHtml = allRows.map(row => row.outerHTML).join('');
+        } else {
+            // 행이 20개를 초과하면 상위 10개와 하위 10개 행의 HTML만 추출
+            const topRowsHtml = allRows.slice(0, 10).map(row => row.outerHTML).join('');
+            const bottomRowsHtml = allRows.slice(-10).map(row => row.outerHTML).join('');
+            rowsHtml = topRowsHtml + bottomRowsHtml;
+        }
+        
+        // 원본 테이블의 속성(class, id 등)을 포함한 새로운 테이블 HTML 구성
+        const tableAttributes = Array.from(targetTable.attributes).map(attr => `${attr.name}="${attr.value}"`).join(' ');
+        const newTableHtml = `
+            <table ${tableAttributes}>
+                ${thead.outerHTML}
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        `;
+        
+        // 캡처용 임시 컨테이너 생성
+        const captureContainer = document.createElement('div');
+        captureContainer.style.position = 'absolute';
+        captureContainer.style.left = '-9999px';
+        captureContainer.style.padding = '1px';
+        
+        captureContainer.innerHTML = newTableHtml;
+
+        // 복사본 테이블에 원본 너비를 명시적으로 설정
+        const clonedTable = captureContainer.querySelector('table');
+        if (clonedTable) {
+            clonedTable.style.width = `${targetTable.offsetWidth}px`;
+        }
+
+        document.body.appendChild(captureContainer);
+    
         try {
-            // 스타일이 유지된 원본 테이블을 직접 캡처
-            const canvas = await html2canvas(targetTable, { backgroundColor: null });
+            // 임시 컨테이너를 캡처
+            const canvas = await html2canvas(captureContainer, {
+                backgroundColor: null,
+                scale: window.devicePixelRatio > 1 ? 2 : 1 // 고해상도 지원
+            });
             popup.style.display = 'block';
             popupImg.src = canvas.toDataURL();
         } catch (err) {
             console.error("부분 이미지 캡처 실패:", err);
             alert("부분 이미지 캡처 중 오류가 발생했습니다.");
-            popup.style.display = 'none';
         } finally {
-            // 이미지 캡처의 성공/실패 여부와 관계없이, 숨겼던 모든 행을 다시 표시
-            rowsToHide.forEach(row => row.style.display = ''); // 인라인 display 스타일을 제거하여 원래 상태로 복원
+            // 작업 완료 후 항상 임시 컨테이너 제거
+            document.body.removeChild(captureContainer);
         }
     };    
 }
