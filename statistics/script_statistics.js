@@ -679,8 +679,7 @@ function setupPartialTablePopup() {
             popup.style.display = 'none';
             document.body.removeChild(container);
         });
-    };
-    
+    };    
 }
 
 // 팝업 버튼 리스너 설정 헬퍼 함수 (targetElement를 캡처)
