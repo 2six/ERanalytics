@@ -608,6 +608,7 @@ function setupTablePopup() {
 
         // 캡처용 임시 컨테이너 생성
         const captureContainer = document.createElement('div');
+        captureContainer.id = 'data-container'; // --- 추가: 원본 CSS를 적용하기 위해 ID 부여 ---
         captureContainer.style.position = 'absolute';
         captureContainer.style.left = '-9999px';
         captureContainer.style.padding = '1px'; // 테두리 잘림 방지
@@ -703,6 +704,7 @@ function setupPartialTablePopup() {
         
         // 캡처용 임시 컨테이너 생성
         const captureContainer = document.createElement('div');
+        captureContainer.id = 'data-container'; // --- 추가: 원본 CSS를 적용하기 위해 ID 부여 ---
         captureContainer.style.position = 'absolute';
         captureContainer.style.left = '-9999px';
         captureContainer.style.padding = '1px';
