@@ -627,58 +627,46 @@ function setupPartialTablePopup() {
     const popup = document.getElementById('image-popup');
     const popupImg = document.getElementById('popup-image');
     const partialButton = document.getElementById('popup-partial-button');
+    const dataContainer = document.getElementById('data-container'); // dataContainer 참조
 
     if (!partialButton || !popup || !popupImg) return;
 
-    partialButton.onclick = () => {
+    // async/await를 사용하여 비동기 코드를 더 명확하게 작성
+    partialButton.onclick = async () => {
         const targetTable = dataContainer.querySelector('table');
         if (!targetTable) {
             alert("테이블이 로드되지 않았습니다.");
             return;
         }
-    
-        // 전체 테이블 복제
-        const clonedTable = targetTable.cloneNode(true);
-        const thead = clonedTable.querySelector('thead');
-        const tbody = clonedTable.querySelector('tbody');
-    
-        if (!tbody || !thead) {
-            alert("테이블 구조가 올바르지 않습니다.");
+
+        const tbody = targetTable.querySelector('tbody');
+        if (!tbody || tbody.rows.length === 0) {
+            alert("캡처할 데이터가 테이블에 없습니다.");
             return;
         }
-    
-        // 모든 tbody 행 리스트화
-        const rows = Array.from(tbody.rows);
-    
-        // 기존 행 제거
-        while (tbody.firstChild) {
-            tbody.removeChild(tbody.firstChild);
-        }
-    
-        // 상위 10개 + 하위 10개 행 추가
-        rows.slice(0, 10).forEach(row => tbody.appendChild(row));
-        rows.slice(-10).forEach(row => tbody.appendChild(row));
-    
-        // ✅ 색상 강조 스타일 다시 적용 (필수!)
-        applyGradientColorsSingle(clonedTable);
-    
-        // 캡처용 컨테이너
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.top = '-9999px';
-        container.appendChild(clonedTable);
-        document.body.appendChild(container);
-    
-        html2canvas(container, { backgroundColor: null }).then(canvas => {
+
+        const allRows = Array.from(tbody.rows);
+        
+        // 상위 10개와 하위 10개 사이에 있는 행들만 선택
+        // 총 행 수가 20개 이하이면 숨길 행이 없으므로 빈 배열이 됨
+        const rowsToHide = allRows.length > 20 ? allRows.slice(10, -10) : [];
+        
+        // 행들을 숨김 처리
+        rowsToHide.forEach(row => row.style.display = 'none');
+
+        try {
+            // 스타일이 유지된 원본 테이블을 직접 캡처
+            const canvas = await html2canvas(targetTable, { backgroundColor: null });
             popup.style.display = 'block';
             popupImg.src = canvas.toDataURL();
-            document.body.removeChild(container);
-        }).catch(err => {
+        } catch (err) {
             console.error("부분 이미지 캡처 실패:", err);
             alert("부분 이미지 캡처 중 오류가 발생했습니다.");
             popup.style.display = 'none';
-            document.body.removeChild(container);
-        });
+        } finally {
+            // 이미지 캡처의 성공/실패 여부와 관계없이, 숨겼던 모든 행을 다시 표시
+            rowsToHide.forEach(row => row.style.display = ''); // 인라인 display 스타일을 제거하여 원래 상태로 복원
+        }
     };    
 }
 
