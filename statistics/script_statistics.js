@@ -627,11 +627,16 @@ function setupPartialTablePopup() {
     const popup = document.getElementById('image-popup');
     const popupImg = document.getElementById('popup-image');
     const partialButton = document.getElementById('popup-partial-button');
-    const targetTable = dataContainer.querySelector('table');
 
-    if (!partialButton || !popup || !popupImg || !targetTable) return;
+    if (!partialButton || !popup || !popupImg) return;
 
     partialButton.onclick = () => {
+        const targetTable = dataContainer.querySelector('table'); // ← 클릭 시점에 찾기
+        if (!targetTable) {
+            alert("테이블이 로드되지 않았습니다.");
+            return;
+        }
+
         const clonedTable = document.createElement('table');
         clonedTable.style.borderCollapse = 'collapse';
         clonedTable.style.backgroundColor = 'white';
@@ -650,7 +655,6 @@ function setupPartialTablePopup() {
             clonedTable.appendChild(newTbody);
         }
 
-        // 캡처용 DOM에 추가 (숨김)
         const container = document.createElement('div');
         container.style.position = 'absolute';
         container.style.top = '-9999px';
