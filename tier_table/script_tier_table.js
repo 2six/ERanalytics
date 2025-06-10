@@ -820,55 +820,6 @@ document.addEventListener('DOMContentLoaded', function () {
          if (closeButton && !closeButton.onclick) { // 이미 리스너가 없으면 추가
               closeButton.onclick = () => { popup.style.display = 'none'; };
          }
-         setupPartialTablePopup(); // 추가: 부분 이미지 팝업 기능도 설정
-    }
-
-    // 부분 이미지 캡처 버튼 설정
-    function setupPartialTablePopup() {
-        const popup = document.getElementById('image-popup');
-        const popupImg = document.getElementById('popup-image');
-        const partialButton = document.getElementById('popup-partial-button');
-        const targetTable = dataContainer.querySelector('table');
-
-        if (!partialButton || !popup || !popupImg || !targetTable) return;
-
-        partialButton.onclick = () => {
-            const clonedTable = document.createElement('table');
-            clonedTable.style.borderCollapse = 'collapse';
-            clonedTable.style.backgroundColor = 'white';
-
-            // 헤더 복제
-            const thead = targetTable.querySelector('thead');
-            if (thead) clonedTable.appendChild(thead.cloneNode(true));
-
-            // 처음 10행 + 마지막 10행 복제
-            const tbody = targetTable.querySelector('tbody');
-            if (tbody) {
-                const rows = Array.from(tbody.rows);
-                const newTbody = document.createElement('tbody');
-                rows.slice(0, 10).forEach(row => newTbody.appendChild(row.cloneNode(true)));
-                rows.slice(-10).forEach(row => newTbody.appendChild(row.cloneNode(true)));
-                clonedTable.appendChild(newTbody);
-            }
-
-            // 캡처용 DOM에 추가 (숨김)
-            const container = document.createElement('div');
-            container.style.position = 'absolute';
-            container.style.top = '-9999px';
-            container.appendChild(clonedTable);
-            document.body.appendChild(container);
-
-            html2canvas(container, { backgroundColor: null }).then(canvas => {
-                popup.style.display = 'block';
-                popupImg.src = canvas.toDataURL();
-                document.body.removeChild(container);
-            }).catch(err => {
-                console.error("부분 이미지 캡처 실패:", err);
-                alert("부분 이미지 캡처 중 오류가 발생했습니다.");
-                popup.style.display = 'none';
-                document.body.removeChild(container);
-            });
-        };
     }
 
     // 팝업 버튼 리스너 설정 헬퍼 함수 (targetElement를 캡처)
