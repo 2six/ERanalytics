@@ -659,6 +659,9 @@ function setupPartialTablePopup() {
         rows.slice(0, 10).forEach(row => tbody.appendChild(row));
         rows.slice(-10).forEach(row => tbody.appendChild(row));
     
+        // ✅ 색상 강조 스타일 다시 적용 (필수!)
+        applyGradientColorsSingle(clonedTable);
+    
         // 캡처용 컨테이너
         const container = document.createElement('div');
         container.style.position = 'absolute';
@@ -677,6 +680,7 @@ function setupPartialTablePopup() {
             document.body.removeChild(container);
         });
     };
+    
 }
 
 // 팝업 버튼 리스너 설정 헬퍼 함수 (targetElement를 캡처)
