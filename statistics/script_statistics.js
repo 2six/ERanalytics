@@ -631,36 +631,41 @@ function setupPartialTablePopup() {
     if (!partialButton || !popup || !popupImg) return;
 
     partialButton.onclick = () => {
-        const targetTable = dataContainer.querySelector('table'); // ← 클릭 시점에 찾기
+        const targetTable = dataContainer.querySelector('table');
         if (!targetTable) {
             alert("테이블이 로드되지 않았습니다.");
             return;
         }
-
-        const clonedTable = document.createElement('table');
-        clonedTable.style.borderCollapse = 'collapse';
-        clonedTable.style.backgroundColor = 'white';
-
-        // 헤더 복제
-        const thead = targetTable.querySelector('thead');
-        if (thead) clonedTable.appendChild(thead.cloneNode(true));
-
-        // 처음 10행 + 마지막 10행 복제
-        const tbody = targetTable.querySelector('tbody');
-        if (tbody) {
-            const rows = Array.from(tbody.rows);
-            const newTbody = document.createElement('tbody');
-            rows.slice(0, 10).forEach(row => newTbody.appendChild(row.cloneNode(true)));
-            rows.slice(-10).forEach(row => newTbody.appendChild(row.cloneNode(true)));
-            clonedTable.appendChild(newTbody);
+    
+        // 전체 테이블 복제
+        const clonedTable = targetTable.cloneNode(true);
+        const thead = clonedTable.querySelector('thead');
+        const tbody = clonedTable.querySelector('tbody');
+    
+        if (!tbody || !thead) {
+            alert("테이블 구조가 올바르지 않습니다.");
+            return;
         }
-
+    
+        // 모든 tbody 행 리스트화
+        const rows = Array.from(tbody.rows);
+    
+        // 기존 행 제거
+        while (tbody.firstChild) {
+            tbody.removeChild(tbody.firstChild);
+        }
+    
+        // 상위 10개 + 하위 10개 행 추가
+        rows.slice(0, 10).forEach(row => tbody.appendChild(row));
+        rows.slice(-10).forEach(row => tbody.appendChild(row));
+    
+        // 캡처용 컨테이너
         const container = document.createElement('div');
         container.style.position = 'absolute';
         container.style.top = '-9999px';
         container.appendChild(clonedTable);
         document.body.appendChild(container);
-
+    
         html2canvas(container, { backgroundColor: null }).then(canvas => {
             popup.style.display = 'block';
             popupImg.src = canvas.toDataURL();
